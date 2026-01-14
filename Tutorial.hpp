@@ -20,7 +20,15 @@ struct Tutorial : RTG::Application {
 	VkRenderPass render_pass = VK_NULL_HANDLE;
 
 	//Pipelines:
-	//none, yet
+	struct BackgroundPipeline
+	{
+		VkPipelineLayout layout = VK_NULL_HANDLE;
+
+		VkPipeline handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass RenderPass, uint32_t subpass);
+		void Destroy(RTG &);
+	} BackgroundPipeline;
 
 	//pools from which per-workspace things are allocated:
 	VkCommandPool command_pool = VK_NULL_HANDLE;
