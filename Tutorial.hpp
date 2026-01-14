@@ -28,7 +28,17 @@ struct Tutorial : RTG::Application {
 
 		void Create(RTG &, VkRenderPass RenderPass, uint32_t subpass);
 		void Destroy(RTG &);
-	} BackgroundPipeline;
+
+		struct Push
+		{
+			float time;
+		};
+
+		VkPipelineLayout layout = VK_NULL_HANDLE;
+		
+	} backgroundPipeline;
+
+	
 
 	//pools from which per-workspace things are allocated:
 	VkCommandPool command_pool = VK_NULL_HANDLE;
@@ -59,6 +69,8 @@ struct Tutorial : RTG::Application {
 
 	virtual void update(float dt) override;
 	virtual void on_input(InputEvent const &) override;
+
+	float time = 0.0f;
 
 	//--------------------------------------------------------------------
 	//Rendering function, uses all the resources above to queue work to draw a frame:
