@@ -33,8 +33,6 @@ struct Tutorial : RTG::Application {
 		{
 			float time;
 		};
-
-		VkPipelineLayout layout = VK_NULL_HANDLE;
 		
 	} backgroundPipeline;
 
