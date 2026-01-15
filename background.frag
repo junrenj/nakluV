@@ -8,7 +8,21 @@ layout(push_constant) uniform Push
     float time;
 };
 
+vec4 RainBubble()
+{
+    vec4 result = vec4(0,0,0,0);
+    vec2 centerPos = vec2(0.5, 0.5);
+    vec2 uvOffset = position - centerPos;
+    float radius = 0.05;
+
+    float dist = length(uvOffset);
+
+    return result;
+}
+
 void main() 
 {
+    // vec4 Color = RainBubble();
+    // outColor = ;
     outColor = vec4(fract(position.x + time), position.y, 0.0, 1.0);
 }
