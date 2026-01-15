@@ -34,7 +34,7 @@ struct Tutorial : RTG::Application {
 			float time;
 		};
 		
-	} backgroundPipeline;
+	} BackgroundPipeline;
 
 	
 

@@ -76,15 +76,61 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
             .pDynamicStates = DynamicStates.data(),
         };
 
-        // TODO: draw triangles
+        // This pipeline will take no per-vertex inputs:
+        VkPipelineVertexInputStateCreateInfo VertexInputState
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .vertexBindingDescriptionCount = 0,
+            .pVertexBindingDescriptions = nullptr,
+            .vertexAttributeDescriptionCount = 0,
+            .pVertexAttributeDescriptions = nullptr,
+        };
 
-        // TODO: one viewport and scissor rectangle:
+        // This pipeline will draw triangles:
+        VkPipelineInputAssemblyStateCreateInfo InputAssemblyState
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .primitiveRestartEnable = VK_FALSE,
+        };
 
-        // TODO: the rasterizer will cull back faces and fill polygons:
+        // This pipeline will render to one viewport and scissor rectangle:
+        VkPipelineViewportStateCreateInfo ViewportState
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .viewportCount = 1,
+            .scissorCount = 1,
+        };
 
-        // TODO: multisampling will be disabled (one sample per pixel):
+        // The rasterizer will cull back faces and fill polygons:
+        VkPipelineRasterizationStateCreateInfo RasterizationState
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            .depthClampEnable = VK_FALSE,
+            .rasterizerDiscardEnable = VK_FALSE,
+            .polygonMode = VK_POLYGON_MODE_FILL,
+            .cullMode = VK_CULL_MODE_BACK_BIT,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            .depthBiasEnable = VK_FALSE,
+            .lineWidth = 1.0f,
+        };
 
-        // TODO: //depth and stencil tests will be disabled:
+        // Multisampling will be disabled (one sample per pixel):
+        VkPipelineMultisampleStateCreateInfo MultisampleState
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+            .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+            .sampleShadingEnable = VK_FALSE,
+        };
+
+        // Depth and stencil tests will be disabled:
+        VkPipelineDepthStencilStateCreateInfo DepthStencilState
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            .depthTestEnable = VK_FALSE,
+            .depthBoundsTestEnable = VK_FALSE,
+            .stencilTestEnable = VK_FALSE,
+        };
 
         // There will be one color attachment with blending disabled:
         std::array< VkPipelineColorBlendAttachmentState, 1 > AttachmentStates
@@ -111,19 +157,19 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = uint32_t(Stages.size()),
             .pStages = Stages.data(),
-            .pVertexInputState = &,
-            .pInputAssemblyState = &input_assembly_state,
-            .pRasterizationState = &rasterization_state,
-			.pMultisampleState = &multisample_state,
-			.pDepthStencilState = &depth_stencil_state,
-			.pColorBlendState = &color_blend_state,
-			.pDynamicState = &dynamic_state,
+            .pVertexInputState = &VertexInputState,
+            .pInputAssemblyState = &InputAssemblyState,
+            .pRasterizationState = &RasterizationState,
+			.pMultisampleState = &MultisampleState,
+			.pDepthStencilState = &DepthStencilState,
+			.pColorBlendState = &ColorBlendState,
+			.pDynamicState = &DynamicState,
 			.layout = layout,
-			.renderPass = render_pass,
-			.subpass = subpass,
+			.renderPass = RenderPass,
+			.subpass = Subpass,
         };
 
-        VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &create_info, nullptr, &handle) );
+        VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &handle) );
     }
 }
 

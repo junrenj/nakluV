@@ -12,7 +12,7 @@
 Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_) {
 	refsol::Tutorial_constructor(rtg, &depth_format, &render_pass, &command_pool);
 
-	backgroundPipeline.Create(rtg, render_pass, 0);
+	BackgroundPipeline.Create(rtg, render_pass, 0);
 
 	workspaces.resize(rtg.workspaces.size());
 	for (Workspace &workspace : workspaces) {
@@ -36,7 +36,7 @@ Tutorial::~Tutorial() {
 	}
 	workspaces.clear();
 
-	backgroundPipeline.Destroy(rtg);
+	BackgroundPipeline.Destroy(rtg);
 
 	refsol::Tutorial_destructor(rtg, &render_pass, &command_pool);
 }
@@ -75,7 +75,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 		VK(vkBeginCommandBuffer(workspace.command_buffer, &begin_info));
 	}
 
-	// TODO: put GPU commands here:
+	// GPU commands here:
 	{
 		// render pass
 		std::array<VkClearValue, 2> clear_values
@@ -111,7 +111,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 
 		{
 			// configure viewport transform:
-			VkViewport viewport
+			VkViewport Viewport
 			{
 				.x = 0.0f,
 				.y = 0.0f,
@@ -120,12 +120,22 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 				.minDepth = 0.0f,
 				.maxDepth = 1.0f,
 			};
-			vkCmdSetViewport(workspace.command_buffer, 0, 1, &viewport);
+			vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
 		}
 
 		{
 			// draw with the background pipeline:
-			vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundPipeline.handle);
+			vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.handle);
+			
+			// Push time here
+			{
+				BackgroundPipeline::Push push
+				{
+					.time = time,
+				};
+				vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.layout, 
+									VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+			}
 			vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
 		}
 

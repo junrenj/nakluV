@@ -10,5 +10,5 @@ layout(push_constant) uniform Push
 
 void main() 
 {
-    outColor = vec4(position, 0.0, 1.0);
+    outColor = vec4(fract(position.x + time), position.y, 0.0, 1.0);
 }
