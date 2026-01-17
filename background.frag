@@ -8,7 +8,7 @@ layout(push_constant) uniform Push
     float time;
 };
 
-void RippleMask(vec2 uv, float radiusMax, float radiusMin, float fadeInner, float fadeOuter, float thickness, inout float finalAlpha, inout vec2 seed, vec2 offsetRange, float duration, float timeSpeed)
+void RippleCalculate(vec2 uv, float radiusMax, float radiusMin, float fadeInner, float fadeOuter, float thickness, inout vec4 finalRGBA, inout vec2 seed, vec2 offsetRange, float duration, float timeSpeed, vec3 colorRipple_1, vec3 colorRipple_2)
 {
     seed = fract(seed * 782.109);
     float randomOffsetX = mix(offsetRange.x, offsetRange.y, seed.x);
@@ -37,11 +37,13 @@ void RippleMask(vec2 uv, float radiusMax, float radiusMin, float fadeInner, floa
     if(dist >= radius - thickness &&
          dist <= radius + thickness)
     {
-        finalAlpha += alpha;
+        finalRGBA += vec4(0, 0, 0, alpha);
+        vec3 color = mix(colorRipple_1, colorRipple_2, sin(seed.y));
+        finalRGBA = vec4(color, finalRGBA.w);
     }
 }
 
-void RainLine(vec2 uv, float lineWidth, float thickness, inout float finalAlpha, inout vec2 seed, vec2 offsetRange, float widthRange, float duration, float timeSpeed)
+void RainLine(vec2 uv, float lineWidth, float thickness, inout vec4 finalRGBA, inout vec2 seed, vec2 offsetRange, float widthRange, float duration, float timeSpeed, vec3 colorRainline_1, vec3 colorRainline_2)
 {
     seed = fract(seed * 217.345);
     float randomOffsetX = mix(offsetRange.x, offsetRange.y, seed.x);
@@ -49,29 +51,33 @@ void RainLine(vec2 uv, float lineWidth, float thickness, inout float finalAlpha,
     vec2 randomOffset = vec2(randomOffsetX, randomOffsetY);
 
     float cycle = duration + fract(randomOffset.x);
-    float pulse = fract(time / cycle);
+    float pulse = fract(sin(time / cycle));
 
     vec2 offset = (uv - 0.5) - randomOffset;
 
+    float randomWidthRange = widthRange + 0.01 * sin(seed.y);
+
     float calAlpha = smoothstep(offset.x - lineWidth, offset.x, offset.y) - smoothstep(offset.x, offset.x + lineWidth, offset.y);
+    float timeFrac = fract(timeSpeed * time + sin(seed.x)) - 0.5;
 
-    float timeFrac = fract(time);
-    if(uv.y <= timeFrac + widthRange && uv.y >= timeFrac - widthRange)
+    if(uv.y <= timeFrac + randomWidthRange && uv.y >= timeFrac - randomWidthRange)
     {
-        finalAlpha += clamp(calAlpha - seed.x, 0, 1) * pulse;
+        float finalAlpha = clamp(calAlpha - seed.x, 0, 1);
+        finalRGBA += vec4(0, 0, 0, finalAlpha);
+        vec3 color = mix(colorRainline_1, colorRainline_2, sin(seed.x));
+        finalRGBA = vec4(color, finalRGBA.w);
     }
-
 }
 
 vec4 RainBubble()
 {
     // Final Var
-    vec4 result = vec4(0,0,0,0);
-    float finalAlpha = 0.0;
+    vec4 finalRGBA = vec4(0,0,0,0);
 
     // Color Var
-    vec3 colorBackground = vec3(0.427, 0.823, 0.859);
-    vec3 colorRipple = vec3(1, 1, 1);
+    vec3 colorBackground = vec3(103, 139, 159) / 255;
+    vec3 colorRipple_1 = vec3(1, 1, 1);
+    vec3 colorRipple_2 = vec3(1, 1, 1);
 
     // Ripple Var
     float radius = 0.05;
@@ -93,23 +99,24 @@ vec4 RainBubble()
     // Ripple
     for(int i = 0; i < dropsNum; i++)
     {
-        RippleMask(uvOffset, radiusMax, radiusMin, fadeInner, fadeOuter, thickness, finalAlpha, seed, offsetRange, duration, timeSpeed);
+        RippleCalculate(uvOffset, radiusMax, radiusMin, fadeInner, fadeOuter, thickness, finalRGBA, seed, offsetRange, duration, timeSpeed, colorRipple_1, colorRipple_2);
     }
 
     // RainLine
-    float rainLineNum = 50;
+    float rainLineNum = 300;
     float lineWidth = 0.005;
     float widthRange = 0.01;
+    vec3 colorRainline_1 = vec3(1, 1, 1);
+    vec3 colorRainline_2 = vec3(1, 1, 1);
+
     for(int i = 0; i < rainLineNum; i++)
     {
-        RainLine(uvOffset, lineWidth, thickness, finalAlpha, seed, offsetRange, widthRange, duration, 1);
+        RainLine(uvOffset, lineWidth, thickness, finalRGBA, seed, offsetRange, widthRange, duration, 1, colorRainline_1, colorRainline_2);
     }
-
-    vec3 colorFinal = mix(colorBackground, colorRipple, finalAlpha);
-
-    result = vec4(colorFinal, finalAlpha);
-
-    return clamp(result, 0, 1);
+    finalRGBA = clamp(finalRGBA, 0, 1);
+    vec3 colorFinal = pow(mix(colorBackground, finalRGBA.xyz, finalRGBA.w), vec3(2.2));
+    finalRGBA = vec4(colorFinal, finalRGBA.w);
+    return clamp(finalRGBA, 0, 1);
 }
 
 
