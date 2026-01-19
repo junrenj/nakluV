@@ -1,5 +1,7 @@
 #pragma once
 
+#include "PosColVertex.hpp"
+
 #include "RTG.hpp"
 
 struct Tutorial : RTG::Application {
@@ -19,7 +21,7 @@ struct Tutorial : RTG::Application {
 	//Render passes describe how pipelines write to images:
 	VkRenderPass render_pass = VK_NULL_HANDLE;
 
-	//Pipelines:
+	// Pipelines:
 	struct BackgroundPipeline
 	{
 		VkPipelineLayout layout = VK_NULL_HANDLE;
@@ -36,15 +38,36 @@ struct Tutorial : RTG::Application {
 		
 	} BackgroundPipeline;
 
+	// Lines Pipeline
+	struct LinesPipeline
+	{
+		// No descriptor set layouts
+
+		// No push constants
+
+		VkPipelineLayout Layout = VK_NULL_HANDLE;
+
+		using Vertex = PosColVertex;
+
+		VkPipeline Handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass RenderPass, uint32_t Subpass);
+		void Destroy(RTG &);
+	} LinesPipeline;
+
 	
 
 	//pools from which per-workspace things are allocated:
 	VkCommandPool command_pool = VK_NULL_HANDLE;
 
 	//workspaces hold per-render resources:
-	struct Workspace {
+	struct Workspace 
+	{
 		VkCommandBuffer command_buffer = VK_NULL_HANDLE; //from the command pool above; reset at the start of every render.
 
+		// Location for lines data:( streamed to GPU per-frame)
+		Helpers::AllocatedBuffer LinesVerticesSrc;	// host coherent; mapped
+		Helpers::AllocatedBuffer LinesVertices;		// device-local
 	};
 	std::vector< Workspace > workspaces;
 
@@ -69,6 +92,8 @@ struct Tutorial : RTG::Application {
 	virtual void on_input(InputEvent const &) override;
 
 	float time = 0.0f;
+
+	std::vector< LinesPipeline::Vertex > LinesVertices;
 
 	//--------------------------------------------------------------------
 	//Rendering function, uses all the resources above to queue work to draw a frame:

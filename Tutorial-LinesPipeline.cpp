@@ -4,15 +4,15 @@
 #include "Helpers.hpp"
 
 static uint32_t vert_code[] =
-#include "spv/background.vert.inl"
+#include "spv/lines.vert.inl"
 ;
 
 static uint32_t frag_code[] =
-#include "spv/background.frag.inl"
+#include "spv/lines.frag.inl"
 ;
 
 
-void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t Subpass)
+void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t Subpass)
 {
     VkShaderModule Vert_Module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule Frag_Module = rtg.helpers.create_shader_module(frag_code);
@@ -20,24 +20,17 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
     // refsol::BackgroundPipeline_create(rtg, RenderPass, Subpass, Vert_Module, Frag_Module, &layout, &handle);
 
     {
-        // Create pipeline layout:
-        VkPushConstantRange Range
-        {
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset = 0,
-            .size = sizeof(Push),
-        };
 
         VkPipelineLayoutCreateInfo CreateInfo
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .setLayoutCount = 0,
             .pSetLayouts = nullptr,
-            .pushConstantRangeCount = 1,
-            .pPushConstantRanges = &Range,
+            .pushConstantRangeCount = 0,
+            .pPushConstantRanges = nullptr,
         };
 
-        VK( vkCreatePipelineLayout(rtg.device, &CreateInfo, nullptr, &layout));
+        VK( vkCreatePipelineLayout(rtg.device, &CreateInfo, nullptr, &Layout));
     }
 
     {
@@ -75,21 +68,11 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
             .pDynamicStates = DynamicStates.data(),
         };
 
-        // This pipeline will take no per-vertex inputs:
-        VkPipelineVertexInputStateCreateInfo VertexInputState
-        {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            .vertexBindingDescriptionCount = 0,
-            .pVertexBindingDescriptions = nullptr,
-            .vertexAttributeDescriptionCount = 0,
-            .pVertexAttributeDescriptions = nullptr,
-        };
-
-        // This pipeline will draw triangles:
+        // This pipeline will draw lines:
         VkPipelineInputAssemblyStateCreateInfo InputAssemblyState
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
             .primitiveRestartEnable = VK_FALSE,
         };
 
@@ -122,11 +105,13 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
             .sampleShadingEnable = VK_FALSE,
         };
 
-        // Depth and stencil tests will be disabled:
+        // Depth test will be less, and stencil test will be disabled:
         VkPipelineDepthStencilStateCreateInfo DepthStencilState
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .depthTestEnable = VK_FALSE,
+            .depthTestEnable = VK_TRUE,
+            .depthWriteEnable = VK_TRUE,
+            .depthCompareOp = VK_COMPARE_OP_LESS,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
         };
@@ -156,7 +141,7 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = uint32_t(Stages.size()),
             .pStages = Stages.data(),
-            .pVertexInputState = &VertexInputState,
+            .pVertexInputState = &Vertex::ArrayInputState,
             .pInputAssemblyState = &InputAssemblyState,
 			.pViewportState = &ViewportState,
             .pRasterizationState = &RasterizationState,
@@ -164,26 +149,26 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
 			.pDepthStencilState = &DepthStencilState,
 			.pColorBlendState = &ColorBlendState,
 			.pDynamicState = &DynamicState,
-			.layout = layout,
+			.layout = Layout,
 			.renderPass = RenderPass,
 			.subpass = Subpass,
         };
 
-        VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &handle) );
+        VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &Handle) );
     }
 }
 
-void Tutorial::BackgroundPipeline::Destroy(RTG &rtg)
+void Tutorial::LinesPipeline::Destroy(RTG &rtg)
 {
-    if(layout != VK_NULL_HANDLE)
+    if(Layout != VK_NULL_HANDLE)
     {
-        vkDestroyPipelineLayout(rtg.device, layout, nullptr);
-        layout = VK_NULL_HANDLE;
+        vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
+        Layout = VK_NULL_HANDLE;
     }
 
-    if(handle != VK_NULL_HANDLE)
+    if(Handle != VK_NULL_HANDLE)
     {
-        vkDestroyPipeline(rtg.device, handle, nullptr);
-        handle = VK_NULL_HANDLE;
+        vkDestroyPipeline(rtg.device, Handle, nullptr);
+        Handle = VK_NULL_HANDLE;
     }
 }
