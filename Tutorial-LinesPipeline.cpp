@@ -11,7 +11,6 @@ static uint32_t frag_code[] =
 #include "spv/lines.frag.inl"
 ;
 
-
 void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t Subpass)
 {
     VkShaderModule Vert_Module = rtg.helpers.create_shader_module(vert_code);
@@ -20,12 +19,40 @@ void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t
     // refsol::BackgroundPipeline_create(rtg, RenderPass, Subpass, Vert_Module, Frag_Module, &layout, &handle);
 
     {
+        // the set0_Camera layout holds a Camera structure in a uniform buffer used in the vertex shader:
+        std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
+        {
+			VkDescriptorSetLayoutBinding
+            {
+				.binding = 0,
+				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = 1,
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+			},
+		};
+		
+		VkDescriptorSetLayoutCreateInfo CreateInfo
+        {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = uint32_t(Bindings.size()),
+			.pBindings = Bindings.data(),
+		};
+
+		VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set0_Camera) );
+    }
+
+    {
+        // create pipeline layout:
+        std::array< VkDescriptorSetLayout, 1 > Layouts
+        {
+            Set0_Camera,
+        };
 
         VkPipelineLayoutCreateInfo CreateInfo
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = 0,
-            .pSetLayouts = nullptr,
+            .setLayoutCount = uint32_t(Layouts.size()),
+            .pSetLayouts = Layouts.data(),
             .pushConstantRangeCount = 0,
             .pPushConstantRanges = nullptr,
         };
@@ -36,7 +63,7 @@ void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t
     {
         // Create Pipeline
 
-        // Shader code for verttex and fragment pipeline stages:
+        // Shader code for vertex and fragment pipeline stages:
         std::array< VkPipelineShaderStageCreateInfo, 2 > Stages
         {
             VkPipelineShaderStageCreateInfo
@@ -160,6 +187,11 @@ void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t
 
 void Tutorial::LinesPipeline::Destroy(RTG &rtg)
 {
+    if(Set0_Camera != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(rtg.device, Set0_Camera, nullptr);
+        Set0_Camera = VK_NULL_HANDLE;
+    }
     if(Layout != VK_NULL_HANDLE)
     {
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);

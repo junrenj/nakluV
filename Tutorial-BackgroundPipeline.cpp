@@ -78,7 +78,7 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
         // This pipeline will take no per-vertex inputs:
         VkPipelineVertexInputStateCreateInfo VertexInputState
         {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .vertexBindingDescriptionCount = 0,
             .pVertexBindingDescriptions = nullptr,
             .vertexAttributeDescriptionCount = 0,

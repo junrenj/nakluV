@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PosColVertex.hpp"
+#include "mat4.hpp"
 
 #include "RTG.hpp"
 
@@ -41,7 +42,14 @@ struct Tutorial : RTG::Application {
 	// Lines Pipeline
 	struct LinesPipeline
 	{
-		// No descriptor set layouts
+		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+
+		struct Camera
+		{
+			Mat4 CLIP_FROM_WORLD;
+		};
+		static_assert(sizeof(Camera) == 16*4, "camera buffer structure is packed");
+		
 
 		// No push constants
 
@@ -57,8 +65,9 @@ struct Tutorial : RTG::Application {
 
 	
 
-	//pools from which per-workspace things are allocated:
+	// Pools from which per-workspace things are allocated:
 	VkCommandPool command_pool = VK_NULL_HANDLE;
+	VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 
 	//workspaces hold per-render resources:
 	struct Workspace 
@@ -68,6 +77,11 @@ struct Tutorial : RTG::Application {
 		// Location for lines data:( streamed to GPU per-frame)
 		Helpers::AllocatedBuffer LinesVerticesSrc;	// host coherent; mapped
 		Helpers::AllocatedBuffer LinesVertices;		// device-local
+
+		// location for LinesPipeline::Camera data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer Camera_Src;	// host coherent; mapped
+		Helpers::AllocatedBuffer Camera;		// device-local
+		VkDescriptorSet CameraDescriptors;		// references Camera
 	};
 	std::vector< Workspace > workspaces;
 
@@ -93,10 +107,16 @@ struct Tutorial : RTG::Application {
 
 	float time = 0.0f;
 
+	Mat4 CLIP_FROM_WORLD;
+
 	std::vector< LinesPipeline::Vertex > LinesVertices;
 
 	//--------------------------------------------------------------------
 	//Rendering function, uses all the resources above to queue work to draw a frame:
 
 	virtual void render(RTG &, RTG::RenderParams const &) override;
+
+// Pattern function just for fun and test
+	void MakePatternX();
+	void MakePatternGrid();
 };
