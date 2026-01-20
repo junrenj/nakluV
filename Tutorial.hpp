@@ -63,8 +63,6 @@ struct Tutorial : RTG::Application {
 		void Destroy(RTG &);
 	} LinesPipeline;
 
-	
-
 	// Pools from which per-workspace things are allocated:
 	VkCommandPool command_pool = VK_NULL_HANDLE;
 	VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
@@ -119,4 +117,47 @@ struct Tutorial : RTG::Application {
 // Pattern function just for fun and test
 	void MakePatternX();
 	void MakePatternGrid();
+	void MakePatternBlackHole();
+	struct Vec2
+	{
+		float x;
+		float y;
+
+		Vec2 operator*(float Input) const
+        {
+            return Vec2{x * Input, y * Input};
+        }
+		Vec2 operator*(Vec2 Input) const
+        {
+            return Vec2{x * Input.x, y * Input.y};
+        }
+		Vec2 operator*=(Vec2 Input) const
+        {
+            return Vec2{x * Input.x, y * Input.y};
+        }
+		Vec2 operator*=(float Input) const
+        {
+            return Vec2{x * Input, y * Input};
+        }
+
+		Vec2 operator+(Vec2 Input) const
+        {
+            return Vec2{x + Input.x, y + Input.y};
+        }
+		Vec2 operator+=(Vec2 Input) const
+        {
+            return Vec2{x + Input.x, y + Input.y};
+        }
+		Vec2 operator-(Vec2 Input) const
+        {
+            return Vec2{x - Input.x, y - Input.y};
+        }
+		Vec2 operator-=(Vec2 Input) const
+        {
+            return Vec2{x - Input.x, y - Input.y};
+        }
+
+		static const Vec2 Zero;
+		static const Vec2 One;
+	};
 };

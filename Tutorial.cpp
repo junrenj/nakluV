@@ -9,6 +9,9 @@
 #include <cstring>
 #include <iostream>
 
+const Tutorial::Vec2 Tutorial::Vec2::Zero{0.0f, 0.0f};
+const Tutorial::Vec2 Tutorial::Vec2::One{1.0f, 1.0f};
+
 Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_) 
 {
 	refsol::Tutorial_constructor(rtg, &depth_format, &render_pass, &command_pool);
@@ -432,7 +435,8 @@ void Tutorial::update(float dt)
 
  	// Test for fun
 	// MakePatternX();
-	MakePatternGrid();
+	// MakePatternGrid();
+	MakePatternBlackHole();
 }
 
 
@@ -478,7 +482,8 @@ void Tutorial::MakePatternGrid()
 	constexpr size_t count = 2 * 30 + 2 * 30;
 	LinesVertices.reserve(count);
 	// horizontal lines at z = 0.5f:
-	for (uint32_t i = 0; i < 30; ++i) {
+	for (uint32_t i = 0; i < 30; ++i) 
+	{
 		float y = (i + 0.5f) / 30.0f * 2.0f - 1.0f;
 		LinesVertices.emplace_back(PosColVertex
 		{
@@ -506,5 +511,46 @@ void Tutorial::MakePatternGrid()
 			.Position{.x = x, .y = 1.0f, .z = z},
 			.Color{ .r = 0x44, .g = 0x00, .b = 0xff, .a = 0xff},
 		});
+	}
+}
+
+void Tutorial::MakePatternBlackHole()
+{
+	LinesVertices.clear();
+
+	const size_t GoldenRatioIterate = 8;
+	const size_t VerticesNumsPerArcBegin = 16;
+	const float RadiusBegin = 0.2f;
+	
+	float RadiusNow = RadiusBegin;
+	float Angle = 0.0f;
+	float Radians = Angle * 3.1415926f / 180.0f;
+
+	Vec2 CircleCenter = Vec2::Zero;
+
+	
+	constexpr size_t count = GoldenRatioIterate * VerticesNumsPerArcBegin;
+	LinesVertices.reserve(count);
+
+	for (uint32_t k = 0; k < 30; ++k) 
+	{
+		for (uint32_t i = 0; i < GoldenRatioIterate; ++i) 
+		{
+			for (uint32_t j = 0; j < VerticesNumsPerArcBegin; ++j)
+			{
+				Vec2 PointPos = CircleCenter + Vec2(cosf(Radians) * RadiusNow ,sinf(Radians) * RadiusNow);
+				LinesVertices.emplace_back(PosColVertex
+				{
+					.Position{.x = PointPos.x, .y = PointPos.y, .z = 0.0f},
+					.Color{ .r = 0xff, .g = 0xff, .b = 0xff, .a = 0xff},
+				});
+
+				Angle += 90.0f / VerticesNumsPerArcBegin;
+				Radians = Angle * 3.1415926f / 180.0f;
+			}
+			Radians = (Angle - 90.0f) * 3.1415926f / 180.0f;
+			CircleCenter -= Vec2(sinf(Radians) * RadiusNow ,cosf(Radians) * RadiusNow);
+			RadiusNow *= 2.0f;
+		}
 	}
 }

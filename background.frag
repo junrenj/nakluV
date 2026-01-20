@@ -123,5 +123,6 @@ vec4 RainBubble()
 void main() 
 {
     vec4 Color = RainBubble();
+    Color = vec4(0, 0, 0, 0);
     outColor = Color;
 }
