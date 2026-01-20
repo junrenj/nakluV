@@ -549,8 +549,8 @@ void Tutorial::MakePatternBlackHole()
 				Radians = Angle * 3.1415926f / 180.0f;
 			}
 			Radians = (Angle - 90.0f) * 3.1415926f / 180.0f;
-			CircleCenter -= Vec2(sinf(Radians) * RadiusNow ,cosf(Radians) * RadiusNow);
-			RadiusNow *= 2.0f;
+			// CircleCenter -= Vec2(sinf(Radians) * RadiusNow ,cosf(Radians) * RadiusNow);
+			// RadiusNow *= 2.0f;
 		}
 	}
 }
