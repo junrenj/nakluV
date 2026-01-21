@@ -22,7 +22,7 @@ struct Tutorial : RTG::Application {
 	//Render passes describe how pipelines write to images:
 	VkRenderPass render_pass = VK_NULL_HANDLE;
 
-	// Pipelines:
+	// Background Pipelines:
 	struct BackgroundPipeline
 	{
 		VkPipelineLayout layout = VK_NULL_HANDLE;
@@ -68,6 +68,28 @@ struct Tutorial : RTG::Application {
 		void Destroy(RTG &);
 	} LinesPipeline;
 
+	// Objects Pipeline
+	struct ObjectsPipeline
+	{
+		// Descriptor set Layouts:
+		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+
+		// types for descriptors:
+		using Camera = LinesPipeline::Camera;
+
+		// no push constants
+
+		VkPipelineLayout Layout = VK_NULL_HANDLE;
+
+		using Vertex = PosColVertex;
+		
+		VkPipeline Handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass Render_pass, uint32_t Subpass);
+		void Destroy(RTG &);
+	} ObjectsPipeline;
+	
+
 	// Pools from which per-workspace things are allocated:
 	VkCommandPool command_pool = VK_NULL_HANDLE;
 	VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
@@ -90,6 +112,7 @@ struct Tutorial : RTG::Application {
 
 	//-------------------------------------------------------------------
 	//static scene resources:
+	Helpers::AllocatedBuffer ObjectVertices;
 
 	//--------------------------------------------------------------------
 	//Resources that change when the swapchain is resized:

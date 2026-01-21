@@ -18,6 +18,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 
 	BackgroundPipeline.Create(rtg, render_pass, 0);
 	LinesPipeline.Create(rtg, render_pass, 0);
+	ObjectsPipeline.Create(rtg, render_pass, 0);
 
 	// create descriptor pool:
 	{
@@ -152,6 +153,7 @@ Tutorial::~Tutorial() {
 
 	BackgroundPipeline.Destroy(rtg);
 	LinesPipeline.Destroy(rtg);
+	ObjectsPipeline.Destroy(rtg);
 
 	if(DescriptorPool)
 	{
