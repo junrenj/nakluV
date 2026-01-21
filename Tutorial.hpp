@@ -44,6 +44,11 @@ struct Tutorial : RTG::Application {
 	{
 		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
 
+		struct Push
+		{
+			float time;
+		};
+
 		struct Camera
 		{
 			Mat4 CLIP_FROM_WORLD;
@@ -156,6 +161,11 @@ struct Tutorial : RTG::Application {
         {
             return Vec2{x - Input.x, y - Input.y};
         }
+
+		static void PrintVec2(const Vec2& v)
+		{
+			printf("(%.3f, %.3f)\n", v.x, v.y);
+		}
 
 		static const Vec2 Zero;
 		static const Vec2 One;

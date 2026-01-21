@@ -43,6 +43,13 @@ void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t
 
     {
         // create pipeline layout:
+        VkPushConstantRange Range
+        {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,
+            .size = sizeof(Push),
+        };
+
         std::array< VkDescriptorSetLayout, 1 > Layouts
         {
             Set0_Camera,
@@ -53,8 +60,8 @@ void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .setLayoutCount = uint32_t(Layouts.size()),
             .pSetLayouts = Layouts.data(),
-            .pushConstantRangeCount = 0,
-            .pPushConstantRanges = nullptr,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &Range,
         };
 
         VK( vkCreatePipelineLayout(rtg.device, &CreateInfo, nullptr, &Layout));

@@ -119,10 +119,64 @@ vec4 RainBubble()
     return clamp(finalRGBA, 0, 1);
 }
 
+float BlackHemiCircle()
+{
+    float Distance = length(vec2(position.x - 0.5, position.y - 0.63));
+    float Value = 0;
+    if(Distance <= 0.13 && position.y > 0.5 && position.y < 0.63)
+    {
+        Value = 1;
+    }
+    else
+    {
+        Value = 0;
+    }
+    return Value;
+}
+
+float BlackHemiRim()
+{
+    float Distance = length(vec2(position.x - 0.5, 0.98 * position.y - 0.63));
+    float Value = 0;
+    if(Distance <= 0.13 && position.y > 0.5 && position.y < 0.63)
+    {
+        Value = 1;
+    }
+    else
+    {
+        Value = 0;
+    }
+    return Value;
+}
+
+vec4 BlackHole()
+{
+    vec4 Result = vec4(0,0,0,0);
+    float Value = BlackHemiCircle();
+    float x = 0.51100;
+    float y = 0.09867;
+    float z = 0.3062;
+
+    float RimInside = BlackHemiRim();
+    x = mix(0.0, 1.0, Value - RimInside);
+    y = mix(0.0, 1.0, Value - RimInside);
+    z = mix(0.0, 1.0, Value - RimInside);
+    
+    float Distance = length(vec2(position.x - 0.5, 1.3 * position.y - 0.8));
+    if(Distance <= 0.13 && position.y > 0.5 && position.y < 0.8)
+    {
+        Value = 1;
+    }
+
+    Result = vec4(x, y, z, Value);
+
+    return Result;
+}
 
 void main() 
 {
     vec4 Color = RainBubble();
-    Color = vec4(0, 0, 0, 0);
+    
+    Color = BlackHole();
     outColor = Color;
 }

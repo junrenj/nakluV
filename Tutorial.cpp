@@ -304,7 +304,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 		// render pass
 		std::array<VkClearValue, 2> clear_values
 		{
-			VkClearValue{ .color{ .float32{.5f, .1f, .3f, 1.0f}}},
+			VkClearValue{ .color{ .float32{.0f, .0f, 0.f, 1.0f}}},
 			VkClearValue{ .depthStencil{ .depth = 1.0f, .stencil = 0}},
 		};
 
@@ -348,24 +348,6 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			};
 			vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
 		}
-
-		// draw with the background pipeline:
-		{
-			
-			vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.handle);
-			
-			// Push time here
-			{
-				BackgroundPipeline::Push push
-				{
-					.time = time,
-				};
-				vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.layout, 
-									VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
-			}
-			vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
-		}
-
 		// Draw with the lines pipeline:
 		{
 			
@@ -396,10 +378,37 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 					0, nullptr 							// dynamic offsets count, ptr
 				);
 			}
-
+			
+			// Push time here
+			{
+				LinesPipeline::Push push
+				{
+					.time = time,
+				};
+				vkCmdPushConstants(workspace.command_buffer, LinesPipeline.Layout, 
+									VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
+			}
 			// Draw Lines vertices
 			 vkCmdDraw(workspace.command_buffer, uint32_t(LinesVertices.size()), 1, 0, 0);
 		}
+
+		// draw with the background pipeline:
+		{
+			
+			vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.handle);
+			
+			// Push time here
+			{
+				BackgroundPipeline::Push push
+				{
+					.time = time,
+				};
+				vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.layout, 
+									VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+			}
+			vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
+		}
+
 
 		vkCmdEndRenderPass(workspace.command_buffer);
 	}
@@ -418,16 +427,16 @@ void Tutorial::update(float dt)
 
 	// camera orbiting the origin:
 	{
-		float Angle = float(M_PI) * 2.0f * 10.0f * (time / 60.0f);
+		float Angle = float(M_PI) * 2.0f * 2.0f * (time / 60.0f);
 		CLIP_FROM_WORLD = Perspective
 		(
 			60.0f * float(M_PI) / 180.0f, // vfov
 			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height), // aspect
 			0.1f, // near
-			1000.0f // far
+			10000.0f // far
 		) * Look_at
 		(
-			3.0f * std::cos(Angle), 3.0f * std::sin(Angle), 1.0f, // eye
+			3.0f * std::cos(Angle), 3.0f * std::sin(Angle), 1.8f, // eye
 			0.0f, 0.0f, 0.5f, // target
 			0.0f, 0.0f, 1.0f // up
 		);
@@ -518,39 +527,65 @@ void Tutorial::MakePatternBlackHole()
 {
 	LinesVertices.clear();
 
-	const size_t GoldenRatioIterate = 8;
-	const size_t VerticesNumsPerArcBegin = 16;
-	const float RadiusBegin = 0.2f;
+	const size_t GoldenRatioIterate = 16;
+	const size_t VerticesNumsPerArcBegin = 32;
+	const size_t LinesNum = 46;
+	const float RadiusBegin = 0.5f;
 	
+	size_t VerticesNumNow = VerticesNumsPerArcBegin;
 	float RadiusNow = RadiusBegin;
 	float Angle = 0.0f;
-	float Radians = Angle * 3.1415926f / 180.0f;
+	float Radians = 0.0f;
+	float PosZ = 0.0f;
+
+	// float RandomOffset = 138.985f;
 
 	Vec2 CircleCenter = Vec2::Zero;
 
 	
-	constexpr size_t count = GoldenRatioIterate * VerticesNumsPerArcBegin;
+	constexpr size_t count = GoldenRatioIterate * 48 * LinesNum;
 	LinesVertices.reserve(count);
 
-	for (uint32_t k = 0; k < 30; ++k) 
+	for (uint32_t k = 0; k < LinesNum; k++)
 	{
 		for (uint32_t i = 0; i < GoldenRatioIterate; ++i) 
 		{
-			for (uint32_t j = 0; j < VerticesNumsPerArcBegin; ++j)
+			for (uint32_t j = 0; j < VerticesNumNow; ++j)
 			{
+				// RandomOffset *= RandomOffset;
+				// float intPart;
+				// float ColorOffset = std::modf(RandomOffset, &intPart);
+				// ColorOffset = ColorOffset >= 0.05f ? 0.05f : ColorOffset;
+				// uint8_t ColorValue = 0xff / (uint8_t)VerticesNumsPerArcBegin * (uint8_t)j + uint8_t(ColorOffset * 255);
+
+				Radians = Angle * 3.1415926f / 180.0f;
 				Vec2 PointPos = CircleCenter + Vec2(cosf(Radians) * RadiusNow ,sinf(Radians) * RadiusNow);
 				LinesVertices.emplace_back(PosColVertex
 				{
-					.Position{.x = PointPos.x, .y = PointPos.y, .z = 0.0f},
+					.Position{.x = PointPos.x, .y = PointPos.y, .z = PosZ},
 					.Color{ .r = 0xff, .g = 0xff, .b = 0xff, .a = 0xff},
 				});
 
-				Angle += 90.0f / VerticesNumsPerArcBegin;
-				Radians = Angle * 3.1415926f / 180.0f;
+				Angle += 90.0f / VerticesNumNow;
+				Angle = fmodf(Angle, 360.0f);
+				PosZ += 0.002f;
 			}
+			// Offset for the circle center
 			Radians = (Angle - 90.0f) * 3.1415926f / 180.0f;
-			// CircleCenter -= Vec2(sinf(Radians) * RadiusNow ,cosf(Radians) * RadiusNow);
-			// RadiusNow *= 2.0f;
+			float offsetX = -sinf(Radians) * RadiusNow;
+			float offsetY = cosf(Radians) * RadiusNow;
+			CircleCenter = Vec2(CircleCenter.x - offsetX , CircleCenter.y - offsetY);
+			// Golden Ratio
+			RadiusNow *= 2.0f;
+
+			VerticesNumNow += 1;
 		}
+		RadiusNow = RadiusBegin;
+		Angle = fmodf(k * 8.0f, 360.0f);
+		PosZ = 0.0f;
+		CircleCenter = Vec2::Zero;
+		VerticesNumNow = VerticesNumsPerArcBegin;
 	}
+	
+	
 }
