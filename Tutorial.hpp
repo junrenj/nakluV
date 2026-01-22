@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PosColVertex.hpp"
+#include "PosNorTexVertex.hpp"
 #include "mat4.hpp"
 
 #include "RTG.hpp"
@@ -77,6 +78,8 @@ struct Tutorial : RTG::Application {
 		// types for descriptors:
 		using Camera = LinesPipeline::Camera;
 
+		using Vertex = PosNorTexVertex;
+
 		// no push constants
 
 		VkPipelineLayout Layout = VK_NULL_HANDLE;
@@ -88,6 +91,14 @@ struct Tutorial : RTG::Application {
 		void Create(RTG &, VkRenderPass Render_pass, uint32_t Subpass);
 		void Destroy(RTG &);
 	} ObjectsPipeline;
+
+	enum PatternType
+	{	
+		None,
+		X,
+		Grid,
+		BlackHole,
+	} PatternType = Grid;
 	
 
 	// Pools from which per-workspace things are allocated:
@@ -141,6 +152,10 @@ struct Tutorial : RTG::Application {
 	//Rendering function, uses all the resources above to queue work to draw a frame:
 
 	virtual void render(RTG &, RTG::RenderParams const &) override;
+	void RenderCustom(Workspace &workspace);
+	void RenderBackgroundPipeline(Workspace &workspace);
+	void RenderLinesPipeline(Workspace &workspace);
+	void RenderObjectsPipeline(Workspace &workspace);
 
 // Pattern function just for fun and test
 	void MakePatternX();

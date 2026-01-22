@@ -113,6 +113,42 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 				nullptr 					// pDescriptorCopies
 			);
 		}
+
+		// Create Object Vertices
+		{
+			std::vector< PosColVertex > Vertices;
+
+			// TODO: replace with more interesting geometry
+			// A single triangle
+			Vertices.emplace_back(PosColVertex
+			{
+			.Position{ .x = 0.0f, .y = 0.0f, .z = 0.0f },
+			.Color{ .r = 0xff, .g = 0xff, .b = 0xff, .a = 0xff  },
+			});
+			Vertices.emplace_back(PosColVertex
+			{
+				.Position{ .x = 1.0f, .y = 0.0f, .z = 0.0f },
+				.Color{ .r = 0xff, .g = 0x00, .b = 0x00, .a = 0xff },
+			});
+			Vertices.emplace_back(PosColVertex
+			{
+				.Position{ .x = 0.0f, .y = 1.0f, .z = 0.0f },
+				.Color{ .r = 0x00, .g = 0xff, .b = 0x00, .a = 0xff  },
+			});
+
+			size_t Bytes = Vertices.size() * sizeof(Vertices[0]);
+
+			ObjectVertices = rtg.helpers.create_buffer
+			(
+				Bytes,
+				VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				Helpers::Unmapped
+			);
+
+			// copy data to buffer
+			rtg.helpers.transfer_to_buffer(Vertices.data(), Bytes, ObjectVertices);
+		}
 	}
 }
 
@@ -123,7 +159,10 @@ Tutorial::~Tutorial() {
 		std::cerr << "Failed to vkDeviceWaitIdle in Tutorial::~Tutorial [" << string_VkResult(result) << "]; continuing anyway." << std::endl;
 	}
 
-	if (swapchain_depth_image.handle != VK_NULL_HANDLE) {
+	rtg.helpers.destroy_buffer(std::move(ObjectVertices));
+
+	if (swapchain_depth_image.handle != VK_NULL_HANDLE) 
+	{
 		destroy_framebuffers();
 	}
 
@@ -200,7 +239,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 	}
 	
 	// GPU commands here:
-	// Line Render Pass
+	// Line Render Pipeline
 	{
 		// Upload line vertices
 		if(!LinesVertices.empty())
@@ -301,9 +340,8 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 		);
 	}
 
-	// Background Render Pass
+	// Render Pass
 	{
-		// render pass
 		std::array<VkClearValue, 2> clear_values
 		{
 			VkClearValue{ .color{ .float32{.0f, .0f, 0.f, 1.0f}}},
@@ -350,7 +388,60 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			};
 			vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
 		}
-		// Draw with the lines pipeline:
+		
+		RenderCustom(workspace);
+		
+		vkCmdEndRenderPass(workspace.command_buffer);
+	}
+
+	// end recording:
+	VK(vkEndCommandBuffer(workspace.command_buffer));
+
+	//submit `workspace.command buffer` for the GPU to run:
+	refsol::Tutorial_render_submit(rtg, render_params, workspace.command_buffer);
+}
+
+void Tutorial::RenderCustom(Workspace &workspace)
+{
+	switch (PatternType)
+	{
+		case BlackHole:
+			RenderLinesPipeline(workspace);
+			RenderBackgroundPipeline(workspace);
+			break;
+		case X:
+		case Grid:
+		default:
+			RenderBackgroundPipeline(workspace);
+			RenderLinesPipeline(workspace);
+			RenderObjectsPipeline(workspace);
+			break;
+	}
+}
+
+void Tutorial::RenderBackgroundPipeline(Workspace &workspace)
+{
+	// draw with the background pipeline:
+	{
+		
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.handle);
+		
+		// Push time here
+		{
+			BackgroundPipeline::Push push
+			{
+				.time = time,
+			};
+			vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.layout, 
+								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+		}
+		vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
+	}
+}
+
+void Tutorial::RenderLinesPipeline(Workspace &workspace)
+{
+	// Draw with the lines pipeline:
 		{
 			
 			vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -393,35 +484,25 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			// Draw Lines vertices
 			 vkCmdDraw(workspace.command_buffer, uint32_t(LinesVertices.size()), 1, 0, 0);
 		}
-
-		// draw with the background pipeline:
-		{
-			
-			vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.handle);
-			
-			// Push time here
-			{
-				BackgroundPipeline::Push push
-				{
-					.time = time,
-				};
-				vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.layout, 
-									VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
-			}
-			vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
-		}
-
-
-		vkCmdEndRenderPass(workspace.command_buffer);
-	}
-
-	// end recording:
-	VK(vkEndCommandBuffer(workspace.command_buffer));
-
-	//submit `workspace.command buffer` for the GPU to run:
-	refsol::Tutorial_render_submit(rtg, render_params, workspace.command_buffer);
 }
 
+void Tutorial::RenderObjectsPipeline(Workspace &workspace)
+{
+	// Objects Render Pipeline
+	vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ObjectsPipeline.Handle);
+
+	{
+		// use object_vertices (offset 0) as vertex buffer binding 0:
+		std::array< VkBuffer, 1 > VertexBuffers{ ObjectVertices.handle };
+		std::array< VkDeviceSize, 1 > Offsets{ 0 };
+		vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
+	}
+
+	// Camera descriptor set is still bound(!)
+
+	// Draw all vertices:
+	vkCmdDraw(workspace.command_buffer, uint32_t(ObjectVertices.size / sizeof(ObjectsPipeline::Vertex)), 1, 0, 0);
+}
 
 void Tutorial::update(float dt)
 {
@@ -444,10 +525,20 @@ void Tutorial::update(float dt)
 		);
 	}
 
- 	// Test for fun
-	// MakePatternX();
-	// MakePatternGrid();
-	MakePatternBlackHole();
+ 	// Pattern Switch
+	switch (PatternType)
+	{
+		case Grid:
+			MakePatternGrid();
+			break;
+		case BlackHole:
+			MakePatternBlackHole();
+			break;
+		case X:
+		default:
+			MakePatternX();
+			break;
+	}
 }
 
 

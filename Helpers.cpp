@@ -63,8 +63,55 @@ void Helpers::destroy_image(AllocatedImage &&image) {
 
 //----------------------------
 
-void Helpers::transfer_to_buffer(void const *data, size_t size, AllocatedBuffer &target) {
-	refsol::Helpers_transfer_to_buffer(rtg, data, size, &target);
+void Helpers::transfer_to_buffer(void const *data, size_t size, AllocatedBuffer &target) 
+{
+	// NOTE: could let this stick around and use it for all uploads, but this function isn't for performant transfers anyway:
+	AllocatedBuffer TransferSrc = create_buffer
+	(
+		size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		Mapped
+	);
+	
+	//TODO: copy data to transfer buffer
+	std::memcpy(TransferSrc.allocation.data(), data, size);
+
+	//TODO: record CPU->GPU transfer to command buffer
+	VkCommandBufferBeginInfo BeginInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // will record again every submit
+	};
+	VK( vkBeginCommandBuffer(TransferCommandBuffer, &BeginInfo));
+
+	VkBufferCopy CopyRegion
+	{
+		.srcOffset = 0,
+		.dstOffset = 0,
+		.size = size
+	};
+	vkCmdCopyBuffer(TransferCommandBuffer, TransferSrc.handle, target.handle, 1, &CopyRegion);
+
+	VK( vkEndCommandBuffer(TransferCommandBuffer) );
+
+	// run command buffer
+	{
+		VkSubmitInfo SubmitInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.commandBufferCount = 1,
+			.pCommandBuffers = &TransferCommandBuffer
+		};
+
+		VK( vkQueueSubmit(rtg.graphics_queue, 1, &SubmitInfo, VK_NULL_HANDLE));
+	}
+
+	// wait for command buffer to finish
+	VK(vkQueueWaitIdle(rtg.graphics_queue));
+
+	//don't leak buffer memory:
+	destroy_buffer(std::move(TransferSrc));
 }
 
 void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &target) {
@@ -91,8 +138,39 @@ Helpers::Helpers(RTG const &rtg_) : rtg(rtg_) {
 Helpers::~Helpers() {
 }
 
-void Helpers::create() {
+void Helpers::create() 
+{
+	VkCommandPoolCreateInfo CreateInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+		.queueFamilyIndex = rtg.graphics_queue_family.value(),
+	};
+	VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &TransferCommandPool) );
+
+	VkCommandBufferAllocateInfo AllocInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool = TransferCommandPool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+	VK( vkAllocateCommandBuffers(rtg.device, &AllocInfo, &TransferCommandBuffer) );
 }
 
-void Helpers::destroy() {
+void Helpers::destroy() 
+{
+	// Technically not needed since freeing the pool will free all contained buffers:
+	if(TransferCommandBuffer != VK_NULL_HANDLE)
+	{
+		vkFreeCommandBuffers(rtg.device, TransferCommandPool, 1, &TransferCommandBuffer);
+		TransferCommandBuffer = VK_NULL_HANDLE;
+	}
+
+	if(TransferCommandPool != VK_NULL_HANDLE)
+	{
+		vkDestroyCommandPool(rtg.device, TransferCommandPool, nullptr);
+		TransferCommandPool = VK_NULL_HANDLE;
+	}
+
 }

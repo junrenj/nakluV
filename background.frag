@@ -176,7 +176,8 @@ vec4 BlackHole()
 void main() 
 {
     vec4 Color = RainBubble();
-    
     Color = BlackHole();
+
+    Color = vec4(1, 1, 1, 1);
     outColor = Color;
 }

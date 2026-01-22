@@ -17,7 +17,10 @@ layout(set=0, binding=0, std140) uniform Camera
 
 void main() 
 {
-	float scale = clamp((1 - 0.1f * time), 0.000028, 1);
-	gl_Position = CLIP_FROM_WORLD * vec4(Position * scale, 1.0);
+	// Collapse of blackhole
+	// float scale = clamp((1 - 0.1f * time), 0.000028, 1);
+	// gl_Position = CLIP_FROM_WORLD * vec4(Position * scale, 1.0);
+	
+	gl_Position = CLIP_FROM_WORLD * vec4(Position, 1.0);
 	color = Color;
 }
