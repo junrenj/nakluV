@@ -12,7 +12,7 @@ static std::array< VkVertexInputBindingDescription, 1 > Bindings
     }
 };
 
-static std::array< VkVertexInputAttributeDescription, 2 > Attributes
+static std::array< VkVertexInputAttributeDescription, 3 > Attributes
 {
     VkVertexInputAttributeDescription
     {

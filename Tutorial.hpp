@@ -73,18 +73,23 @@ struct Tutorial : RTG::Application {
 	struct ObjectsPipeline
 	{
 		// Descriptor set Layouts:
-		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+		// VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set1Transforms = VK_NULL_HANDLE;
 
 		// types for descriptors:
-		using Camera = LinesPipeline::Camera;
+		struct Transfrom
+		{
+			Mat4 CLIP_FROM_LOCAL;
+			Mat4 WORLD_FROM_LOCAL;
+			Mat4 WORLD_FROM_LOCAL_NORMAL;
+		};
+		static_assert(sizeof(Transfrom) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
 
 		using Vertex = PosNorTexVertex;
 
 		// no push constants
 
 		VkPipelineLayout Layout = VK_NULL_HANDLE;
-
-		using Vertex = PosColVertex;
 		
 		VkPipeline Handle = VK_NULL_HANDLE;
 
@@ -118,12 +123,24 @@ struct Tutorial : RTG::Application {
 		Helpers::AllocatedBuffer Camera_Src;	// host coherent; mapped
 		Helpers::AllocatedBuffer Camera;		// device-local
 		VkDescriptorSet CameraDescriptors;		// references Camera
+
+		// location for ObjectsPipeline::Transforms data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer TransformsSrc;	// host coherent; mapped
+		Helpers::AllocatedBuffer Transforms;	// device-local
+		VkDescriptorSet TransformDescriptors;	// references Transforms
 	};
 	std::vector< Workspace > workspaces;
 
 	//-------------------------------------------------------------------
 	//static scene resources:
 	Helpers::AllocatedBuffer ObjectVertices;
+	struct ObjectVerticesInfo
+	{
+		uint32_t first = 0;
+		uint32_t count = 0;
+	};
+	ObjectVerticesInfo PlaneVertices;
+	ObjectVerticesInfo TorusVertices;
 
 	//--------------------------------------------------------------------
 	//Resources that change when the swapchain is resized:
@@ -147,6 +164,14 @@ struct Tutorial : RTG::Application {
 	Mat4 CLIP_FROM_WORLD;
 
 	std::vector< LinesPipeline::Vertex > LinesVertices;
+
+	struct ObjectInstance
+	{
+		ObjectVerticesInfo Vertices;
+		ObjectsPipeline::Transfrom Transform;
+	};
+
+	std::vector<ObjectInstance> ObjectInstances;
 
 	//--------------------------------------------------------------------
 	//Rendering function, uses all the resources above to queue work to draw a frame:
@@ -208,4 +233,8 @@ struct Tutorial : RTG::Application {
 		static const Vec2 Zero;
 		static const Vec2 One;
 	};
+
+// Different Mesh Vertices Instantialize
+	void InstantializePlane(std::vector< PosNorTexVertex > &Vertices);
+	void InstantializeTorus(std::vector< PosNorTexVertex > &Vertices);
 };

@@ -24,13 +24,17 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 	{
 		uint32_t PerWorkspace = uint32_t(rtg.workspaces.size());	// for easier-to-read counting
 
-		std::array< VkDescriptorPoolSize, 1> PoolSizes
+		std::array< VkDescriptorPoolSize, 2> PoolSizes
 		{
-			// we only need uniform buffer descriptors for the moment:
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 				.descriptorCount = 1 * PerWorkspace, 	// one descriptor per set, one set per workspace
+			},
+			VkDescriptorPoolSize
+			{
+				.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				.descriptorCount = 1 * PerWorkspace,	// one descriptor per set, one set per workspace
 			},
 		};
 
@@ -38,7 +42,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0, // because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-			.maxSets = 1 * PerWorkspace, // one set per workspace
+			.maxSets = 2 * PerWorkspace, // one set per workspace
 			.poolSizeCount = uint32_t(PoolSizes.size()),
 			.pPoolSizes = PoolSizes.data(),
 		};
@@ -82,6 +86,20 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.CameraDescriptors) );
 		}
 
+		// allocate descriptor set for Transforms descriptor
+		{
+			VkDescriptorSetAllocateInfo AllocInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+				.descriptorPool = DescriptorPool,
+				.descriptorSetCount = 1,
+				.pSetLayouts = &ObjectsPipeline.Set1Transforms,
+			};
+
+			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.TransformDescriptors));
+			// NOTE: will fill in this descriptor set in render when buffers are [re-]allocated
+		}
+
 		 // point descriptor to Camera buffer:
 		{
 			VkDescriptorBufferInfo CameraInfo
@@ -116,25 +134,12 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 
 		// Create Object Vertices
 		{
-			std::vector< PosColVertex > Vertices;
+			std::vector< PosNorTexVertex > Vertices;
+			// Create Quadrilateral:
+			InstantializePlane(Vertices);
 
-			// TODO: replace with more interesting geometry
-			// A single triangle
-			Vertices.emplace_back(PosColVertex
-			{
-			.Position{ .x = 0.0f, .y = 0.0f, .z = 0.0f },
-			.Color{ .r = 0xff, .g = 0xff, .b = 0xff, .a = 0xff  },
-			});
-			Vertices.emplace_back(PosColVertex
-			{
-				.Position{ .x = 1.0f, .y = 0.0f, .z = 0.0f },
-				.Color{ .r = 0xff, .g = 0x00, .b = 0x00, .a = 0xff },
-			});
-			Vertices.emplace_back(PosColVertex
-			{
-				.Position{ .x = 0.0f, .y = 1.0f, .z = 0.0f },
-				.Color{ .r = 0x00, .g = 0xff, .b = 0x00, .a = 0xff  },
-			});
+			// Create Torus
+			InstantializeTorus(Vertices);
 
 			size_t Bytes = Vertices.size() * sizeof(Vertices[0]);
 
@@ -187,6 +192,16 @@ Tutorial::~Tutorial() {
 		{
 			rtg.helpers.destroy_buffer(std::move(workspace.Camera));
 		}
+
+		if(workspace.TransformsSrc.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.TransformsSrc));
+		}
+		if(workspace.Transforms.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.Transforms));
+		}
+		// Transforms_descriptors freed when pool is destroyed.
 	}
 	workspaces.clear();
 
@@ -212,7 +227,6 @@ void Tutorial::on_swapchain(RTG &rtg_, RTG::SwapchainEvent const &swapchain) {
 void Tutorial::destroy_framebuffers() {
 	refsol::Tutorial_destroy_framebuffers(rtg, &swapchain_depth_image, &swapchain_depth_image_view, &swapchain_framebuffers);
 }
-
 
 void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 	//assert that parameters are valid:
@@ -401,6 +415,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 	refsol::Tutorial_render_submit(rtg, render_params, workspace.command_buffer);
 }
 
+//BEGIN~ Custom Render Function
 void Tutorial::RenderCustom(Workspace &workspace)
 {
 	switch (PatternType)
@@ -503,6 +518,7 @@ void Tutorial::RenderObjectsPipeline(Workspace &workspace)
 	// Draw all vertices:
 	vkCmdDraw(workspace.command_buffer, uint32_t(ObjectVertices.size / sizeof(ObjectsPipeline::Vertex)), 1, 0, 0);
 }
+//ENG~ Custom Render Function
 
 void Tutorial::update(float dt)
 {
@@ -539,15 +555,64 @@ void Tutorial::update(float dt)
 			MakePatternX();
 			break;
 	}
-}
 
+	// Make some Objects
+	{
+		ObjectInstances.clear();
+		// Plane translated + x by one unit:
+		Mat4 WORLD_FROM_LOCAL
+		{
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			1.0f, 0.0f, 0.0f, 1.0f,
+		};
+
+		ObjectInstances.emplace_back(ObjectInstance
+		{
+			.Vertices = PlaneVertices,
+				.Transform
+				{
+					.CLIP_FROM_LOCAL = CLIP_FROM_WORLD * WORLD_FROM_LOCAL,
+					.WORLD_FROM_LOCAL = WORLD_FROM_LOCAL,
+					.WORLD_FROM_LOCAL_NORMAL = WORLD_FROM_LOCAL,
+				},
+		});
+
+		{
+			// Torus translated -x by one unit and rotated CCW around +y:
+			float Angle = time / 60.0f * 2.0f * float(M_PI) * 10.0f;
+			float Ca = std::cos(Angle);
+			float Sa = std::sin(Angle);
+			Mat4 WORLD_FROM_LOCAL
+			{
+				Ca, 0.0f, -Sa, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				Sa, 0.0f, Ca, 0.0f,
+				-1.0f, 0.0f, 0.0f, 1.0f, 
+			};
+
+			ObjectInstances.emplace_back(ObjectInstance
+			{
+				.Vertices = TorusVertices,
+				.Transform
+				{
+					.CLIP_FROM_LOCAL = CLIP_FROM_WORLD * WORLD_FROM_LOCAL,
+					.WORLD_FROM_LOCAL = WORLD_FROM_LOCAL,
+					.WORLD_FROM_LOCAL_NORMAL = WORLD_FROM_LOCAL,
+				}
+			});
+		}
+	}
+	
+}
 
 void Tutorial::on_input(InputEvent const &) 
 {
 	
 }
 
-// Make Pattern Function (test)
+//BEGIN~ Make Pattern Function
 void Tutorial::MakePatternX()
 {
 	// Make an 'x'
@@ -682,3 +747,112 @@ void Tutorial::MakePatternBlackHole()
 	
 	
 }
+//END~ Make Pattern Function
+
+//BEGIN~ Instantialize Mesh's Vertices
+void Tutorial::InstantializePlane(std::vector< PosNorTexVertex > &Vertices)
+{
+	PlaneVertices.first = uint32_t(Vertices.size());
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = -1.0f, .y = -1.0f, .z = 0.0f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
+		.Texcoord{ .u = 0.0f, .v = 0.0f },
+	});
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = 1.0f, .y = -1.0f, .z = 0.0f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
+		.Texcoord{ .u = 1.0f, .v = 0.0f },
+	});
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = -1.0f, .y = 1.0f, .z = 0.0f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
+		.Texcoord{ .u = 0.0f, .v = 1.0f },
+	});
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = 1.0f, .y = 1.0f, .z = 0.0f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
+		.Texcoord{ .u = 1.0f, .v = 1.0f },
+	});
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = -1.0f, .y = 1.0f, .z = 0.0f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
+		.Texcoord{ .u = 0.0f, .v = 1.0f },
+	});
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = 1.0f, .y = -1.0f, .z = 0.0f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
+		.Texcoord{ .u = 1.0f, .v = 0.0f },
+	});
+
+	PlaneVertices.count = uint32_t(Vertices.size() - PlaneVertices.first);
+}
+
+void Tutorial::InstantializeTorus(std::vector< PosNorTexVertex > &Vertices)
+{
+	TorusVertices.first = uint32_t(Vertices.size());
+
+	// will parameterize with (u,v) where:
+	// - u is angle around main axis (+z)
+	// - v is angle around the tube
+
+	constexpr float R1 = 0.75f; // main radius
+	constexpr float R2 = 0.15f; // tube radius
+
+	constexpr uint32_t U_STEPS = 20;
+	constexpr uint32_t V_STEPS = 16;
+
+	// texture repeats around the torus:
+	constexpr float V_REPEATS = 2.0f;
+	constexpr float U_REPEATS = int(V_REPEATS / R2 * R1 + 0.999f); // approximately square, rounded up
+
+	auto emplace_vertex = [&](uint32_t ui, uint32_t vi) {
+		// convert steps to angles:
+		// (doing the mod since trig on 2 M_PI may not exactly match 0)
+		float ua = (ui % U_STEPS) / float(U_STEPS) * 2.0f * float(M_PI);
+		float va = (vi % V_STEPS) / float(V_STEPS) * 2.0f * float(M_PI);
+
+		Vertices.emplace_back( PosNorTexVertex
+			{
+			.Position
+			{
+				.x = (R1 + R2 * std::cos(va)) * std::cos(ua),
+				.y = (R1 + R2 * std::cos(va)) * std::sin(ua),
+				.z = R2 * std::sin(va),
+			},
+			.Normal
+			{
+				.x = std::cos(va) * std::cos(ua),
+				.y = std::cos(va) * std::sin(ua),
+				.z = std::sin(va),
+			},
+			.Texcoord
+			{
+				.u = ui / float(U_STEPS) * U_REPEATS,
+				.v = vi / float(V_STEPS) * V_REPEATS,
+			},
+		});
+	};
+
+	for (uint32_t ui = 0; ui < U_STEPS; ++ui) 
+	{
+		for (uint32_t vi = 0; vi < V_STEPS; ++vi) 
+		{
+			emplace_vertex(ui, vi);
+			emplace_vertex(ui+1, vi);
+			emplace_vertex(ui, vi+1);
+
+			emplace_vertex(ui, vi+1);
+			emplace_vertex(ui+1, vi);
+			emplace_vertex(ui+1, vi+1);
+		}
+	}
+
+	TorusVertices.count = uint32_t(Vertices.size()) - TorusVertices.first;
+}
+//END~ Instantialize Mesh's Vertices

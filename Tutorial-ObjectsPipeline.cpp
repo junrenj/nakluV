@@ -19,13 +19,13 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
     // refsol::BackgroundPipeline_create(rtg, RenderPass, Subpass, Vert_Module, Frag_Module, &layout, &handle);
 
     {
-        // the set0_Camera layout holds a Camera structure in a uniform buffer used in the vertex shader:
+        //the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
         std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
         {
 			VkDescriptorSetLayoutBinding
             {
 				.binding = 0,
-				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 				.descriptorCount = 1,
 				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
 			},
@@ -38,13 +38,14 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 			.pBindings = Bindings.data(),
 		};
 
-		VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set0_Camera) );
+		VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set1Transforms) );
     }
 
     {
-        std::array< VkDescriptorSetLayout, 1 > Layouts
+        std::array< VkDescriptorSetLayout, 2 > Layouts
         {
-            Set0_Camera,
+            Set1Transforms,  // we'd like to say "VK_NULL_HANDLE" here, but that's not valid without an extension
+            Set1Transforms,
         };
 
         VkPipelineLayoutCreateInfo CreateInfo
@@ -186,10 +187,10 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 
 void Tutorial::ObjectsPipeline::Destroy(RTG &rtg)
 {
-    if(Set0_Camera != VK_NULL_HANDLE)
+    if(Set1Transforms != VK_NULL_HANDLE)
     {
-        vkDestroyDescriptorSetLayout(rtg.device, Set0_Camera, nullptr);
-        Set0_Camera = VK_NULL_HANDLE;
+        vkDestroyDescriptorSetLayout(rtg.device, Set1Transforms, nullptr);
+        Set1Transforms = VK_NULL_HANDLE;
     }
     if(Layout != VK_NULL_HANDLE)
     {
