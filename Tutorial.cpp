@@ -93,7 +93,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 				.descriptorPool = DescriptorPool,
 				.descriptorSetCount = 1,
-				.pSetLayouts = &ObjectsPipeline.Set1Transforms,
+				.pSetLayouts = &ObjectsPipeline.Set1_Transforms,
 			};
 
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.TransformDescriptors));
@@ -155,14 +155,254 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 			rtg.helpers.transfer_to_buffer(Vertices.data(), Bytes, ObjectVertices);
 		}
 	}
+
+	 // make some textures
+	{
+		Textures.reserve(2);
+
+		// texture 0 will be a dark grey / light grey checkerboard with a red square at the origin.
+		{
+			// actually make the texture:
+			uint32_t size = 128;
+			std::vector< uint32_t > data;
+			data.reserve(size * size);
+			for (uint32_t y = 0; y < size; ++y) 
+			{
+				float fy = (y + 0.5f) / float(size);
+				for (uint32_t x = 0; x < size; ++x) 
+				{
+					float fx = (x + 0.5f) / float(size);
+					//highlight the origin:
+					if(fx < 0.05f && fy < 0.05f)
+					{
+						data.emplace_back(0xff0000ff); // red
+					}
+					else if ((fx < 0.5f) == (fy < 0.5f))
+					{
+						data.emplace_back(0xff444444); // dark grey
+					}
+					else
+					{
+						data.emplace_back(0xffbbbbbb); // light grey
+					}
+				}
+			}
+			assert(data.size() == size*size);
+
+			// make a place for the texture to live on the GPU
+			Textures.emplace_back(rtg.helpers.create_image
+			(
+				VkExtent2D{ .width = size , .height = size }, // size of image
+				VK_FORMAT_R8G8B8A8_UNORM, // how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // will sample and upload
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // should be device-local
+				Helpers::Unmapped
+			));
+
+			// transfer data
+			rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
+		}
+
+		// Texture 1 will be a classic 'xor' texture
+		{
+			// Actually make the texture
+			uint32_t Size = 256;
+			std::vector< uint32_t > Data;
+			Data.reserve(Size * Size);
+			for (uint32_t y = 0; y < Size; y++)
+			{
+				for (uint32_t x = 0; x < Size; x++)
+				{
+					uint8_t r = uint8_t(x) ^ uint8_t(y);
+					uint8_t g = uint8_t(x + 128) ^ uint8_t(y);
+					uint8_t b = uint8_t(x) ^ uint8_t(y + 27);
+					uint8_t a = 0xff;
+					Data.emplace_back( uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24) );
+				}
+			}
+			assert(Data.size() == Size*Size);
+
+			// Make a place for the texture to live on the GPU:
+			Textures.emplace_back(rtg.helpers.create_image
+			(
+			VkExtent2D{ .width = Size , .height = Size }, // size of image
+			VK_FORMAT_R8G8B8A8_SRGB, 	// how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 	// will sample and upload
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 							// should be device-local
+			Helpers::Unmapped
+			));
+
+			// Transfer data:
+			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
+		}
+	}
+
+	 // make image views for the textures
+	{
+		TextureViews.reserve(Textures.size());
+		for (Helpers::AllocatedImage const &Image : Textures)
+		{
+			VkImageViewCreateInfo CreateInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.flags = 0,
+				.image = Image.handle,
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.format = Image.format,
+				// .components sets swizzling and is fine when zero-initialized
+				.subresourceRange
+				{
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = 0,
+					.levelCount = 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+			};
+
+			VkImageView ImageView = VK_NULL_HANDLE;
+			VK( vkCreateImageView(rtg.device, &CreateInfo, nullptr, &ImageView));
+
+			TextureViews.emplace_back(ImageView);
+		}
+		assert(TextureViews.size() == Textures.size());
+	}
+
+	 // make a sampler for the textures
+	{
+		VkSamplerCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.flags = 0,
+			.magFilter = VK_FILTER_NEAREST,
+			.minFilter = VK_FILTER_NEAREST,
+			.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+			.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.mipLodBias = 0.0f,
+			.anisotropyEnable = VK_FALSE,
+			.maxAnisotropy = 0.0f, 				// doesn't matter if anisotropy isn't enabled
+			.compareEnable = VK_FALSE,
+			.compareOp = VK_COMPARE_OP_ALWAYS, // doesn't matter if compare isn't enabled
+			.minLod = 0.0f,
+			.maxLod = 0.0f,
+			.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+			.unnormalizedCoordinates = VK_FALSE,
+		};
+		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSampler) );
+	}
+
+	// create the texture descriptor pool	
+	{
+		uint32_t PerTexture = uint32_t(Textures.size());
+
+		std::array< VkDescriptorPoolSize, 1 > PoolSizes
+		{
+			VkDescriptorPoolSize
+			{
+				.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1 * 1 * PerTexture,	 // one descriptor per set, one set per texture
+			}
+		};
+
+		VkDescriptorPoolCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.flags = 0, 	// because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
+			.maxSets = 1 * PerTexture, 	// one set per texture
+			.poolSizeCount = uint32_t(PoolSizes.size()),
+			.pPoolSizes = PoolSizes.data(),
+		};
+
+		VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &TextureDescriptorPool));
+	}
+
+	 // allocate and write the texture descriptor sets
+	{
+		// allocate the descriptors (using the same alloc_info):
+		VkDescriptorSetAllocateInfo AllocInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = TextureDescriptorPool,
+			.descriptorSetCount = 1,
+			.pSetLayouts = &ObjectsPipeline.Set2_TEXTURE,
+		};
+
+		TextureDescriptors.assign(Textures.size(), VK_NULL_HANDLE);
+
+		for (VkDescriptorSet &DescriptorSet : TextureDescriptors)
+		{
+			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &DescriptorSet));
+		}
+		
+		// write descriptors for textures
+		std::vector< VkDescriptorImageInfo > Infos(Textures.size());
+		std::vector< VkWriteDescriptorSet > Writes(Textures.size());
+
+		for (Helpers::AllocatedImage const &Image : Textures)
+		{
+			size_t Index = &Image - &Textures[0];
+
+			Infos[Index] = VkDescriptorImageInfo
+			{
+				.sampler = TextureSampler,
+				.imageView = TextureViews[Index],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			Writes[Index] = VkWriteDescriptorSet
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = TextureDescriptors[Index],
+				.dstBinding = 0,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &Infos[Index],
+			};
+		}
+
+		vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+	}
 }
 
 Tutorial::~Tutorial() {
-	//just in case rendering is still in flight, don't destroy resources:
-	//(not using VK macro to avoid throw-ing in destructor)
-	if (VkResult result = vkDeviceWaitIdle(rtg.device); result != VK_SUCCESS) {
+	// just in case rendering is still in flight, don't destroy resources:
+	// (not using VK macro to avoid throw-ing in destructor)
+	if (VkResult result = vkDeviceWaitIdle(rtg.device); result != VK_SUCCESS) 
+	{
 		std::cerr << "Failed to vkDeviceWaitIdle in Tutorial::~Tutorial [" << string_VkResult(result) << "]; continuing anyway." << std::endl;
 	}
+
+	if(TextureDescriptorPool)
+	{
+		vkDestroyDescriptorPool(rtg.device, TextureDescriptorPool, nullptr);
+		TextureDescriptorPool = nullptr;
+
+		// this also frees the descriptor sets allocated from the pool:
+		TextureDescriptors.clear();
+	}
+
+	if(TextureSampler)
+	{
+		vkDestroySampler(rtg.device, TextureSampler, nullptr);
+		TextureSampler = VK_NULL_HANDLE;
+	}
+
+	for (VkImageView &View : TextureViews)
+	{
+		vkDestroyImageView(rtg.device, View, nullptr);
+		View = VK_NULL_HANDLE;
+	}
+	TextureViews.clear();
+
+	for (auto &Texture : Textures)
+	{
+		rtg.helpers.destroy_image(std::move(Texture));
+	}
+	Textures.clear();
 
 	rtg.helpers.destroy_buffer(std::move(ObjectVertices));
 
@@ -330,6 +570,94 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			.size = workspace.Camera_Src.size,
 		};
 		vkCmdCopyBuffer(workspace.command_buffer, workspace.Camera_Src.handle, workspace.Camera.handle, 1, &CopyRegion);
+	}
+
+	if(!ObjectInstances.empty())
+	{
+		// upload object transforms:
+		size_t NeededBytes = ObjectInstances.size() * sizeof(ObjectsPipeline::Transfrom);
+		if(workspace.TransformsSrc.handle == VK_NULL_HANDLE ||
+			workspace.TransformsSrc.size < NeededBytes)
+		{
+			//round to next multiple of 4k to avoid re-allocating continuously if vertex count grows slowly:
+			size_t NewBytes = ((NeededBytes + 4096) / 4096) * 4096;
+			if(workspace.TransformsSrc.handle)
+			{
+				rtg.helpers.destroy_buffer(std::move(workspace.TransformsSrc));
+			}
+			if(workspace.Transforms.handle)
+			{
+				rtg.helpers.destroy_buffer(std::move(workspace.Transforms));
+			}
+			workspace.TransformsSrc = rtg.helpers.create_buffer
+			(
+				NewBytes,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // going to have GPU copy from this memory
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, // host-visible memory, coherent (no special sync needed)
+				Helpers::Mapped // get a pointer to the memory
+			);
+			workspace.Transforms = rtg.helpers.create_buffer(
+				NewBytes,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // going to use as storage buffer, also going to have GPU into this memory
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // GPU-local memory
+				Helpers::Unmapped // don't get a pointer to the memory
+			);
+
+			// update the descriptor set:
+			VkDescriptorBufferInfo TransformInfo
+			{
+				.buffer = workspace.Transforms.handle,
+				.offset = 0,
+				.range = workspace.Transforms.size,
+			};
+
+			std::array< VkWriteDescriptorSet, 1 > Writes
+			{
+				VkWriteDescriptorSet
+				{
+					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.dstSet = workspace.TransformDescriptors,
+					.dstBinding = 0,
+					.dstArrayElement = 0,
+					.descriptorCount = 1,
+					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+					.pBufferInfo = &TransformInfo,
+				},
+			};
+
+			vkUpdateDescriptorSets
+			(
+				rtg.device,
+				uint32_t(Writes.size()), Writes.data(), // descriptorWrites count, data
+				0, nullptr // descriptorCopies count, data
+			);
+
+			std::cout << "Re-allocated object transforms buffers to " << NewBytes << " bytes." << std::endl;
+
+			assert(workspace.TransformsSrc.size == workspace.Transforms.size);
+			assert(workspace.TransformsSrc.size >= NeededBytes);
+
+			// Copy Transform into TransformSrc
+			{
+				assert(workspace.TransformsSrc.allocation.mapped);
+				ObjectsPipeline::Transfrom *Out = reinterpret_cast< ObjectsPipeline::Transfrom * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				for (ObjectInstance const &Inst : ObjectInstances)
+				{
+					*Out = Inst.Transform;
+					++Out;
+				}
+			}
+
+			// device-side copy from Transforms_src -> Transforms:
+			VkBufferCopy CopyRegion
+			{
+				.srcOffset = 0,
+				.dstOffset = 0,
+				.size = NeededBytes,
+			};
+
+			vkCmdCopyBuffer(workspace.command_buffer, workspace.TransformsSrc.handle, workspace.Transforms.handle, 1, &CopyRegion);
+		}
 	}
 
 	// Memory Barrier
@@ -503,8 +831,11 @@ void Tutorial::RenderLinesPipeline(Workspace &workspace)
 
 void Tutorial::RenderObjectsPipeline(Workspace &workspace)
 {
-	// Objects Render Pipeline
-	vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ObjectsPipeline.Handle);
+	// Draw with the objects pipeline:
+	if (!ObjectInstances.empty()) 
+	{ 
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ObjectsPipeline.Handle);
+	}
 
 	{
 		// use object_vertices (offset 0) as vertex buffer binding 0:
@@ -513,10 +844,42 @@ void Tutorial::RenderObjectsPipeline(Workspace &workspace)
 		vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
 	}
 
+	// Bind Transforms descriptor set
+	{
+		std::array< VkDescriptorSet, 1 > DescriptorSets
+		{
+			workspace.TransformDescriptors, // 1: Transforms
+		};
+		vkCmdBindDescriptorSets
+		(
+			workspace.command_buffer, 			// Command Buffer
+			VK_PIPELINE_BIND_POINT_GRAPHICS, 	// Pipeline bind point
+			ObjectsPipeline.Layout, 			// Pipeline Layout
+			1, // First Set
+			uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
+			0, nullptr // DynamicOffsets Count, ptr
+		);
+	}
+
 	// Camera descriptor set is still bound(!)
 
-	// Draw all vertices:
-	vkCmdDraw(workspace.command_buffer, uint32_t(ObjectVertices.size / sizeof(ObjectsPipeline::Vertex)), 1, 0, 0);
+	// Draw all Instances:
+	for (ObjectInstance const &Inst : ObjectInstances)
+	{
+		uint32_t Index = uint32_t(&Inst - &ObjectInstances[0]);
+		
+		vkCmdBindDescriptorSets
+		(
+			workspace.command_buffer,			// Command buffer
+			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
+			ObjectsPipeline.Layout,				// Pipeline Layout
+			2, 	// Second Sets
+			1, &TextureDescriptors[Inst.Texture],	// descriptor sets count, ptr
+			0, nullptr	// Dynamic offsets count, ptr
+		);
+		
+		vkCmdDraw(workspace.command_buffer, Inst.Vertices.count, 1, Inst.Vertices.first, Index);
+	}
 }
 //ENG~ Custom Render Function
 
@@ -559,25 +922,28 @@ void Tutorial::update(float dt)
 	// Make some Objects
 	{
 		ObjectInstances.clear();
-		// Plane translated + x by one unit:
-		Mat4 WORLD_FROM_LOCAL
 		{
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			1.0f, 0.0f, 0.0f, 1.0f,
-		};
+			// Plane translated + x by one unit:
+			Mat4 WORLD_FROM_LOCAL
+			{
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				1.0f, 0.0f, 0.0f, 1.0f,
+			};
 
-		ObjectInstances.emplace_back(ObjectInstance
-		{
-			.Vertices = PlaneVertices,
+			ObjectInstances.emplace_back(ObjectInstance
+			{
+				.Vertices = PlaneVertices,
 				.Transform
 				{
 					.CLIP_FROM_LOCAL = CLIP_FROM_WORLD * WORLD_FROM_LOCAL,
 					.WORLD_FROM_LOCAL = WORLD_FROM_LOCAL,
 					.WORLD_FROM_LOCAL_NORMAL = WORLD_FROM_LOCAL,
 				},
-		});
+				.Texture = 1,
+			});
+		}
 
 		{
 			// Torus translated -x by one unit and rotated CCW around +y:

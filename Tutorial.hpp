@@ -74,7 +74,8 @@ struct Tutorial : RTG::Application {
 	{
 		// Descriptor set Layouts:
 		// VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
-		VkDescriptorSetLayout Set1Transforms = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set1_Transforms = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set2_TEXTURE = VK_NULL_HANDLE;
 
 		// types for descriptors:
 		struct Transfrom
@@ -142,6 +143,12 @@ struct Tutorial : RTG::Application {
 	ObjectVerticesInfo PlaneVertices;
 	ObjectVerticesInfo TorusVertices;
 
+	std::vector< Helpers::AllocatedImage > Textures;
+	std::vector< VkImageView > TextureViews;
+	VkSampler TextureSampler = VK_NULL_HANDLE;
+	VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
+	std::vector< VkDescriptorSet > TextureDescriptors;
+
 	//--------------------------------------------------------------------
 	//Resources that change when the swapchain is resized:
 
@@ -169,6 +176,7 @@ struct Tutorial : RTG::Application {
 	{
 		ObjectVerticesInfo Vertices;
 		ObjectsPipeline::Transfrom Transform;
+		uint32_t Texture = 0;
 	};
 
 	std::vector<ObjectInstance> ObjectInstances;

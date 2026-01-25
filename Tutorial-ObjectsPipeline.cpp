@@ -18,6 +18,7 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 
     // refsol::BackgroundPipeline_create(rtg, RenderPass, Subpass, Vert_Module, Frag_Module, &layout, &handle);
 
+    // the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
     {
         //the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
         std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
@@ -38,14 +39,38 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 			.pBindings = Bindings.data(),
 		};
 
-		VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set1Transforms) );
+		VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set1_Transforms) );
+    }
+
+    // the set2_TEXTURE layout has a single descriptor for a sampler2D used in the fragment shader:
+    {
+        std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
+        {
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            },
+        };
+
+        VkDescriptorSetLayoutCreateInfo CreateInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(Bindings.size()),
+            .pBindings = Bindings.data(),
+        };
+
+        VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set2_TEXTURE) );
     }
 
     {
-        std::array< VkDescriptorSetLayout, 2 > Layouts
+        std::array< VkDescriptorSetLayout, 3 > Layouts
         {
-            Set1Transforms,  // we'd like to say "VK_NULL_HANDLE" here, but that's not valid without an extension
-            Set1Transforms,
+            Set1_Transforms,  // we'd like to say "VK_NULL_HANDLE" here, but that's not valid without an extension
+            Set1_Transforms,
+            Set2_TEXTURE,
         };
 
         VkPipelineLayoutCreateInfo CreateInfo
@@ -187,11 +212,18 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 
 void Tutorial::ObjectsPipeline::Destroy(RTG &rtg)
 {
-    if(Set1Transforms != VK_NULL_HANDLE)
+    if(Set1_Transforms != VK_NULL_HANDLE)
     {
-        vkDestroyDescriptorSetLayout(rtg.device, Set1Transforms, nullptr);
-        Set1Transforms = VK_NULL_HANDLE;
+        vkDestroyDescriptorSetLayout(rtg.device, Set1_Transforms, nullptr);
+        Set1_Transforms = VK_NULL_HANDLE;
     }
+
+    if(Set2_TEXTURE != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(rtg.device, Set2_TEXTURE, nullptr);
+        Set2_TEXTURE = VK_NULL_HANDLE;
+    }
+
     if(Layout != VK_NULL_HANDLE)
     {
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
