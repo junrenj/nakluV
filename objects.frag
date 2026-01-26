@@ -1,5 +1,9 @@
 #version 450
 
+layout(push_constant) uniform Push
+{
+    float time;
+};
 
 layout(set=0,binding=0,std140) uniform World 
 {
@@ -20,7 +24,8 @@ layout(location=0) out vec4 outColor;
 void main() 
 {
 	vec3 n = normalize(normal);
-	vec3 albedo = texture(TEXTURE, texcoord).rgb;
+	vec2 NewUV = texcoord + vec2(0.1, 0.2) * time;
+	vec3 albedo = texture(TEXTURE, NewUV).rgb;
 
 	// hemisphere sky + directional sun:
 	vec3 e = SKY_ENERGY * (0.5 * dot(n, SKY_DIRECTION) + 0.5)

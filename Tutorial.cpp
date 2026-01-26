@@ -8,6 +8,8 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include "ImageLoader.hpp"
+
 
 const Tutorial::Vec2 Tutorial::Vec2::Zero{0.0f, 0.0f};
 const Tutorial::Vec2 Tutorial::Vec2::One{1.0f, 1.0f};
@@ -34,7 +36,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-				.descriptorCount = 1 * PerWorkspace,	// one descriptor per set, one set per workspace
+				.descriptorCount = 2 * PerWorkspace,	// one descriptor per set, one set per workspace
 			},
 		};
 
@@ -42,7 +44,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0, // because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-			.maxSets = 2 * PerWorkspace, // one set per workspace
+			.maxSets = 3 * PerWorkspace, // one set per workspace
 			.poolSizeCount = uint32_t(PoolSizes.size()),
 			.pPoolSizes = PoolSizes.data(),
 		};
@@ -51,11 +53,11 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 	}
 
 	workspaces.resize(rtg.workspaces.size());
-	for (Workspace &workspace : workspaces) 
+	for (Workspace &workspace : workspaces)
 	{
 		refsol::Tutorial_constructor_workspace(rtg, command_pool, &workspace.command_buffer);
 
-		workspace.Camera_Src = rtg.helpers.create_buffer
+		workspace.CameraSrc = rtg.helpers.create_buffer
 		(
 			sizeof(LinesPipeline::Camera),
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// going to have GPU copy from this memory
@@ -86,6 +88,36 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.CameraDescriptors) );
 		}
 
+		workspace.WorldSrc = rtg.helpers.create_buffer
+		(
+			sizeof(ObjectsPipeline::World),
+			VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			Helpers::Mapped
+		);
+		workspace.World = rtg.helpers.create_buffer
+		(
+			sizeof(ObjectsPipeline::World),
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			Helpers::Unmapped
+		);
+
+		{
+			// Allocate descriptor set for world descriptor
+			VkDescriptorSetAllocateInfo AllocInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+				.descriptorPool = DescriptorPool,
+				.descriptorSetCount = 1,
+				.pSetLayouts = &ObjectsPipeline.Set0_World,
+			};
+
+			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.WorldDescriptors));
+			
+			//NOTE: will actually fill in this descriptor set just a bit lower
+		}
+
 		// allocate descriptor set for Transforms descriptor
 		{
 			VkDescriptorSetAllocateInfo AllocInfo
@@ -109,7 +141,14 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 				.range = workspace.Camera.size,
 			};
 
-			std::array< VkWriteDescriptorSet, 1 > Writes
+			VkDescriptorBufferInfo WorldInfo
+			{
+				.buffer = workspace.World.handle,
+				.offset = 0,
+				.range = workspace.World.size,
+			};
+
+			std::array< VkWriteDescriptorSet, 2 > Writes
 			{
 				VkWriteDescriptorSet{
 					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -119,6 +158,15 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 					.descriptorCount = 1,
 					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 					.pBufferInfo = &CameraInfo,
+				},
+				VkWriteDescriptorSet{
+					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.dstSet = workspace.WorldDescriptors,
+					.dstBinding = 0,
+					.dstArrayElement = 0,
+					.descriptorCount = 1,
+					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.pBufferInfo = &WorldInfo,
 				},
 			};
 
@@ -136,6 +184,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		{
 			std::vector< PosNorTexVertex > Vertices;
 			// Create Quadrilateral:
+			// InstantializeFriedEgg(Vertices);
 			InstantializePlane(Vertices);
 
 			// Create Torus
@@ -160,39 +209,17 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 	{
 		Textures.reserve(2);
 
-		// texture 0 will be a dark grey / light grey checkerboard with a red square at the origin.
+		// First Texture
 		{
-			// actually make the texture:
-			uint32_t size = 128;
-			std::vector< uint32_t > data;
-			data.reserve(size * size);
-			for (uint32_t y = 0; y < size; ++y) 
-			{
-				float fy = (y + 0.5f) / float(size);
-				for (uint32_t x = 0; x < size; ++x) 
-				{
-					float fx = (x + 0.5f) / float(size);
-					//highlight the origin:
-					if(fx < 0.05f && fy < 0.05f)
-					{
-						data.emplace_back(0xff0000ff); // red
-					}
-					else if ((fx < 0.5f) == (fy < 0.5f))
-					{
-						data.emplace_back(0xff444444); // dark grey
-					}
-					else
-					{
-						data.emplace_back(0xffbbbbbb); // light grey
-					}
-				}
-			}
-			assert(data.size() == size*size);
+			int Width,Height;
+			std::vector< uint32_t > Data;
+			Data = ImageLoader::Load("../Textures/YellowPaint.jpg", Width, Height);
+			assert(Data.size() == Width*Height);
 
 			// make a place for the texture to live on the GPU
 			Textures.emplace_back(rtg.helpers.create_image
 			(
-				VkExtent2D{ .width = size , .height = size }, // size of image
+				VkExtent2D{ .width = (uint32_t)Width , .height = (uint32_t)Height }, // size of image
 				VK_FORMAT_R8G8B8A8_UNORM, // how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // will sample and upload
@@ -201,32 +228,20 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 			));
 
 			// transfer data
-			rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
+			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
 		}
 
 		// Texture 1 will be a classic 'xor' texture
 		{
-			// Actually make the texture
-			uint32_t Size = 256;
+			int Width,Height;
 			std::vector< uint32_t > Data;
-			Data.reserve(Size * Size);
-			for (uint32_t y = 0; y < Size; y++)
-			{
-				for (uint32_t x = 0; x < Size; x++)
-				{
-					uint8_t r = uint8_t(x) ^ uint8_t(y);
-					uint8_t g = uint8_t(x + 128) ^ uint8_t(y);
-					uint8_t b = uint8_t(x) ^ uint8_t(y + 27);
-					uint8_t a = 0xff;
-					Data.emplace_back( uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24) );
-				}
-			}
-			assert(Data.size() == Size*Size);
+			Data = ImageLoader::Load("../Textures/WaterMask.png", Width, Height);
+			assert(Data.size() == Width*Height);
 
 			// Make a place for the texture to live on the GPU:
 			Textures.emplace_back(rtg.helpers.create_image
 			(
-			VkExtent2D{ .width = Size , .height = Size }, // size of image
+			VkExtent2D{ .width = (uint32_t)Width  , .height = (uint32_t)Height }, // size of image
 			VK_FORMAT_R8G8B8A8_SRGB, 	// how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 	// will sample and upload
@@ -424,14 +439,24 @@ Tutorial::~Tutorial() {
 			rtg.helpers.destroy_buffer(std::move(workspace.LinesVertices));
 		}
 
-		if(workspace.Camera_Src.handle != VK_NULL_HANDLE)
+		if(workspace.CameraSrc.handle != VK_NULL_HANDLE)
 		{
-			rtg.helpers.destroy_buffer(std::move(workspace.Camera_Src));
+			rtg.helpers.destroy_buffer(std::move(workspace.CameraSrc));
 		}
 		if(workspace.Camera.handle != VK_NULL_HANDLE)
 		{
 			rtg.helpers.destroy_buffer(std::move(workspace.Camera));
 		}
+
+		if (workspace.WorldSrc.handle != VK_NULL_HANDLE) 
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.WorldSrc));
+		}
+		if (workspace.World.handle != VK_NULL_HANDLE) 
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.World));
+		}
+		//World_descriptors freed when pool is destroyed.
 
 		if(workspace.TransformsSrc.handle != VK_NULL_HANDLE)
 		{
@@ -556,20 +581,38 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 		{
 			.CLIP_FROM_WORLD = CLIP_FROM_WORLD
 		};
-		assert(workspace.Camera_Src.size == sizeof(Camera));
+		assert(workspace.CameraSrc.size == sizeof(Camera));
 
 		// host-side copy into Camera_src:
-		memcpy(workspace.Camera_Src.allocation.data(), &Camera, sizeof(Camera));
+		memcpy(workspace.CameraSrc.allocation.data(), &Camera, sizeof(Camera));
 
 		// add device-side copy from Camera_src -> Camera:
-		assert(workspace.Camera_Src.size == workspace.Camera.size);
+		assert(workspace.CameraSrc.size == workspace.Camera.size);
 		VkBufferCopy CopyRegion
 		{
 			.srcOffset = 0,
 			.dstOffset = 0,
-			.size = workspace.Camera_Src.size,
+			.size = workspace.CameraSrc.size,
 		};
-		vkCmdCopyBuffer(workspace.command_buffer, workspace.Camera_Src.handle, workspace.Camera.handle, 1, &CopyRegion);
+		vkCmdCopyBuffer(workspace.command_buffer, workspace.CameraSrc.handle, workspace.Camera.handle, 1, &CopyRegion);
+	}
+
+	// upload world info:
+	{
+		assert(workspace.CameraSrc.size == sizeof(World));
+
+		//host-side copy into World_src:
+		memcpy(workspace.WorldSrc.allocation.data(), &World, sizeof(World));
+
+		//add device-side copy from World_src -> World:
+		assert(workspace.WorldSrc.size == workspace.World.size);
+		VkBufferCopy CopyRegion
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = workspace.WorldSrc.size,
+		};
+		vkCmdCopyBuffer(workspace.command_buffer, workspace.WorldSrc.handle, workspace.World.handle, 1, &CopyRegion);
 	}
 
 	if(!ObjectInstances.empty())
@@ -748,6 +791,10 @@ void Tutorial::RenderCustom(Workspace &workspace)
 {
 	switch (PatternType)
 	{
+		case None:
+			RenderBackgroundPipeline(workspace);
+			RenderObjectsPipeline(workspace);
+			break;
 		case BlackHole:
 			RenderLinesPipeline(workspace);
 			RenderBackgroundPipeline(workspace);
@@ -844,10 +891,11 @@ void Tutorial::RenderObjectsPipeline(Workspace &workspace)
 		vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
 	}
 
-	// Bind Transforms descriptor set
+	// Bind World and Transforms descriptor sets:
 	{
-		std::array< VkDescriptorSet, 1 > DescriptorSets
+		std::array< VkDescriptorSet, 2 > DescriptorSets
 		{
+			workspace.WorldDescriptors, 	// 0: World
 			workspace.TransformDescriptors, // 1: Transforms
 		};
 		vkCmdBindDescriptorSets
@@ -855,10 +903,20 @@ void Tutorial::RenderObjectsPipeline(Workspace &workspace)
 			workspace.command_buffer, 			// Command Buffer
 			VK_PIPELINE_BIND_POINT_GRAPHICS, 	// Pipeline bind point
 			ObjectsPipeline.Layout, 			// Pipeline Layout
-			1, // First Set
+			0, 									// First Set
 			uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
 			0, nullptr // DynamicOffsets Count, ptr
 		);
+	}
+
+	// Push time here
+	{
+		ObjectsPipeline::Push push
+		{
+			.time = time,
+		};
+		vkCmdPushConstants(workspace.command_buffer, ObjectsPipeline.Layout, 
+							VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
 	}
 
 	// Camera descriptor set is still bound(!)
@@ -917,6 +975,27 @@ void Tutorial::update(float dt)
 		default:
 			MakePatternX();
 			break;
+	}
+
+	// static sun and sky
+	{
+		World.SKY_DIRECTION.x = 0.0f;
+		World.SKY_DIRECTION.y = 0.0f;
+		World.SKY_DIRECTION.z = 1.0f;
+
+		World.SKY_ENERGY.r = 0.1f;
+		World.SKY_ENERGY.g = 0.1f;
+		World.SKY_ENERGY.b = 0.2f;
+
+		World.SUN_DIRECTION.x = time * 10 / 23.0f;
+		World.SUN_DIRECTION.y = 13.0f / 23.0f;
+		World.SUN_DIRECTION.z = 18.0f / 23.0f;
+		World.DirectionNormalize();		// Normalize vector
+
+
+		World.SUN_ENERGY.r = 1.0f;
+		World.SUN_ENERGY.g = 1.0f;
+		World.SUN_ENERGY.b = 0.9f;		
 	}
 
 	// Make some Objects
@@ -1121,39 +1200,40 @@ void Tutorial::InstantializePlane(std::vector< PosNorTexVertex > &Vertices)
 	PlaneVertices.first = uint32_t(Vertices.size());
 	Vertices.emplace_back(PosNorTexVertex
 	{
-		.Position{ .x = -1.0f, .y = -1.0f, .z = 0.0f },
+		.Position{ .x = -100.0f, .y = -100.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
 		.Texcoord{ .u = 0.0f, .v = 0.0f },
 	});
 	Vertices.emplace_back(PosNorTexVertex
 	{
-		.Position{ .x = 1.0f, .y = -1.0f, .z = 0.0f },
+		.Position{ .x = 100.0f, .y = -100.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 1.0f, .v = 0.0f },
+		.Texcoord{ .u = 100.0f, .v = 0.0f },
 	});
 	Vertices.emplace_back(PosNorTexVertex
 	{
-		.Position{ .x = -1.0f, .y = 1.0f, .z = 0.0f },
+		.Position{ .x = -100.0f, .y = 100.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 0.0f, .v = 1.0f },
+		.Texcoord{ .u = 0.0f, .v = 100.0f },
+	});
+	
+	Vertices.emplace_back(PosNorTexVertex
+	{
+		.Position{ .x = 100.0f, .y = 100.0f, .z = -0.14f },
+		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
+		.Texcoord{ .u = 100.0f, .v = 100.0f },
 	});
 	Vertices.emplace_back(PosNorTexVertex
 	{
-		.Position{ .x = 1.0f, .y = 1.0f, .z = 0.0f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 1.0f, .v = 1.0f },
-	});
-	Vertices.emplace_back(PosNorTexVertex
-	{
-		.Position{ .x = -1.0f, .y = 1.0f, .z = 0.0f },
+		.Position{ .x = -100.0f, .y = 100.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
-		.Texcoord{ .u = 0.0f, .v = 1.0f },
+		.Texcoord{ .u = 0.0f, .v = 100.0f },
 	});
 	Vertices.emplace_back(PosNorTexVertex
 	{
-		.Position{ .x = 1.0f, .y = -1.0f, .z = 0.0f },
+		.Position{ .x = 100.0f, .y = -100.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
-		.Texcoord{ .u = 1.0f, .v = 0.0f },
+		.Texcoord{ .u = 100.0f, .v = 0.0f },
 	});
 
 	PlaneVertices.count = uint32_t(Vertices.size() - PlaneVertices.first);
@@ -1168,7 +1248,7 @@ void Tutorial::InstantializeTorus(std::vector< PosNorTexVertex > &Vertices)
 	// - v is angle around the tube
 
 	constexpr float R1 = 0.75f; // main radius
-	constexpr float R2 = 0.15f; // tube radius
+	constexpr float R2 = 0.25f; // tube radius
 
 	constexpr uint32_t U_STEPS = 20;
 	constexpr uint32_t V_STEPS = 16;
@@ -1220,5 +1300,99 @@ void Tutorial::InstantializeTorus(std::vector< PosNorTexVertex > &Vertices)
 	}
 
 	TorusVertices.count = uint32_t(Vertices.size()) - TorusVertices.first;
+}
+
+void Tutorial::InstantializeFriedEgg(std::vector< PosNorTexVertex > &Vertices)
+{
+	FriedEggVertices.first = uint32_t(Vertices.size());
+	// f 2/1/1 14/1/1 3/1/1
+	Vertices.emplace_back(PosNorTexVertex{
+	.Position{ .x = 0.705791f, .y = 0.330759f, .z = 0.006080f },
+	.Normal{ .x = -0.0488f, .y = -0.0265f, .z =  -0.9985f },
+	.Texcoord{.u = 1.0f, .v = 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	.Position{ .x = -0.010275f, .y = -0.003005f, .z = 0.049954f },
+	.Normal{ .x = -0.0488f, .y = -0.0265f, .z = -0.9985f },
+	.Texcoord{ .u = 0.0f, .v = 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	.Position{ .x = 0.456304f, .y = 0.794400f, .z = 0.002470f },
+	.Normal{.x = -0.0488f, .y = -0.0265f, .z = -0.9985f },
+	.Texcoord{ .u = 0.0f, .v = 0.0f }
+	});
+
+
+	// f 8/1/2 14/1/2 9/1/2
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.802880f, -0.360267f, 0.005093f },
+	{ 0.0442f, 0.0274f, -0.9986f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.010275f, -0.003005f, 0.049954f },
+	{ 0.0442f, 0.0274f, -0.9986f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.682450f, -0.702539f, 0.001038f },
+	{ 0.0442f, 0.0274f, -0.9986f },
+	{ 0.0f, 0.0f }
+	});
+
+
+	// f 9/1/3 14/1/3 10/1/3
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.682450f, -0.702539f, 0.001038f },
+	{ 0.0281f, 0.0428f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.010275f, -0.003005f, 0.049954f },
+	{ 0.0281f, 0.0428f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.382683f, -0.923880f, 0.000000f },
+	{ 0.0281f, 0.0428f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+
+
+	// f 3/1/4 14/1/4 4/1/4
+	Vertices.emplace_back(PosNorTexVertex{
+	{ 0.456304f, 0.794400f, 0.002470f },
+	{ -0.0093f, -0.0496f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.010275f, -0.003005f, 0.049954f },
+	{ -0.0093f, -0.0496f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ 0.000000f, 1.000000f, 0.000000f },
+	{ -0.0093f, -0.0496f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+
+
+	// f 10/1/5 14/1/5 11/1/5
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.382683f, -0.923880f, 0.000000f },
+	{ 0.0100f, 0.0501f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ -0.010275f, -0.003005f, 0.049954f },
+	{ 0.0100f, 0.0501f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	Vertices.emplace_back(PosNorTexVertex{
+	{ 0.000000f, -1.000000f, 0.000000f },
+	{ 0.0100f, 0.0501f, -0.9987f },
+	{ 0.0f, 0.0f }
+	});
+	FriedEggVertices.count = uint32_t(Vertices.size() - FriedEggVertices.first);
 }
 //END~ Instantialize Mesh's Vertices

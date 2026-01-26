@@ -178,6 +178,8 @@ void main()
     vec4 Color = RainBubble();
     Color = BlackHole();
 
-    Color = vec4(1, 1, 1, 1);
+    vec4 Result = mix(vec4(1,1,1,1), vec4(0.92, 0.43, 0.27, 1), 1.0 - position.y);
+
+    Color = Result;
     outColor = Color;
 }

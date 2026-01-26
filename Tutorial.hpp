@@ -73,11 +73,41 @@ struct Tutorial : RTG::Application {
 	struct ObjectsPipeline
 	{
 		// Descriptor set Layouts:
-		// VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set0_World = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set1_Transforms = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set2_TEXTURE = VK_NULL_HANDLE;
+		
+		struct Push
+		{
+			float time;
+		};
 
 		// types for descriptors:
+		struct World
+		{
+			struct { float x, y, z, padding_; } SKY_DIRECTION;
+			struct { float r, g, b, padding_; } SKY_ENERGY;
+			struct { float x, y, z, padding_; } SUN_DIRECTION;
+			struct { float r, g, b, padding_; } SUN_ENERGY;
+
+			void DirectionNormalize()
+			{ 
+				float Length2 = SUN_DIRECTION.x * SUN_DIRECTION.x +
+								SUN_DIRECTION.y * SUN_DIRECTION.y +
+								SUN_DIRECTION.z * SUN_DIRECTION.z;
+
+
+				if (Length2 > 0.0f)
+				{
+					float LenInv = 1.0f / std::sqrt(Length2);
+					SUN_DIRECTION.x *= LenInv;
+					SUN_DIRECTION.y *= LenInv;
+					SUN_DIRECTION.z *= LenInv;
+				}
+			}
+		};
+		static_assert(sizeof(World) == 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
+
 		struct Transfrom
 		{
 			Mat4 CLIP_FROM_LOCAL;
@@ -104,7 +134,7 @@ struct Tutorial : RTG::Application {
 		X,
 		Grid,
 		BlackHole,
-	} PatternType = Grid;
+	} PatternType = None;
 	
 
 	// Pools from which per-workspace things are allocated:
@@ -116,12 +146,17 @@ struct Tutorial : RTG::Application {
 	{
 		VkCommandBuffer command_buffer = VK_NULL_HANDLE; //from the command pool above; reset at the start of every render.
 
+		//location for ObjectsPipeline::World data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer WorldSrc; 	// host coherent; mapped
+		Helpers::AllocatedBuffer World; 	// device-local
+		VkDescriptorSet WorldDescriptors; 	// references World
+
 		// Location for lines data:( streamed to GPU per-frame)
 		Helpers::AllocatedBuffer LinesVerticesSrc;	// host coherent; mapped
 		Helpers::AllocatedBuffer LinesVertices;		// device-local
 
 		// location for LinesPipeline::Camera data: (streamed to GPU per-frame)
-		Helpers::AllocatedBuffer Camera_Src;	// host coherent; mapped
+		Helpers::AllocatedBuffer CameraSrc;	// host coherent; mapped
 		Helpers::AllocatedBuffer Camera;		// device-local
 		VkDescriptorSet CameraDescriptors;		// references Camera
 
@@ -142,6 +177,8 @@ struct Tutorial : RTG::Application {
 	};
 	ObjectVerticesInfo PlaneVertices;
 	ObjectVerticesInfo TorusVertices;
+	ObjectVerticesInfo FriedEggVertices;
+	ObjectVerticesInfo PanVertices;
 
 	std::vector< Helpers::AllocatedImage > Textures;
 	std::vector< VkImageView > TextureViews;
@@ -171,6 +208,8 @@ struct Tutorial : RTG::Application {
 	Mat4 CLIP_FROM_WORLD;
 
 	std::vector< LinesPipeline::Vertex > LinesVertices;
+
+	ObjectsPipeline::World World;
 
 	struct ObjectInstance
 	{
@@ -245,4 +284,6 @@ struct Tutorial : RTG::Application {
 // Different Mesh Vertices Instantialize
 	void InstantializePlane(std::vector< PosNorTexVertex > &Vertices);
 	void InstantializeTorus(std::vector< PosNorTexVertex > &Vertices);
+	void InstantializeFriedEgg(std::vector< PosNorTexVertex > &Vertices);
+	void InstantializePan(std::vector< PosNorTexVertex > &Vertices);
 };

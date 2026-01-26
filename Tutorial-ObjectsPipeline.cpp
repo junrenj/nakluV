@@ -16,7 +16,28 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
     VkShaderModule Vert_Module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule Frag_Module = rtg.helpers.create_shader_module(frag_code);
 
-    // refsol::BackgroundPipeline_create(rtg, RenderPass, Subpass, Vert_Module, Frag_Module, &layout, &handle);
+    // the set0_World layout holds world info in a uniform buffer used in the fragment shader:
+    {
+        std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
+        {
+			VkDescriptorSetLayoutBinding
+            {
+				.binding = 0,
+				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = 1,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+			},
+		};
+
+        VkDescriptorSetLayoutCreateInfo CreateInfo
+        {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = uint32_t(Bindings.size()),
+			.pBindings = Bindings.data(),
+		};
+
+        VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set0_World) );
+    }
 
     // the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
     {
@@ -66,9 +87,16 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
     }
 
     {
+        VkPushConstantRange Range
+        {
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,
+            .size = sizeof(Push),
+        };
+
         std::array< VkDescriptorSetLayout, 3 > Layouts
         {
-            Set1_Transforms,  // we'd like to say "VK_NULL_HANDLE" here, but that's not valid without an extension
+            Set0_World,  // we'd like to say "VK_NULL_HANDLE" here, but that's not valid without an extension
             Set1_Transforms,
             Set2_TEXTURE,
         };
@@ -78,8 +106,8 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .setLayoutCount = uint32_t(Layouts.size()),
             .pSetLayouts = Layouts.data(),
-            .pushConstantRangeCount = 0,
-            .pPushConstantRanges = nullptr,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &Range,
         };
 
         VK( vkCreatePipelineLayout(rtg.device, &CreateInfo, nullptr, &Layout));
@@ -212,6 +240,13 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 
 void Tutorial::ObjectsPipeline::Destroy(RTG &rtg)
 {
+    if (Set0_World != VK_NULL_HANDLE) 
+    {
+		vkDestroyDescriptorSetLayout(rtg.device, Set0_World, nullptr);
+		Set0_World = VK_NULL_HANDLE;
+	}
+
+
     if(Set1_Transforms != VK_NULL_HANDLE)
     {
         vkDestroyDescriptorSetLayout(rtg.device, Set1_Transforms, nullptr);
