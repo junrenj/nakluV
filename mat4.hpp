@@ -126,3 +126,56 @@ inline Mat4 Look_at
 		-right_dot_eye, -up_dot_eye, in_dot_eye, 1.0f,
 	};
 }
+
+// Orbit camera matrix:
+// makes a camera-from-world matrix for a camera orbiting target_{x,y,z}
+//   at distance radius with angles azimuth and elevation.
+// azimuth is counterclockwise angle in the xy plane from the x axis
+// elevation is angle up from the xy plane
+// both are in radians
+inline Mat4 orbit(
+		float target_x, float target_y, float target_z,
+		float azimuth, float elevation, float radius
+	) {
+
+	// shorthand for some useful trig values:
+	float CA = std::cos(azimuth);
+	float SA = std::sin(azimuth);
+	float CE = std::cos(elevation);
+	float SE = std::sin(elevation);
+
+	// Camera's right direction is azimuth rotated by 90 degrees:
+	float Right_X = -SA;
+	float Right_Y = CA;
+	float Right_Z = 0.0f;
+
+	// camera's up direction is elevation rotated 90 degrees:
+	// (and points in the same xy direction as azimuth)
+	float Up_X = -SE * CA;
+	float Up_Y = -SE * SA;
+	float Up_Z = CE;
+
+	// Direction to the camera from the target:
+	float Out_X = CE * CA;
+	float Out_Y = CE * SA;
+	float Out_Z = SE;
+
+	// Camera's position:
+	float Eye_X = target_x + radius * Out_X;
+	float Eye_Y = target_y + radius * Out_Y;
+	float Eye_Z = target_z + radius * Out_Z;
+
+	// Camera's position projected onto the various vectors:
+	float RightDotEye = Right_X * Eye_X + Right_Y * Eye_Y + Right_Z * Eye_Z;
+	float UpDotEye = Up_X * Eye_X + Up_Y * Eye_Y + Up_Z * Eye_Z;
+	float OutDotEye = Out_X * Eye_X + Out_Y * Eye_Y + Out_Z * Eye_Z;
+
+	// the final local-from-world transformation (column-major):
+	return Mat4
+	{
+		Right_X, Up_X, Out_X, 0.0f,
+		Right_Y, Up_Y, Out_Y, 0.0f,
+		Right_Z, Up_Z, Out_Z, 0.0f,
+		-RightDotEye, -UpDotEye, -OutDotEye, 1.0f,
+	};
+}

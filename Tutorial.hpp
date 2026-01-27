@@ -134,7 +134,7 @@ struct Tutorial : RTG::Application {
 		X,
 		Grid,
 		BlackHole,
-	} PatternType = None;
+	} PatternType = Grid;
 	
 
 	// Pools from which per-workspace things are allocated:
@@ -203,8 +203,31 @@ struct Tutorial : RTG::Application {
 	virtual void update(float dt) override;
 	virtual void on_input(InputEvent const &) override;
 
+	// Modal action, intercepts inputs
+	std::function< void(InputEvent const &) > Action; 
+
 	float time = 0.0f;
 
+	enum class CameraMode
+	{
+		Scene = 0,
+		Free = 1,
+	} CurrentCameraMode = CameraMode::Free;
+
+	// Used when cameraMode == cameraMode::Free
+	struct OrbitCamera
+	{
+		float TargetX = 0.0f, TargetY = 0.0f, TargetZ = 0.0f; // Where Camera Looking + Orbiting
+		float Radius = 2.0f; 	// Distance from camera to target
+		float Azimuth = 0.0f; 	// Counterclockwise angle around z axis between x axis and camera direction (radians)
+		float Elevation = 0.25f * float(M_PI); // Angle up from xy plane to camera direction(radians)
+
+		float FOV = 60.0f / 180.0f * float(M_PI);	// vertical field of view (radians)
+		float Near = 0.1f;		// Near Clippping plane
+		float Far = 1000.0f;	// Far Clipping plane 
+	} FreeCamera;
+
+	// Computed from the current camera (as set by camera_mode) during update():
 	Mat4 CLIP_FROM_WORLD;
 
 	std::vector< LinesPipeline::Vertex > LinesVertices;
@@ -284,6 +307,4 @@ struct Tutorial : RTG::Application {
 // Different Mesh Vertices Instantialize
 	void InstantializePlane(std::vector< PosNorTexVertex > &Vertices);
 	void InstantializeTorus(std::vector< PosNorTexVertex > &Vertices);
-	void InstantializeFriedEgg(std::vector< PosNorTexVertex > &Vertices);
-	void InstantializePan(std::vector< PosNorTexVertex > &Vertices);
 };

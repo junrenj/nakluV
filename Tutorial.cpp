@@ -3,6 +3,8 @@
 #include "VK.hpp"
 #include "refsol.hpp"
 
+#include <GLFW/glfw3.h>
+
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -31,12 +33,12 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.descriptorCount = 1 * PerWorkspace, 	// one descriptor per set, one set per workspace
+				.descriptorCount = 2 * PerWorkspace, 	 // one descriptor per set, two sets per workspace
 			},
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-				.descriptorCount = 2 * PerWorkspace,	// one descriptor per set, one set per workspace
+				.descriptorCount = 1 * PerWorkspace,	// one descriptor per set, one set per workspace
 			},
 		};
 
@@ -44,7 +46,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0, // because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-			.maxSets = 3 * PerWorkspace, // one set per workspace
+			.maxSets = 3 * PerWorkspace, // three set per workspace
 			.poolSizeCount = uint32_t(PoolSizes.size()),
 			.pPoolSizes = PoolSizes.data(),
 		};
@@ -184,7 +186,6 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		{
 			std::vector< PosNorTexVertex > Vertices;
 			// Create Quadrilateral:
-			// InstantializeFriedEgg(Vertices);
 			InstantializePlane(Vertices);
 
 			// Create Torus
@@ -919,7 +920,7 @@ void Tutorial::RenderObjectsPipeline(Workspace &workspace)
 							VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push), &push);
 	}
 
-	// Camera descriptor set is still bound(!)
+	// Camera descriptor set is still bound, but unused(!)
 
 	// Draw all Instances:
 	for (ObjectInstance const &Inst : ObjectInstances)
@@ -946,7 +947,9 @@ void Tutorial::update(float dt)
 	time = std::fmod(time + dt, 60.0f);
 
 	// camera orbiting the origin:
+	if(CurrentCameraMode == CameraMode::Scene)
 	{
+		// camera rotating around the origin:
 		float Angle = float(M_PI) * 2.0f * 2.0f * (time / 60.0f);
 		CLIP_FROM_WORLD = Perspective
 		(
@@ -960,6 +963,24 @@ void Tutorial::update(float dt)
 			0.0f, 0.0f, 0.5f, // target
 			0.0f, 0.0f, 1.0f // up
 		);
+	}
+	else if(CurrentCameraMode == CameraMode::Free)
+	{
+		CLIP_FROM_WORLD = Perspective
+		(
+			FreeCamera.FOV,
+			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height),	// Aspect
+			FreeCamera.Near,
+			FreeCamera.Far
+		) * orbit
+		(
+			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
+			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
+		);
+	}
+	else
+	{
+		assert(0 && "Only Two Camera Mode!");
 	}
 
  	// Pattern Switch
@@ -1052,9 +1073,118 @@ void Tutorial::update(float dt)
 	
 }
 
-void Tutorial::on_input(InputEvent const &) 
+void Tutorial::on_input(InputEvent const &evt) 
 {
-	
+	// If there is a current action, it gets input priority:
+	if(Action)
+	{
+		Action(evt);
+		return;
+	}
+
+	// General Controls:
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_TAB)
+	{
+		// Switch Camera Modes
+		CurrentCameraMode = CameraMode((int(CurrentCameraMode) + 1) % 2);
+		return;
+	}
+
+	// Free Camera Controls
+	if(CurrentCameraMode == CameraMode::Free)
+	{
+		if(evt.type == InputEvent::MouseWheel)
+		{
+			// change distance by 10% every scroll click:
+			FreeCamera.Radius *= std::exp(std::log(1.1f) * -evt.wheel.y);
+			// make sure camera isn't too close or too far from target:
+			FreeCamera.Radius = std::max(FreeCamera.Radius, 0.5f * FreeCamera.Near);
+			FreeCamera.Radius = std::min(FreeCamera.Radius, 2.0f * FreeCamera.Far);
+			return;
+		}
+		
+		if(evt.type == InputEvent::MouseButtonDown &&
+			evt.button.button == GLFW_MOUSE_BUTTON_LEFT &&
+			evt.button.mods & GLFW_MOD_SHIFT)
+		{
+			// start panning
+			float InitX = evt.button.x;
+			float InitY = evt.button.y;
+			OrbitCamera InitCamera = FreeCamera;
+
+			Action = [this, InitX, InitY, InitCamera](InputEvent const &evt)
+			{
+				if(evt.type == InputEvent::MouseButtonUp &&
+					evt.button.button == GLFW_MOUSE_BUTTON_LEFT)
+				{
+					// Cancel upon button lifted:
+					Action = nullptr;
+					return;
+				}
+				if(evt.type == InputEvent::MouseMotion)
+				{
+					float Height = 2.0f * std::tan(FreeCamera.FOV * 0.5f) * FreeCamera.Radius;
+
+					//motion, therefore, at target point:
+					float Dx = (evt.motion.x - InitX) / rtg.swapchain_extent.height * Height;
+					float Dy =-(evt.motion.y - InitY) / rtg.swapchain_extent.height * Height; //note: negated because glfw uses y-down coordinate system
+
+					//compute camera transform to extract right (first row) and up (second row):
+					Mat4 CameraFromWorld = orbit
+					(
+						InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ,
+						InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
+					);
+
+					//move the desired distance:
+					FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0] - Dy * CameraFromWorld[1];
+					FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[4] - Dy * CameraFromWorld[5];
+					FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[8] - Dy * CameraFromWorld[9];
+
+					return;
+				}
+			};
+		}
+
+		if(evt.type == InputEvent::MouseButtonDown &&
+			 evt.button.button ==  GLFW_MOUSE_BUTTON_LEFT)
+		{
+			// Start tumbling
+
+			float InitX = evt.button.x;
+			float InitY = evt.button.y;
+			OrbitCamera InitCamera = FreeCamera;
+			
+			Action = [this, InitX, InitY, InitCamera](InputEvent const &evt) {
+				if (evt.type == InputEvent::MouseButtonUp &&
+					 evt.button.button == GLFW_MOUSE_BUTTON_LEFT) 
+				{
+					//cancel upon button lifted:
+					Action = nullptr;
+					return;
+				}
+				if (evt.type == InputEvent::MouseMotion) 
+				{
+					float Dx = (evt.motion.x - InitX) / rtg.swapchain_extent.height;
+					float Dy = (evt.motion.y - InitY) / rtg.swapchain_extent.height; //note: negated because glfw uses y-down coordinate system
+					
+					// Rotate camera based on motion:
+					float Speed = float(M_PI);	// how much rotation happens at one full window height
+					float FlipX = (std::abs(InitCamera.Elevation) > 0.5f * float(M_PI) ? -1.0f : 1.0f); // switch azimuth rotation when camera is upside-down
+					FreeCamera.Azimuth = InitCamera.Azimuth -Dx * Speed * FlipX;
+					FreeCamera.Elevation = InitCamera.Elevation - Dy * Speed;
+					
+					// Reduce Azimuth and elevation to [-pi, pi] range
+					const float TwoPi = 2.0f * float(M_PI);
+					FreeCamera.Azimuth -= std::round(FreeCamera.Azimuth / TwoPi) * TwoPi;
+					FreeCamera.Elevation -= std::round(FreeCamera.Elevation / TwoPi) * TwoPi;
+					return;
+				}
+			};
+
+			return;
+		}
+	}
 }
 
 //BEGIN~ Make Pattern Function
@@ -1300,99 +1430,5 @@ void Tutorial::InstantializeTorus(std::vector< PosNorTexVertex > &Vertices)
 	}
 
 	TorusVertices.count = uint32_t(Vertices.size()) - TorusVertices.first;
-}
-
-void Tutorial::InstantializeFriedEgg(std::vector< PosNorTexVertex > &Vertices)
-{
-	FriedEggVertices.first = uint32_t(Vertices.size());
-	// f 2/1/1 14/1/1 3/1/1
-	Vertices.emplace_back(PosNorTexVertex{
-	.Position{ .x = 0.705791f, .y = 0.330759f, .z = 0.006080f },
-	.Normal{ .x = -0.0488f, .y = -0.0265f, .z =  -0.9985f },
-	.Texcoord{.u = 1.0f, .v = 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	.Position{ .x = -0.010275f, .y = -0.003005f, .z = 0.049954f },
-	.Normal{ .x = -0.0488f, .y = -0.0265f, .z = -0.9985f },
-	.Texcoord{ .u = 0.0f, .v = 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	.Position{ .x = 0.456304f, .y = 0.794400f, .z = 0.002470f },
-	.Normal{.x = -0.0488f, .y = -0.0265f, .z = -0.9985f },
-	.Texcoord{ .u = 0.0f, .v = 0.0f }
-	});
-
-
-	// f 8/1/2 14/1/2 9/1/2
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.802880f, -0.360267f, 0.005093f },
-	{ 0.0442f, 0.0274f, -0.9986f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.010275f, -0.003005f, 0.049954f },
-	{ 0.0442f, 0.0274f, -0.9986f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.682450f, -0.702539f, 0.001038f },
-	{ 0.0442f, 0.0274f, -0.9986f },
-	{ 0.0f, 0.0f }
-	});
-
-
-	// f 9/1/3 14/1/3 10/1/3
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.682450f, -0.702539f, 0.001038f },
-	{ 0.0281f, 0.0428f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.010275f, -0.003005f, 0.049954f },
-	{ 0.0281f, 0.0428f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.382683f, -0.923880f, 0.000000f },
-	{ 0.0281f, 0.0428f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-
-
-	// f 3/1/4 14/1/4 4/1/4
-	Vertices.emplace_back(PosNorTexVertex{
-	{ 0.456304f, 0.794400f, 0.002470f },
-	{ -0.0093f, -0.0496f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.010275f, -0.003005f, 0.049954f },
-	{ -0.0093f, -0.0496f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ 0.000000f, 1.000000f, 0.000000f },
-	{ -0.0093f, -0.0496f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-
-
-	// f 10/1/5 14/1/5 11/1/5
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.382683f, -0.923880f, 0.000000f },
-	{ 0.0100f, 0.0501f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ -0.010275f, -0.003005f, 0.049954f },
-	{ 0.0100f, 0.0501f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	Vertices.emplace_back(PosNorTexVertex{
-	{ 0.000000f, -1.000000f, 0.000000f },
-	{ 0.0100f, 0.0501f, -0.9987f },
-	{ 0.0f, 0.0f }
-	});
-	FriedEggVertices.count = uint32_t(Vertices.size() - FriedEggVertices.first);
 }
 //END~ Instantialize Mesh's Vertices
