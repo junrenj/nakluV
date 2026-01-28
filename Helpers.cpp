@@ -2,7 +2,6 @@
 
 #include "RTG.hpp"
 #include "VK.hpp"
-#include "refsol.hpp"
 
 #include <vulkan/utility/vk_format_utils.h> // useful for byte counting
 
@@ -42,25 +41,132 @@ Helpers::Allocation::~Allocation() {
 
 //----------------------------
 
+Helpers::Allocation Helpers::Allocate(VkDeviceSize size, VkDeviceSize alignment, uint32_t memory_type_index, MapFlag map)
+{
+	Helpers::Allocation AllocationTemp;
+
+	VkMemoryAllocateInfo AllocationInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.allocationSize = size,
+		.memoryTypeIndex = memory_type_index
+	};
+
+	VK( vkAllocateMemory( rtg.device, &AllocationInfo, nullptr, &AllocationTemp.handle ) );
+
+	AllocationTemp.size = size;
+	AllocationTemp.offset = 0;
+
+	if (map == Mapped) 
+	{
+		VK( vkMapMemory(rtg.device, AllocationTemp.handle, 0, AllocationTemp.size, 0, &AllocationTemp.mapped) );
+	}
+
+	return AllocationTemp;
+}
+
+Helpers::Allocation Helpers::Allocate(VkMemoryRequirements const &req, VkMemoryPropertyFlags properties, MapFlag map)
+{
+	return Allocate(req.size, req.alignment, FindMemoryType(req.memoryTypeBits, properties), map);
+}
+
+void Helpers::Free(Helpers::Allocation &&Allocation)
+{
+	if(Allocation.mapped != nullptr)
+	{
+		vkUnmapMemory(rtg.device, Allocation.handle);
+		Allocation.mapped = nullptr;
+	}
+
+	vkFreeMemory(rtg.device, Allocation.handle, nullptr);
+
+	Allocation.handle = VK_NULL_HANDLE;
+	Allocation.offset = 0;
+	Allocation.size = 0;
+}
+
 Helpers::AllocatedBuffer Helpers::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map) {
 	AllocatedBuffer buffer;
-	refsol::Helpers_create_buffer(rtg, size, usage, properties, (map == Mapped), &buffer);
+	VkBufferCreateInfo CreateInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = size,
+		.usage = usage,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+	};
+	VK( vkCreateBuffer(rtg.device, &CreateInfo, nullptr, &buffer.handle));
+	buffer.size = size;
+
+	// determine memory requirements
+	VkMemoryRequirements Request;
+	vkGetBufferMemoryRequirements(rtg.device, buffer.handle, &Request);
+
+	// allocate memory
+	buffer.allocation = Allocate(Request, properties, map);
+
+	// bind memory
+	VK( vkBindBufferMemory(rtg.device, buffer.handle, buffer.allocation.handle, buffer.allocation.offset));
+
 	return buffer;
 }
 
-void Helpers::destroy_buffer(AllocatedBuffer &&buffer) {
-	refsol::Helpers_destroy_buffer(rtg, &buffer);
+void Helpers::destroy_buffer(AllocatedBuffer &&buffer) 
+{
+	vkDestroyBuffer(rtg.device, buffer.handle, nullptr);
+	buffer.handle = VK_NULL_HANDLE;
+	buffer.size = 0;
+
+	this->Free(std::move(buffer.allocation));
 }
 
 
 Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map) {
 	AllocatedImage image;
-	refsol::Helpers_create_image(rtg, extent, format, tiling, usage, properties, (map == Mapped), &image);
+	
+	image.extent = extent;
+	image.format = format;
+
+	VkImageCreateInfo CreateInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = format,
+		.extent
+		{
+			.width = extent.width,
+			.height = extent.height,
+			.depth = 1
+		},
+		.mipLevels = 1,
+		.arrayLayers = 1,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.tiling = tiling,
+		.usage = usage,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	};
+
+	VK( vkCreateImage(rtg.device, &CreateInfo, nullptr, &image.handle));
+
+	VkMemoryRequirements Require;
+	vkGetImageMemoryRequirements(rtg.device, image.handle, &Require);
+
+	image.allocation = Allocate(Require, properties, map);
+
+	VK( vkBindImageMemory(rtg.device, image.handle, image.allocation.handle, image.allocation.offset));
+
 	return image;
 }
 
-void Helpers::destroy_image(AllocatedImage &&image) {
-	refsol::Helpers_destroy_image(rtg, &image);
+void Helpers::destroy_image(AllocatedImage &&image) 
+{
+	vkDestroyImage(rtg.device, image.handle, nullptr);
+
+	image.handle = VK_NULL_HANDLE;
+	image.extent = VkExtent2D{.width = 0, .height = 0};
+	image.format = VK_FORMAT_UNDEFINED;
+
+	this->Free(std::move(image.allocation));
 }
 
 //----------------------------
@@ -266,13 +372,48 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 
 //----------------------------
 
-VkFormat Helpers::find_image_format(std::vector< VkFormat > const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const {
-	return refsol::Helpers_find_image_format(rtg, candidates, tiling, features);
+uint32_t Helpers::FindMemoryType(uint32_t TypeFilter, VkMemoryPropertyFlags flags) const
+{
+	for (uint32_t i = 0; i < MemoryProperties.memoryTypeCount; ++i) 
+	{
+		VkMemoryType const &type = MemoryProperties.memoryTypes[i];
+		if ((TypeFilter & (1 << i)) != 0
+		 && (type.propertyFlags & flags) == flags) 
+		 {
+			return i;
+		}
+	}
+	throw std::runtime_error("No suitable memory type found.");
 }
 
-VkShaderModule Helpers::create_shader_module(uint32_t const *code, size_t bytes) const {
+VkFormat Helpers::find_image_format(std::vector< VkFormat > const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const 
+{
+	for (VkFormat Format : candidates)
+	{
+		VkFormatProperties Props;
+		vkGetPhysicalDeviceFormatProperties(rtg.physical_device, Format, &Props);
+		if (tiling == VK_IMAGE_TILING_LINEAR && (Props.linearTilingFeatures & features) == features) 
+		{
+			return Format;
+		} 
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (Props.optimalTilingFeatures & features) == features) 
+		{
+			return Format;
+		}
+	}
+	throw std::runtime_error("No supported format matches request.");
+}
+
+VkShaderModule Helpers::create_shader_module(uint32_t const *code, size_t bytes) const 
+{
 	VkShaderModule shader_module = VK_NULL_HANDLE;
-	refsol::Helpers_create_shader_module(rtg, code, bytes, &shader_module);
+	VkShaderModuleCreateInfo CreateInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.codeSize = bytes,
+		.pCode = code
+	};
+	VK( vkCreateShaderModule(rtg.device, &CreateInfo, nullptr, &shader_module));
 	return shader_module;
 }
 
@@ -302,6 +443,25 @@ void Helpers::create()
 		.commandBufferCount = 1
 	};
 	VK( vkAllocateCommandBuffers(rtg.device, &AllocInfo, &TransferCommandBuffer) );
+
+	vkGetPhysicalDeviceMemoryProperties(rtg.physical_device, &MemoryProperties);
+
+	if(rtg.configuration.debug)
+	{
+		std::cout << "Memory types:\n";
+		for (uint32_t i = 0; i < MemoryProperties.memoryTypeCount; ++i) 
+		{
+			VkMemoryType const &Type = MemoryProperties.memoryTypes[i];
+			std::cout << " [" << i << "] heap " << Type.heapIndex << ", flags: " << string_VkMemoryPropertyFlags(Type.propertyFlags) << '\n';
+		}
+		std::cout << "Memory heaps:\n";
+		for (uint32_t i = 0; i < MemoryProperties.memoryHeapCount; ++i) 
+		{
+			VkMemoryHeap const &Heap = MemoryProperties.memoryHeaps[i];
+			std::cout << " [" << i << "] " << Heap.size << " bytes, flags: " << string_VkMemoryHeapFlags( Heap.flags ) << '\n';
+		}
+		std::cout.flush();
+	}
 }
 
 void Helpers::destroy() 
