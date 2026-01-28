@@ -18,7 +18,56 @@ const Tutorial::Vec2 Tutorial::Vec2::One{1.0f, 1.0f};
 
 Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_) 
 {
-	refsol::Tutorial_constructor(rtg, &depth_format, &render_pass, &command_pool);
+	// select a depth format:
+	// (at least one of these two must be supported, according to the spec; but neither are required)
+	depth_format = rtg.helpers.find_image_format
+	(
+		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_X8_D24_UNORM_PACK32 },
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+	);
+
+	// Create render pass
+	{
+		// attachments
+		std::array< VkAttachmentDescription, 2 > Attachments
+		{
+			VkAttachmentDescription
+			{
+
+			},
+		}; 
+
+		// TODO: subpass
+
+		// TODO: dependencies
+
+		VkRenderPassCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = uint32_t(Attachments.size()),
+			.pAttachments = Attachments.data(),
+			.subpassCount = 1,
+			.pSubpasses = &Subpass,
+			.dependencyCount = uint32_t(Dependencies.size()),
+			.pDependencies = Dependencies.data(),
+		};
+
+		VK( vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &render_pass));
+	}
+
+	// allocate command buffer:
+	{
+		VkCommandBufferAllocateInfo AllocInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			.commandPool = command_pool,
+			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			.commandBufferCount = 1,
+		};
+
+		VK( vkAllocateCommandBuffers(rtg.device, &AllocInfo, &workspaces.command_buffer));
+	}
 
 	BackgroundPipeline.Create(rtg, render_pass, 0);
 	LinesPipeline.Create(rtg, render_pass, 0);
@@ -429,7 +478,11 @@ Tutorial::~Tutorial() {
 
 	for (Workspace &workspace : workspaces) 
 	{
-		refsol::Tutorial_destructor_workspace(rtg, command_pool, &workspace.command_buffer);
+		if(workspace.command_buffer != VK_NULL_HANDLE)
+		{
+			vkFreeCommandBuffers(rtg.device, command_pool, 1, &workspace.command_buffer);
+			workspace.command_buffer = VK_NULL_HANDLE;
+		}
 		
 		if(workspace.LinesVerticesSrc.handle != VK_NULL_HANDLE)
 		{
@@ -619,7 +672,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 	if(!ObjectInstances.empty())
 	{
 		// upload object transforms:
-		size_t NeededBytes = ObjectInstances.size() * sizeof(ObjectsPipeline::Transfrom);
+		size_t NeededBytes = ObjectInstances.size() * sizeof(ObjectsPipeline::Transform);
 		if(workspace.TransformsSrc.handle == VK_NULL_HANDLE ||
 			workspace.TransformsSrc.size < NeededBytes)
 		{
@@ -684,7 +737,7 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			// Copy Transform into TransformSrc
 			{
 				assert(workspace.TransformsSrc.allocation.mapped);
-				ObjectsPipeline::Transfrom *Out = reinterpret_cast< ObjectsPipeline::Transfrom * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				ObjectsPipeline::Transform *Out = reinterpret_cast< ObjectsPipeline::Transform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
 				for (ObjectInstance const &Inst : ObjectInstances)
 				{
 					*Out = Inst.Transform;
@@ -784,7 +837,38 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 	VK(vkEndCommandBuffer(workspace.command_buffer));
 
 	//submit `workspace.command buffer` for the GPU to run:
-	refsol::Tutorial_render_submit(rtg, render_params, workspace.command_buffer);
+	{
+		std::array< VkSemaphore, 1 > WaitSemaphores
+		{
+			render_params.image_available
+		};
+		std::array< VkPipelineStageFlags, 1 > WaitStages
+		{
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+		};
+		static_assert(WaitSemaphores.size() == WaitStages.size(), "every semaphore needs a stage");
+
+		
+		std::array< VkSemaphore, 1 > SignalSemaphores
+		{
+			render_params.image_done
+		};
+		VkSubmitInfo SubmitInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.waitSemaphoreCount = uint32_t(WaitSemaphores.size()),
+			.pWaitSemaphores = WaitSemaphores.data(),
+			.pWaitDstStageMask = WaitStages.data(),
+			.commandBufferCount = 1,
+			.pCommandBuffers = &workspace.command_buffer,
+			.signalSemaphoreCount = uint32_t(SignalSemaphores.size()),
+			.pSignalSemaphores = SignalSemaphores.data(),
+		};
+
+		VK( vkQueueSubmit(rtg.graphics_queue, 1, &SubmitInfo, render_params.workspace_available));
+	}
+
+	
 }
 
 //BEGIN~ Custom Render Function

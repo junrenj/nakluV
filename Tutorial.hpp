@@ -108,13 +108,13 @@ struct Tutorial : RTG::Application {
 		};
 		static_assert(sizeof(World) == 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
 
-		struct Transfrom
+		struct Transform
 		{
 			Mat4 CLIP_FROM_LOCAL;
 			Mat4 WORLD_FROM_LOCAL;
 			Mat4 WORLD_FROM_LOCAL_NORMAL;
 		};
-		static_assert(sizeof(Transfrom) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
+		static_assert(sizeof(Transform) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
 
 		using Vertex = PosNorTexVertex;
 
@@ -237,7 +237,7 @@ struct Tutorial : RTG::Application {
 	struct ObjectInstance
 	{
 		ObjectVerticesInfo Vertices;
-		ObjectsPipeline::Transfrom Transform;
+		ObjectsPipeline::Transform Transform;
 		uint32_t Texture = 0;
 	};
 

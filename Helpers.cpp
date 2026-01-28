@@ -119,7 +119,6 @@ void Helpers::destroy_buffer(AllocatedBuffer &&buffer)
 	this->Free(std::move(buffer.allocation));
 }
 
-
 Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map) {
 	AllocatedImage image;
 	
