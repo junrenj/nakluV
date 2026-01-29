@@ -1,7 +1,6 @@
 #include "Tutorial.hpp"
 
 #include "VK.hpp"
-#include "refsol.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -27,6 +26,17 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 	);
 
+	// Create Command pool
+	{
+		VkCommandPoolCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			.queueFamilyIndex = rtg.graphics_queue_family.value(),
+		};
+		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &command_pool) );
+	}
+
 	// Create render pass
 	{
 		// attachments
@@ -34,13 +44,76 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		{
 			VkAttachmentDescription
 			{
-
+				// Color attachment:
+				.format = rtg.surface_format.format,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			},
+			VkAttachmentDescription
+			{
+				// Depth Attachment
+				.format = depth_format,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			},
 		}; 
 
-		// TODO: subpass
+		// Subpass
+		VkAttachmentReference ColorAttachmentRef
+		{
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		};
 
-		// TODO: dependencies
+		VkAttachmentReference DepthAttachmentRef
+		{
+			.attachment = 1,
+			.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		};
+
+		VkSubpassDescription Subpass
+		{
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.inputAttachmentCount = 0,
+			.pInputAttachments = nullptr,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &ColorAttachmentRef,
+			.pDepthStencilAttachment = &DepthAttachmentRef,
+		};
+
+		// dependencies
+		// this defers the image load actions for the attachments:
+		std::array< VkSubpassDependency, 2 > Dependencies
+		{
+			VkSubpassDependency
+			{
+				.srcSubpass = VK_SUBPASS_EXTERNAL,
+				.dstSubpass = 0,
+				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.srcAccessMask = 0,
+				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			},
+			VkSubpassDependency
+			{
+				.srcSubpass = VK_SUBPASS_EXTERNAL,
+				.dstSubpass = 0,
+				.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+				.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+				.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			}
+		};
 
 		VkRenderPassCreateInfo CreateInfo
 		{
@@ -54,19 +127,6 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		};
 
 		VK( vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &render_pass));
-	}
-
-	// allocate command buffer:
-	{
-		VkCommandBufferAllocateInfo AllocInfo
-		{
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-			.commandPool = command_pool,
-			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			.commandBufferCount = 1,
-		};
-
-		VK( vkAllocateCommandBuffers(rtg.device, &AllocInfo, &workspaces.command_buffer));
 	}
 
 	BackgroundPipeline.Create(rtg, render_pass, 0);
@@ -106,7 +166,18 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 	workspaces.resize(rtg.workspaces.size());
 	for (Workspace &workspace : workspaces)
 	{
-		refsol::Tutorial_constructor_workspace(rtg, command_pool, &workspace.command_buffer);
+		// allocate command buffer:
+		{
+			VkCommandBufferAllocateInfo AllocInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+				.commandPool = command_pool,
+				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+				.commandBufferCount = 1,
+			};
+
+			VK( vkAllocateCommandBuffers(rtg.device, &AllocInfo, &workspace.command_buffer));
+		}
 
 		workspace.CameraSrc = rtg.helpers.create_buffer
 		(
@@ -535,16 +606,100 @@ Tutorial::~Tutorial() {
 		// (this also frees the descriptor sets allocated from the pool)
 	}
 
-	refsol::Tutorial_destructor(rtg, &render_pass, &command_pool);
+	// Destroy command pool
+	if(command_pool != VK_NULL_HANDLE)
+	{
+		vkDestroyCommandPool(rtg.device, command_pool, nullptr);
+		command_pool = VK_NULL_HANDLE;
+	}
+
+	if(render_pass != VK_NULL_HANDLE)
+	{
+		vkDestroyRenderPass(rtg.device, render_pass, nullptr);
+		render_pass = VK_NULL_HANDLE;
+	}
 }
 
-void Tutorial::on_swapchain(RTG &rtg_, RTG::SwapchainEvent const &swapchain) {
-	//[re]create framebuffers:
-	refsol::Tutorial_on_swapchain(rtg, swapchain, depth_format, render_pass, &swapchain_depth_image, &swapchain_depth_image_view, &swapchain_framebuffers);
+void Tutorial::on_swapchain(RTG &rtg_, RTG::SwapchainEvent const &swapchain) 
+{
+	// clean up existing framebuffers
+	if(swapchain_depth_image.handle != VK_NULL_HANDLE)
+	{
+		destroy_framebuffers();
+	}
+
+	// allocate depth image for framebuffers to share
+	swapchain_depth_image = rtg.helpers.create_image
+	(
+		swapchain.extent,
+		depth_format,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		Helpers::Unmapped
+	);
+
+	// create an image view of the depth image
+	{
+		VkImageViewCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = swapchain_depth_image.handle,
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = depth_format,
+			.subresourceRange
+			{
+				.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			},
+		};
+
+		VK( vkCreateImageView(rtg.device, &CreateInfo, nullptr, &swapchain_depth_image_view));
+	}
+
+	// Make framebuffers for each swapchain image:
+	swapchain_framebuffers.assign(swapchain.image_views.size(), VK_NULL_HANDLE);
+	for (size_t i = 0; i < swapchain.image_views.size(); ++i)
+	{
+		std::array< VkImageView, 2 > Attachments
+		{
+			swapchain.image_views[i],
+			swapchain_depth_image_view,
+		};
+		VkFramebufferCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = render_pass,
+			.attachmentCount = uint32_t(Attachments.size()),
+			.pAttachments = Attachments.data(),
+			.width = swapchain.extent.width,
+			.height = swapchain.extent.height,
+			.layers = 1,
+		};
+
+		VK( vkCreateFramebuffer(rtg.device, &CreateInfo, nullptr, &swapchain_framebuffers[i]));
+	}
+	
 }
 
-void Tutorial::destroy_framebuffers() {
-	refsol::Tutorial_destroy_framebuffers(rtg, &swapchain_depth_image, &swapchain_depth_image_view, &swapchain_framebuffers);
+void Tutorial::destroy_framebuffers() 
+{
+	for (VkFramebuffer &FrameBuffer : swapchain_framebuffers)
+	{
+		assert(FrameBuffer != VK_NULL_HANDLE);
+		vkDestroyFramebuffer(rtg.device, FrameBuffer, nullptr);
+		FrameBuffer = VK_NULL_HANDLE;
+	}
+	swapchain_framebuffers.clear();
+
+	assert(swapchain_depth_image_view != VK_NULL_HANDLE);
+	vkDestroyImageView(rtg.device, swapchain_depth_image_view, nullptr);
+	swapchain_depth_image_view = VK_NULL_HANDLE;
+
+	rtg.helpers.destroy_image(std::move(swapchain_depth_image));
 }
 
 void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
