@@ -17,7 +17,8 @@
 #include <iostream>
 #include <set>
 
-void RTG::Configuration::parse(int argc, char **argv) {
+void RTG::Configuration::parse(int argc, char **argv) 
+{
 	for (int argi = 1; argi < argc; ++argi) {
 		std::string arg = argv[argi];
 		if (arg == "--debug") {
@@ -149,35 +150,232 @@ RTG::~RTG() {
 }
 
 
-void RTG::recreate_swapchain() {
-	refsol::RTG_recreate_swapchain(
-		configuration.debug,
-		device,
-		physical_device,
-		surface,
-		surface_format,
-		present_mode,
-		graphics_queue_family,
-		present_queue_family,
-		&swapchain,
-		&swapchain_extent,
-		&swapchain_images,
-		&swapchain_image_views,
-		&swapchain_image_dones
-	);
+void RTG::recreate_swapchain() 
+{
+	// clean up swapchain if it already exists
+	if(!swapchain_images.empty())
+	{
+		destroy_swapchain();
+	}
+
+	// determine size, image count, and transform for swapchain
+	VkSurfaceCapabilitiesKHR Capabilities;
+	VK( vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &Capabilities));
+
+	swapchain_extent = Capabilities.currentExtent;
+
+	uint32_t RequestCount = Capabilities.minImageCount + 1;
+	if(Capabilities.maxImageCount != 0)
+	{
+		RequestCount = std::min(Capabilities.maxImageCount, RequestCount);
+	}
+
+	// create the swapchain
+	{
+		VkSwapchainCreateInfoKHR CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			.surface = surface,
+			.minImageCount = RequestCount,
+			.imageFormat = surface_format.format,
+			.imageColorSpace = surface_format.colorSpace,
+			.imageExtent = swapchain_extent,
+			.imageArrayLayers = 1,
+			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			.preTransform = Capabilities.currentTransform,
+			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+			.presentMode = present_mode,
+			.clipped = VK_TRUE,
+			.oldSwapchain = VK_NULL_HANDLE	//NOTE: could be more efficient by passing old swapchain handle here instead of destroying it
+		};
+
+		std::vector< uint32_t > QueueFamilyIndices
+		{
+			graphics_queue_family.value(),
+			present_queue_family.value()
+		};
+
+		if(QueueFamilyIndices[0] != QueueFamilyIndices[1])
+		{
+			// if images will be presented on a different queue, make sure they are shared:
+			CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			CreateInfo.queueFamilyIndexCount = uint32_t(QueueFamilyIndices.size());
+			CreateInfo.pQueueFamilyIndices = QueueFamilyIndices.data();
+		}
+		else
+		{
+			CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		}
+
+		VK( vkCreateSwapchainKHR(device, &CreateInfo, nullptr, &swapchain));
+	}
+
+	// get the swapchain images
+	uint32_t Count = 0;
+	VK( vkGetSwapchainImagesKHR(device, swapchain, &Count, nullptr));
+	swapchain_images.resize(Count);
+	VK( vkGetSwapchainImagesKHR(device, swapchain, &Count, swapchain_images.data()));
+
+	// create views for swapchain images:
+	swapchain_image_views.assign(swapchain_images.size(), VK_NULL_HANDLE);
+	for (size_t i = 0; i < swapchain_images.size(); i++)
+	{
+		VkImageViewCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = swapchain_images[i],
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = surface_format.format,
+			.components
+			{
+				.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+				.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+				.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+				.a = VK_COMPONENT_SWIZZLE_IDENTITY
+			},
+			.subresourceRange
+			{
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			},
+		};
+
+		VK( vkCreateImageView(device, &CreateInfo, nullptr, &swapchain_image_views[i]));
+	}
+
+	// create semaphores for waiting on each image to be done:
+	{
+		VkSemaphoreCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		};
+
+		swapchain_image_dones.assign(swapchain_images.size(), VK_NULL_HANDLE);
+		for (size_t i = 0; i < swapchain_images.size(); i++)
+		{
+			VK( vkCreateSemaphore(device, &CreateInfo, nullptr, &swapchain_image_dones[i]));
+		}
+	}
+	if (configuration.debug) 
+	{
+		std::cout << "Swapchain is now " << swapchain_images.size() << " images of size " << swapchain_extent.width << "x" << swapchain_extent.height << "." << std::endl;
+	}
 }
 
 
-void RTG::destroy_swapchain() {
-	refsol::RTG_destroy_swapchain(
-		device,
-		&swapchain,
-		&swapchain_images,
-		&swapchain_image_views,
-		&swapchain_image_dones
-	);
+void RTG::destroy_swapchain() 
+{
+	VK( vkDeviceWaitIdle(device));	// wait for any rendering to old swapchain to finish
+
+	// Clean up Semaphores used for waiting on the swapchain
+	for (auto & Semaphore : swapchain_image_dones)
+	{
+		vkDestroySemaphore(device, Semaphore, nullptr);
+		Semaphore = nullptr;
+	}
+	swapchain_image_dones.clear();
+
+	// clean up image views referencing the swapchain:
+	for (auto &ImageView : swapchain_image_views)
+	{
+		vkDestroyImageView(device, ImageView, nullptr);
+		ImageView = VK_NULL_HANDLE;
+	}
+	swapchain_image_views.clear();
+
+	// forget handles to swapchain images (will destroy by deallocating the swapchain itself):
+	swapchain_images.clear();
+
+	// deallocate the swapchain and (thus) its images:
+	if(swapchain != VK_NULL_HANDLE)
+	{
+		vkDestroySwapchainKHR(device, swapchain, nullptr);
+		swapchain = VK_NULL_HANDLE;
+	}
+
 }
 
-void RTG::run(Application &application) {
-	refsol::RTG_run(*this, application);
+
+static void CursorPosCallback(GLFWwindow *window, double PosX, double PosY)
+{
+	std::vector< InputEvent > *EventQueue = reinterpret_cast< std::vector< InputEvent > * >(glfwGetWindowUserPointer(window));
+	if (!EventQueue)
+	{
+		return;
+	}
+
+	InputEvent Event;
+	std::memset(&event, '\0', sizeof(Event));
+
+	event.type = InputEvent::MouseMotion;
+	event.motion.x = float(PosX);
+	event.motion.y = float(PosY);
+	event.motion.state = 0;
+	for (int b = 0; b < 8 && b < GLFW_MOUSE_BUTTON_LAST; ++b) 
+	{
+		if (glfwGetMouseButton(window, b) == GLFW_PRESS) 
+		{
+			Event.motion.state |= (1 << b);
+		}
+	}
+
+	EventQueue->emplace_back(Event);
+}
+
+void RTG::run(Application &application) 
+{
+	//TODO: initial on_swapchain
+
+	// setup event handling
+	std::chrono::high_resolution_clock::time_point Before = std::chrono::high_resolution_clock::now();
+
+	// setup time handling
+	std::vector< InputEvent > EventQueue;
+	glfwSetWindowUserPointer(window, &EventQueue);
+
+	glfwSetCursorPosCallback(window, CursorPosCallback);
+	glfwSetMouseButtonCallback(window, MouseButtonCallback);
+	glfwSetScrollCallback(window, ScrollCallback);
+	glfwSetKeyCallback(window, KeyCallback);
+
+	// tear down event handling
+	glfwSetMouseButtonCallback(window, nullptr);
+	glfwSetCursorPosCallback(window, nullptr);
+	glfwSetScrollCallback(window, nullptr);
+	glfwSetKeyCallback(window, nullptr);
+
+	glfwSetWindowUserPointer(window, nullptr);
+
+	while (!glfwWindowShouldClose(window)) 
+	{
+		// event handling:
+		glfwPollEvents();
+
+		// deliver all input events to application:
+		for (InputEvent const &input : event_queue) 
+		{
+			application.on_input(input);
+		}
+		event_queue.clear();
+
+		// elapsed time handling:
+		std::chrono::high_resolution_clock::time_point After = std::chrono::high_resolution_clock::now();
+		float dt = float(std::chrono::duration< double >(After - Before).count());
+		Before = After;
+
+		dt = std::min(dt, 0.1f); // lag if frame rate dips too low
+
+		application.update(dt);
+
+		// setup event handling:
+		
+		// render handling (with on_swapchain as needed)
+
+
+	}
+
+	//TODO: tear down event handling
 }
