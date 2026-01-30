@@ -119,9 +119,30 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 
 	//create workspace resources:
 	workspaces.resize(configuration.workspaces);
-	for (auto &workspace : workspaces) {
-		refsol::RTG_constructor_per_workspace(device, &workspace);
+	for (auto &workspace : workspaces) 
+	{
+		// Create workspace fences:
+		{
+			VkFenceCreateInfo CreateInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				.flags = VK_FENCE_CREATE_SIGNALED_BIT,	// start signaled, because all workspaces are available to start
+			};
+
+			VK( vkCreateFence(device, &CreateInfo, nullptr, &workspace.workspace_available));
+		}
+		
+		// Create workspace semaphores:
+		{
+			VkSemaphoreCreateInfo CreateInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			};
+
+			VK( vkCreateSemaphore(device, &CreateInfo, nullptr, &workspace.workspace_available));
+		}
 	}
+
 
 }
 RTG::~RTG() {
@@ -133,8 +154,18 @@ RTG::~RTG() {
 	}
 
 	//destroy workspace resources:
-	for (auto &workspace : workspaces) {
-		refsol::RTG_destructor_per_workspace(device, &workspace);
+	for (auto &workspace : workspaces) 
+	{
+		if (workspace.workspace_available != VK_NULL_HANDLE) 
+		{
+			vkDestroyFence(device, workspace.workspace_available, nullptr);
+			workspace.workspace_available = VK_NULL_HANDLE;
+		}
+		if (workspace.image_available != VK_NULL_HANDLE) 
+		{
+			vkDestroySemaphore(device, workspace.image_available, nullptr);
+			workspace.image_available = VK_NULL_HANDLE;
+		}
 	}
 	workspaces.clear();
 
@@ -325,9 +356,114 @@ static void CursorPosCallback(GLFWwindow *window, double PosX, double PosY)
 	EventQueue->emplace_back(Event);
 }
 
+static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+	std::vector< InputEvent > *EventQueue = reinterpret_cast< std::vector< InputEvent > * >(glfwGetWindowUserPointer(window));
+	if(!EventQueue)
+	{
+		return;
+	}
+
+	InputEvent Event;
+	std::memset(&Event, '\0', sizeof(Event));
+
+	if(action == GLFW_PRESS)
+	{
+		Event.type = InputEvent::MouseButtonDown;
+	}
+	else if(action == GLFW_RELEASE)
+	{
+		Event.type = InputEvent::MouseButtonUp;
+	}
+	else
+	{
+		std::cerr << "Strange: unknown mouse button action." << std::endl;
+		return;
+	}
+
+	double PosX, PosY;
+	glfwGetCursorPos(window, &PosX, &PosY);
+	Event.button.x = float(PosX);
+	Event.button.y = float(PosY);
+	Event.button.state = 0;
+	for (int b = 0; b < 8 && b < GLFW_MOUSE_BUTTON_LAST; ++b)
+	{
+		if(glfwGetMouseButton(window, b) == GLFW_PRESS)
+		{
+			Event.button.state |= (1 << b);
+		}
+	}
+	Event.button.button = uint8_t(button);
+	Event.button.mods = uint8_t(mods);
+
+	EventQueue->emplace_back(Event);
+}
+
+static void ScrollCallback(GLFWwindow *window, double offsetX, double offsetY)
+{
+	std::vector< InputEvent > *EventQueue = reinterpret_cast< std::vector< InputEvent > *>(glfwGetWindowUserPointer(window));
+	if(!EventQueue)
+	{
+		return;
+	}
+
+	InputEvent Event;
+	std::memset(&Event, '\0', sizeof(Event));
+
+	Event.type = InputEvent::MouseWheel;
+	Event.wheel.x = float(offsetX);
+	Event.wheel.y = float(offsetY);
+
+	EventQueue->emplace_back(Event);
+}
+
+static void KeyCallback(GLFWwindow *window, int Key, int Scanmode, int action, int mods)
+{
+	std::vector< InputEvent > *EventQueue = reinterpret_cast< std::vector< InputEvent > *>(glfwGetWindowUserPointer(window));
+	if(!EventQueue)
+	{
+		return;
+	}
+
+	InputEvent Event;
+	std::memset(&Event, '\0', sizeof(Event));
+
+	if(action == GLFW_PRESS)
+	{
+		Event.type = InputEvent::KeyDown;
+	}
+	else if(action == GLFW_RELEASE)
+	{
+		Event.type = InputEvent::KeyUp;
+	}
+	else if(action == GLFW_REPEAT)
+	{
+		// ignore repeats
+		return;
+	}
+	else
+	{
+		std::cerr << "Strange: got unknown keyboard action." << std::endl;
+	}
+
+	Event.key.key = Key;
+	Event.key.mods = mods;
+
+	EventQueue->emplace_back(Event);
+}
+
 void RTG::run(Application &application) 
 {
-	//TODO: initial on_swapchain
+	auto OnSwapchain = [&,this]()
+	{
+		application.on_swapchain(*thism SwapchainEvent
+		{
+			.extent = swapchain_extent,
+			.images = swapchain_images,
+			.image_views = swapchain_image_views,
+		});
+	};
+	OnSwapchain();
 
 	// setup event handling
 	std::chrono::high_resolution_clock::time_point Before = std::chrono::high_resolution_clock::now();
@@ -371,10 +507,87 @@ void RTG::run(Application &application)
 		application.update(dt);
 
 		// setup event handling:
+
 		
-		// render handling (with on_swapchain as needed)
+		// acquire a workspace
+		uint32_t WorkspaceIndex;
+		{
+			assert(next_workspace < workspaces.size());
+			WorkspaceIndex = next_workspace;
+			next_workspace = (next_workspace + 1) % workspaces.size();
 
+			// wait until the workspace is not being used:
+			VK( vkWaitForFences(device, 1, &workspaces[WorkspaceIndex].workspace_available, VK_TRUE, UINT64_MAX));
 
+			// mark the workspace as in use:
+			VK( vkResetFences(device, 1, &workspaces[WorkspaceIndex].workspace_available));
+		}
+
+		// acquire an image (resize swapchain if needed)
+		uint32_t ImageIndex = -1U;
+
+retry:	
+		// Ask the swapchain for the next image index -- note careful return handling:
+		if(VkResult Result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, workspaces[WorkspaceIndex].image_available,
+			 VK_NULL_HANDLE, &ImageIndex);
+			Result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			// if the swapchain is out-of-date, recreate it and run the loop again:
+			std::cerr << "Recreating swapchain because vkAcquireNextImageKHR returned " << string_VkResult(Result) << "." << std::endl;
+
+			recreate_swapchain();
+			OnSwapchain();
+
+			goto retry;
+		}
+		else if(Result == VK_SUBOPTIMAL_KHR)
+		{
+			// if the swapchain is suboptimal, render to it and recreate it later:
+			std::cerr << "Suboptimal swapchain format -- ignoring for the moment." << std::endl;
+		}
+		else if(Result != VK_SUCCESS)
+		{
+			// other non-success results are genuine errors:
+			throw std::runtime_error("Failed to acquire swapchain image (" + std::string(string_VkResult(result)) + ")!");
+		}
+
+		// queue rendering work
+		application.render(*this, RenderParams
+		{
+			.workspace_index = WorkspaceIndex,
+			.image_index = ImageIndex,
+			.image_available = workspaces[WorkspaceIndex].image_available,
+			.image_done = swapchain_image_dones[ImageIndex],
+			.workspace_available = workspaces[WorkspaceIndex].workspace_available,
+		});
+
+		// present image (resize swapchain if needed)
+		{
+			VkPresentInfoKHR PresentInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+				.waitSemaphoreCount = 1,
+				.pWaitSemaphores = &swapchain_image_dones[image_index],
+				.swapchainCount = 1,
+				.pSwapchains = &swapchain,
+				.pImageIndices = &image_index,
+			};
+
+			assert(present_queue);
+
+			// note, again, the careful return handling:
+			if(VkResult Result = vkQueuePresentKHR(present_queue, &PresentInfo));
+				result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR
+				{
+					std::cerr << "Recreating swapchain because vkQueuePresentKHR returned " << string_VkResult(result) << "." << std::endl;
+					recreate_swapchain();
+					on_swapchain();
+				}
+			else if(result != VK_SUCCESS)
+			{
+				throw std::runtime_error("failed to queue presentation of image (" + std::string(string_VkResult(result)) + ")!");
+			}
+		}
 	}
 
 	//TODO: tear down event handling
