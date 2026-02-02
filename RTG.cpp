@@ -292,27 +292,27 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 		}
 
 		
-		std::cout << "Supproted Surface Formats (" << Formats.size() << "):\n";
+		// std::cout << "Supproted Surface Formats (" << Formats.size() << "):\n";
 
-		for (size_t i = 0; i < Formats.size(); ++i)
-		{
-			const auto& f = Formats[i];
-			std::cout
-				<< "  [" << i << "] "
-				<< "format = " << string_VkFormat(f.format)
-				<< ", colorSpace = " << string_VkColorSpaceKHR(f.colorSpace)
-				<< '\n';
-		}
+		// for (size_t i = 0; i < Formats.size(); ++i)
+		// {
+		// 	const auto& f = Formats[i];
+		// 	std::cout
+		// 		<< "  [" << i << "] "
+		// 		<< "format = " << string_VkFormat(f.format)
+		// 		<< ", colorSpace = " << string_VkColorSpaceKHR(f.colorSpace)
+		// 		<< '\n';
+		// }
 
-		std::cout << "Supproted Present Modes (" << PresentModes.size() << "):\n";
+		// std::cout << "Supproted Present Modes (" << PresentModes.size() << "):\n";
 
-		for (size_t i = 0; i < PresentModes.size(); ++i)
-		{
-			std::cout
-				<< "  [" << i << "] "
-				<< string_VkPresentModeKHR(PresentModes[i])
-				<< '\n';
-		}
+		// for (size_t i = 0; i < PresentModes.size(); ++i)
+		// {
+		// 	std::cout
+		// 		<< "  [" << i << "] "
+		// 		<< string_VkPresentModeKHR(PresentModes[i])
+		// 		<< '\n';
+		// }
 
 		// find first available surface format matching config:
 		surface_format = [&]()
@@ -552,63 +552,108 @@ void RTG::recreate_swapchain()
 		destroy_swapchain();
 	}
 
-	// determine size, image count, and transform for swapchain
-	VkSurfaceCapabilitiesKHR Capabilities;
-	VK( vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &Capabilities));
-
-	swapchain_extent = Capabilities.currentExtent;
-
-	uint32_t RequestCount = Capabilities.minImageCount + 1;
-	if(Capabilities.maxImageCount != 0)
+	if(configuration.headless)
 	{
-		RequestCount = std::min(Capabilities.maxImageCount, RequestCount);
-	}
+		assert(surface == VK_NULL_HANDLE);	// headless, so must not have a surface
 
-	// create the swapchain
-	{
-		VkSwapchainCreateInfoKHR CreateInfo
-		{
-			.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-			.surface = surface,
-			.minImageCount = RequestCount,
-			.imageFormat = surface_format.format,
-			.imageColorSpace = surface_format.colorSpace,
-			.imageExtent = swapchain_extent,
-			.imageArrayLayers = 1,
-			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-			.preTransform = Capabilities.currentTransform,
-			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-			.presentMode = present_mode,
-			.clipped = VK_TRUE,
-			.oldSwapchain = VK_NULL_HANDLE	//NOTE: could be more efficient by passing old swapchain handle here instead of destroying it
-		};
+		//make a fake swapchain:
 
-		std::vector< uint32_t > QueueFamilyIndices
-		{
-			graphics_queue_family.value(),
-			present_queue_family.value()
-		};
+		// set extent from configuration
+		swapchain_extent = configuration.surface_extent;
 
-		if(QueueFamilyIndices[0] != QueueFamilyIndices[1])
+		// set number of images to 3
+		uint32_t RequestedCount = 3;	// enough for FIFO-style presentation
+
+		// create command pool for the headless image copy command buffers:
 		{
-			// if images will be presented on a different queue, make sure they are shared:
-			CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			CreateInfo.queueFamilyIndexCount = uint32_t(QueueFamilyIndices.size());
-			CreateInfo.pQueueFamilyIndices = QueueFamilyIndices.data();
-		}
-		else
-		{
-			CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			assert(HeadlessCommandPool == VK_NULL_HANDLE);
+			VkCommandPoolCreateInfo CreateInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+				.flags = 0,
+				.queueFamilyIndex = graphics_queue_family.value(),
+			};
+			VK( vkCreateCommandPool(device, &CreateInfo, nullptr, &HeadlessCommandPool));
 		}
 
-		VK( vkCreateSwapchainKHR(device, &CreateInfo, nullptr, &swapchain));
-	}
+		// create headless_swapchain
+		assert(headless.empty());
 
-	// get the swapchain images
-	uint32_t Count = 0;
-	VK( vkGetSwapchainImagesKHR(device, swapchain, &Count, nullptr));
-	swapchain_images.resize(Count);
-	VK( vkGetSwapchainImagesKHR(device, swapchain, &Count, swapchain_images.data()));
+		headlessSwapchain.reserve(RequestedCount);
+		for (uint32_t i = 0; i < RequestedCount; i++)
+		{
+			HeadlessSwapchainImage &h =  headlessSwapchain.emplace_back();
+		}
+		
+
+		//TODO: fill in swapchain_images
+	}
+	else
+	{
+		assert(surface != VK_NULL_HANDLE); // not headless, so must have a surface
+
+		// request a swapchain from the windowing system:
+
+		// determine size, image count, and transform for swapchain
+		VkSurfaceCapabilitiesKHR Capabilities;
+		VK( vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &Capabilities));
+
+		swapchain_extent = Capabilities.currentExtent;
+
+		uint32_t RequestCount = Capabilities.minImageCount + 1;
+		if(Capabilities.maxImageCount != 0)
+		{
+			RequestCount = std::min(Capabilities.maxImageCount, RequestCount);
+		}
+
+		// create the swapchain
+		{
+			VkSwapchainCreateInfoKHR CreateInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+				.surface = surface,
+				.minImageCount = RequestCount,
+				.imageFormat = surface_format.format,
+				.imageColorSpace = surface_format.colorSpace,
+				.imageExtent = swapchain_extent,
+				.imageArrayLayers = 1,
+				.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				.preTransform = Capabilities.currentTransform,
+				.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+				.presentMode = present_mode,
+				.clipped = VK_TRUE,
+				.oldSwapchain = VK_NULL_HANDLE	//NOTE: could be more efficient by passing old swapchain handle here instead of destroying it
+			};
+
+			std::vector< uint32_t > QueueFamilyIndices
+			{
+				graphics_queue_family.value(),
+				present_queue_family.value()
+			};
+
+			if(QueueFamilyIndices[0] != QueueFamilyIndices[1])
+			{
+				// if images will be presented on a different queue, make sure they are shared:
+				CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+				CreateInfo.queueFamilyIndexCount = uint32_t(QueueFamilyIndices.size());
+				CreateInfo.pQueueFamilyIndices = QueueFamilyIndices.data();
+			}
+			else
+			{
+				CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			}
+
+			VK( vkCreateSwapchainKHR(device, &CreateInfo, nullptr, &swapchain));
+		}
+
+		// get the swapchain images
+		{
+			uint32_t Count = 0;
+			VK( vkGetSwapchainImagesKHR(device, swapchain, &Count, nullptr));
+			swapchain_images.resize(Count);
+			VK( vkGetSwapchainImagesKHR(device, swapchain, &Count, swapchain_images.data()));
+		}
+	}
 
 	// create views for swapchain images:
 	swapchain_image_views.assign(swapchain_images.size(), VK_NULL_HANDLE);

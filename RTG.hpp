@@ -74,6 +74,9 @@ struct RTG {
 		//how many "workspaces" (frames that can currently be being worked on by the CPU or GPU) to use:
 		uint32_t workspaces = 2;
 
+		// run without a window, read events from stdin
+		bool headless = false;
+
 		//for configuration construction + management:
 		Configuration() = default;
 		void parse(int argc, char **argv); //parse command-line options; throws on error
@@ -118,6 +121,17 @@ struct RTG {
 
 	//The swapchain is the list of images that get rendered to and shown on the surface:
 	VkSwapchainKHR swapchain = VK_NULL_HANDLE; //in non-headless mode, swapchain images are managed by this object; in headless mode this will be null
+
+	// in headless mode, we maintain our own swapchain:
+	VkCommandPool HeadlessCommandPool = VK_NULL_HANDLE;
+	struct HeadlessSwapchainImage
+	{
+		Helpers::AllocatedImage Image;		// on-GPU rendering target
+		Helpers::AllocatedBuffer Buffer;	// host memory to copy image to after rendering
+		VkCommandBuffer CopyCommand = VK_NULL_HANDLE;	// copy image -> buffer
+		VkFence ImagePresented = VK_NULL_HANDLE;		// fence to signal after copy finishes
+	};
+	std::vector< HeadlessSwapchainImage > headlessSwapchain;
 
 	VkExtent2D swapchain_extent = {.width = 0, .height = 0}; //current size of the swapchain
 	std::vector< VkImage > swapchain_images; //images in the swapchain
