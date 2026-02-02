@@ -1,7 +1,6 @@
 #include "RTG.hpp"
 
 #include "VK.hpp"
-#include "refsol.hpp"
 
 #include <vulkan/vulkan_core.h>
 #if defined(__APPLE__)
@@ -55,6 +54,35 @@ void RTG::Configuration::usage(std::function< void(const char *, const char *) >
 	callback("--drawing-size <w> <h>", "Set the size of the surface to draw to.");
 }
 
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT Severity,
+	VkDebugUtilsMessageTypeFlagsEXT Type,
+	const VkDebugUtilsMessengerCallbackDataEXT *Data,
+	void *UserData
+) 
+{
+	if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) 
+	{
+		std::cerr << "\x1b[91m" << "E: ";
+	} 
+	else if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) 
+	{
+		std::cerr << "\x1b[33m" << "w: ";
+	} 
+	else if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) 
+	{
+		std::cerr << "\x1b[90m" << "i: ";
+	} 
+	else 
+	{ 
+		//VERBOSE
+		std::cerr << "\x1b[90m" << "v: ";
+	}
+	std::cerr << Data->pMessage << "\x1b[0m" << std::endl;
+
+	return VK_FALSE;
+}
+
 RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 
 	//copy input configuration:
@@ -63,72 +91,357 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 	//fill in flags/extensions/layers information:
 
 	// create the `instance` (main handle to Vulkan library):
-	VkInstanceCreateFlags InstanceFlags = 0;
-	std::vector< const char * > InstanceExtensions;
-	std::vector< const char * >InstanceLayers;
-
-	// add extensions for MoltenVK portability layer on macOS
-
-	// add extensions and layers for debugging
-
-	//TODO: add extensions needed by glfw
-
-	//TODO: write debug messenger structure
-
-	VkInstanceCreateInfo CreateInfo
 	{
-		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		.pNext = nullptr,	// TODO: pass debug structure if configured
-		.flags = InstanceFlags,
-		.pApplicationInfo = &configuration.application_info,
-		.enabledLayerCount = uint32_t(InstanceLayers.size()),
-		.ppEnabledExtensionNames = InstanceExtensions.data()
-	};
-	VK( vkCreateInstance(&CreateInfo, nullptr, &instance));
+		VkInstanceCreateFlags InstanceFlags = 0;
+		std::vector< const char * > InstanceExtensions;
+		std::vector< const char * >InstanceLayers;
 
-	// TODO: Create debug messager structure
+		// add extensions for MoltenVK portability layer on macOS
+		#if defined(__APPLE__)
+		InstanceFlags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+
+		InstanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+		InstanceExtensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
+		InstanceExtensions.emplace_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
+		#endif
+		
+		// add extensions and layers for debugging:
+		if(configuration.debug)
+		{
+			InstanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			InstanceLayers.emplace_back("VK_LAYER_KHRONOS_validation");
+		}
+
+		// add extensions needed by glfw
+		{
+			glfwInit();
+			if(!glfwVulkanSupported())
+			{
+				throw std::runtime_error("GLFW reports Vulkan is not supported");
+			}
+
+			uint32_t Count;
+			const char **Extensions = glfwGetRequiredInstanceExtensions(&Count);
+			if(Extensions == nullptr)
+			{
+				throw std::runtime_error("GLFW failed to return a list of requested instance extensions. Perhaps it was not compiled with Vulkan support.");
+			}
+			for (uint32_t i = 0; i < Count; i++)
+			{
+				InstanceExtensions.emplace_back(Extensions[i]);
+			}
+			
+		}
+
+		// write debug messenger structure
+		VkDebugUtilsMessengerCreateInfoEXT DebugMessengerCreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+			.messageSeverity =
+				VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+			.messageType =
+				VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+				| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+			.pfnUserCallback = debug_callback,
+			.pUserData = nullptr
+		};
+
+		VkInstanceCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+			.pNext = configuration.debug ? &DebugMessengerCreateInfo : nullptr,
+			.flags = InstanceFlags,
+			.pApplicationInfo = &configuration.application_info,
+			.enabledLayerCount = uint32_t(InstanceLayers.size()),
+			.ppEnabledLayerNames = InstanceLayers.data(),
+			.enabledExtensionCount = uint32_t(InstanceExtensions.size()),
+			.ppEnabledExtensionNames = InstanceExtensions.data()
+		};
+		VK( vkCreateInstance(&CreateInfo, nullptr, &instance));
+
+		// Create debug messenger
+		if(configuration.debug)
+		{
+			PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+			if (!vkCreateDebugUtilsMessengerEXT) 
+			{
+				throw std::runtime_error("Failed to lookup debug utils create fn.");
+			}
+			VK( vkCreateDebugUtilsMessengerEXT(instance, &DebugMessengerCreateInfo, nullptr, &debug_messenger) );
+		}
+	}
 	
 
-	//create the `window` and `surface` (where things get drawn):
-	refsol::RTG_constructor_create_surface(
-		configuration.application_info,
-		configuration.debug,
-		configuration.surface_extent,
-		instance,
-		&window,
-		&surface
-	);
+	// create the `window` and `surface` (where things get drawn):
+	{
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	//select the `physical_device` -- the gpu that will be used to draw:
-	refsol::RTG_constructor_select_physical_device(
-		configuration.debug,
-		configuration.physical_device_name,
-		instance,
-		&physical_device
-	);
+		window = glfwCreateWindow(configuration.surface_extent.width, configuration.surface_extent.height, configuration.application_info.pApplicationName, nullptr, nullptr);
 
-	//select the `surface_format` and `present_mode` which control how colors are represented on the surface and how new images are supplied to the surface:
-	refsol::RTG_constructor_select_format_and_mode(
-		configuration.debug,
-		configuration.surface_formats,
-		configuration.present_modes,
-		physical_device,
-		surface,
-		&surface_format,
-		&present_mode
-	);
+		if(!window)
+		{
+			throw std::runtime_error("GLFW failed to create a window.");
+		}
 
-	//create the `device` (logical interface to the GPU) and the `queue`s to which we can submit commands:
-	refsol::RTG_constructor_create_device(
-		configuration.debug,
-		physical_device,
-		surface,
-		&device,
-		&graphics_queue_family,
-		&graphics_queue,
-		&present_queue_family,
-		&present_queue
-	);
+		VK(glfwCreateWindowSurface(instance, window, nullptr, &surface) );
+	}
+	
+
+	// select the `physical_device` -- the gpu that will be used to draw:
+	{
+		std::vector< std::string > PhysicalDeviceNames;
+		// Pick a physical device
+		{
+			uint32_t Count = 0;
+			VK( vkEnumeratePhysicalDevices(instance, &Count, nullptr));
+			std::vector< VkPhysicalDevice > PhysicalDevices(Count);
+			VK( vkEnumeratePhysicalDevices(instance, &Count, PhysicalDevices.data()));
+
+			uint32_t BestScore = 0;
+
+			for (auto const &Pd : PhysicalDevices)
+			{
+				VkPhysicalDeviceProperties Properties;
+				vkGetPhysicalDeviceProperties(Pd, &Properties);
+
+				VkPhysicalDeviceFeatures Features;
+				vkGetPhysicalDeviceFeatures(Pd, &Features);
+
+				PhysicalDeviceNames.emplace_back(Properties.deviceName);
+
+				if(!configuration.physical_device_name.empty())
+				{
+					if(configuration.physical_device_name == Properties.deviceName)
+					{
+						if(physical_device)
+						{
+							std::cerr << "WARNING: have two physical devices with the name '" << Properties.deviceName << "'; using the first to be enumerated." << std::endl;
+						}
+						else
+						{
+							physical_device = Pd;
+						}
+					}
+				}
+				else
+				{
+					uint32_t Score = 1;
+					if(Properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+					{
+						Score += 0x8000;
+					}
+
+					if(Score > BestScore)
+					{
+						BestScore = Score;
+						physical_device = Pd;
+					}
+				}
+			}
+			
+		}
+
+		if(physical_device == VK_NULL_HANDLE)
+		{
+			std::cerr << "Physical devices:\n";
+			for (std::string const &Name : PhysicalDeviceNames) 
+			{
+				std::cerr << "    " << Name << "\n";
+			}
+			std::cerr.flush();
+
+			if (!configuration.physical_device_name.empty()) 
+			{
+				throw std::runtime_error("No physical device with name '" + configuration.physical_device_name + "'.");
+			} 
+			else 
+			{
+				throw std::runtime_error("No suitable GPU found.");
+			}
+		}
+
+		// report device name:
+		{
+			VkPhysicalDeviceProperties Properties;
+			vkGetPhysicalDeviceProperties(physical_device, &Properties);
+			std::cout << "Selected physical device '" << Properties.deviceName << "'." << std::endl;
+		}
+	}
+
+	// select the `surface_format` and `present_mode` which control how colors are represented on the surface and how new images are supplied to the surface:
+	{
+		std::vector< VkSurfaceFormatKHR > Formats;
+		std::vector< VkPresentModeKHR > PresentModes;
+
+		{
+			uint32_t Count = 0;
+			VK( vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &Count, nullptr));
+			Formats.resize(Count);
+			VK(  vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &Count, Formats.data()));
+		}
+
+		{
+			uint32_t Count = 0;
+			VK( vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &Count, nullptr) );
+			PresentModes.resize(Count);
+			VK( vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &Count, PresentModes.data()) );
+		}
+
+		
+		std::cout << "Supproted Surface Formats (" << Formats.size() << "):\n";
+
+		for (size_t i = 0; i < Formats.size(); ++i)
+		{
+			const auto& f = Formats[i];
+			std::cout
+				<< "  [" << i << "] "
+				<< "format = " << string_VkFormat(f.format)
+				<< ", colorSpace = " << string_VkColorSpaceKHR(f.colorSpace)
+				<< '\n';
+		}
+
+		std::cout << "Supproted Present Modes (" << PresentModes.size() << "):\n";
+
+		for (size_t i = 0; i < PresentModes.size(); ++i)
+		{
+			std::cout
+				<< "  [" << i << "] "
+				<< string_VkPresentModeKHR(PresentModes[i])
+				<< '\n';
+		}
+
+		// find first available surface format matching config:
+		surface_format = [&]()
+		{
+			for (auto const &ConfigFormat : configuration.surface_formats) 
+			{
+				for (auto const &Format : Formats) 
+				{
+					if (ConfigFormat.format == Format.format && ConfigFormat.colorSpace == Format.colorSpace) 
+					{
+						return Format;
+					}
+				}
+			}
+			throw std::runtime_error("No format matching requested format(s) found.");
+		}();
+
+		// find first available present mode matching config:
+		present_mode = [&](){
+			for (auto const &ConfigMode : configuration.present_modes) 
+			{
+				for (auto const &Mode : PresentModes) 
+				{
+					if (ConfigMode == Mode) 
+					{
+						return Mode;
+					}
+				}
+			}
+			throw std::runtime_error("No present mode matching requested mode(s) found.");
+		}();
+	}
+
+	// create the `device` (logical interface to the GPU) and the `queue`s to which we can submit commands:
+	{
+		// look up queue indices:
+		{
+			uint32_t Count = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &Count, nullptr);
+			std::vector< VkQueueFamilyProperties > QueueFamilies(Count);
+			vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &Count, QueueFamilies.data());
+
+			for (auto const &QueueFamily : QueueFamilies)
+			{
+				uint32_t i = uint32_t(&QueueFamily - &QueueFamilies[0]);
+
+				// if it does graphics, set the graphics queue family:
+				if(QueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				{
+					if(!graphics_queue_family)
+					{
+						graphics_queue_family = i;
+					}
+				}
+
+				// if it has present support, set the present queue family:
+				VkBool32 PresentSupport = VK_FALSE;
+				VK( vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, & PresentSupport));
+				if(PresentSupport == VK_TRUE)
+				{
+					if(!present_queue_family)
+					{
+						present_queue_family = i;
+					}
+				}
+
+				if(!graphics_queue_family)
+				{
+					throw std::runtime_error("No queue with graphics support.");
+				}
+				if(!present_queue_family)
+				{
+					throw std::runtime_error("No queue with present support.");
+				}
+			}
+		}
+
+		// select device extensions:
+		std::vector< const char * > DeviceExtensions;
+		#if defined(__APPLE__)
+		DeviceExtensions.emplace_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+		#endif
+		// Add the swapchain extension:
+		DeviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+		// create the logical device:
+		{
+			std::vector< VkDeviceQueueCreateInfo > QueueCreateInfos;
+			std::set< uint32_t > UniqueQueueFamilies
+			{
+				graphics_queue_family.value(),
+				present_queue_family.value()
+			};
+
+			float QueueProperties[1] = {1.0f};
+			for (uint32_t QueueFamily : UniqueQueueFamilies) 
+			{
+				QueueCreateInfos.emplace_back(VkDeviceQueueCreateInfo
+				{
+					.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+					.queueFamilyIndex = QueueFamily,
+					.queueCount = 1,
+					.pQueuePriorities = QueueProperties,
+				});
+			}
+
+			VkDeviceCreateInfo CreateInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+				.queueCreateInfoCount = uint32_t(QueueCreateInfos.size()),
+				.pQueueCreateInfos = QueueCreateInfos.data(),
+
+				// device layers are depreciated; spec suggests passing instance_layers or nullptr:
+				.enabledLayerCount = 0,
+				.ppEnabledLayerNames = nullptr,
+
+				.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size()),
+				.ppEnabledExtensionNames = DeviceExtensions.data(),
+
+				// pass a pointer to a VkPhysicalDeviceFeatures to request specific features: (e.g., thick lines)
+				.pEnabledFeatures = nullptr,
+			};
+
+			VK( vkCreateDevice(physical_device, &CreateInfo, nullptr, &device));
+
+			vkGetDeviceQueue(device, graphics_queue_family.value(), 0, &graphics_queue);
+			vkGetDeviceQueue(device, present_queue_family.value(), 0, &present_queue);
+		}
+	}
 
 	//run any resource creation required by Helpers structure:
 	helpers.create();
@@ -164,6 +477,7 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 
 
 }
+
 RTG::~RTG() {
 	//don't destroy until device is idle:
 	if (device != VK_NULL_HANDLE) {
@@ -229,7 +543,6 @@ RTG::~RTG() {
 	}
 
 }
-
 
 void RTG::recreate_swapchain() 
 {
