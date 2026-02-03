@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_metal.h> //for VK_EXT_METAL_SURFACE_EXTENSION_NAME
 #endif
 #include <vulkan/vk_enum_string_helper.h> //useful for debug output
+#include <vulkan/utility/vk_format_utils.h> //for getting format sizes
 #include <GLFW/glfw3.h>
 
 #include <cassert>
@@ -577,16 +578,97 @@ void RTG::recreate_swapchain()
 		}
 
 		// create headless_swapchain
-		assert(headless.empty());
+		assert(headlessSwapchain.empty());
 
 		headlessSwapchain.reserve(RequestedCount);
 		for (uint32_t i = 0; i < RequestedCount; i++)
 		{
+			// add a headless "swapchain" image:
 			HeadlessSwapchainImage &h =  headlessSwapchain.emplace_back();
+
+			// allocate image data: (on-GPU, will be rendered to)
+			h.Image = helpers.create_image
+			(
+				swapchain_extent,
+				surface_format.format,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			);
+
+			// allocate buffer data: (on-CPU, will be copied to)
+			h.Buffer = helpers.create_buffer
+			(
+				swapchain_extent.width * swapchain_extent.height * 
+				vkuFormatTexelBlockSize(surface_format.format) / vkuFormatTexelsPerBlock(surface_format.format),
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				Helpers::Mapped
+			);
+
+			// Create and record copy command:
+			{
+				VkCommandBufferAllocateInfo AllocInfo
+				{
+					.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+					.commandPool = HeadlessCommandPool,
+					.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+					.commandBufferCount = 1,
+				};
+				VK( vkAllocateCommandBuffers(device, &AllocInfo, &h.CopyCommand));
+
+				// Record:
+				VkCommandBufferBeginInfo BeginInfo
+				{
+					.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+					.flags = 0,	
+				};
+				VK( vkBeginCommandBuffer(h.CopyCommand, &BeginInfo));
+
+				VkBufferImageCopy Region
+				{
+					.bufferOffset = 0,
+					.bufferRowLength = swapchain_extent.width,
+					.bufferImageHeight = swapchain_extent.height,
+					.imageSubresource
+					{
+						.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+						.mipLevel = 0,
+						.baseArrayLayer = 0,
+						.layerCount = 1,
+					},
+					.imageOffset{ .x = 0, .y = 0, .z = 0},
+					.imageExtent
+					{
+						.width = swapchain_extent.width,
+						.height = swapchain_extent.height,
+						.depth = 1
+					},
+				};
+				vkCmdCopyImageToBuffer(h.CopyCommand, h.Image.handle, 
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, h.Buffer.handle, 1, &Region);
+				
+					VK( vkEndCommandBuffer(h.CopyCommand));
+			}
+
+			// create fence to signal when image is done being "presented" (copied to host memory):
+			{
+				VkFenceCreateInfo CreateInfo
+				{
+					.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+					.flags = VK_FENCE_CREATE_SIGNALED_BIT,	// start signaled, because all images are available to start with
+				};
+				VK( vkCreateFence(device, &CreateInfo, nullptr, &h.ImagePresented));
+			}
 		}
 		
-
-		//TODO: fill in swapchain_images
+		// copy image references into swapchain_images:
+		assert(swapchain_images.empty());
+		swapchain_images.assign(RequestedCount, VK_NULL_HANDLE);
+		for (uint32_t i = 0; i < RequestedCount; i++)
+		{
+			swapchain_images[i] = headlessSwapchain[i].Image.handle;
+		}
 	}
 	else
 	{
@@ -728,11 +810,31 @@ void RTG::destroy_swapchain()
 	// forget handles to swapchain images (will destroy by deallocating the swapchain itself):
 	swapchain_images.clear();
 
-	// deallocate the swapchain and (thus) its images:
-	if(swapchain != VK_NULL_HANDLE)
+	if(configuration.headless)
 	{
-		vkDestroySwapchainKHR(device, swapchain, nullptr);
-		swapchain = VK_NULL_HANDLE;
+		// destroy headless_swapchain
+		for( auto &h : headlessSwapchain)
+		{
+			helpers.destroy_image(std::move(h.Image));
+			helpers.destroy_buffer(std::move(h.Buffer));
+			h.CopyCommand = VK_NULL_HANDLE;	// pool deallocated below
+			vkDestroyFence(device, h.ImagePresented, nullptr);
+			h.ImagePresented = VK_NULL_HANDLE;
+		}
+		headlessSwapchain.clear();
+
+		// free all of the copy command buffers by destroying the pool from which they were allocated:
+		vkDestroyCommandPool(device, HeadlessCommandPool, nullptr);
+		HeadlessCommandPool = VK_NULL_HANDLE;
+	}
+	else
+	{
+		// deallocate the swapchain and thus its images
+		if(swapchain != VK_NULL_HANDLE)
+		{
+			vkDestroySwapchainKHR(device, swapchain, nullptr);
+			swapchain = VK_NULL_HANDLE;
+		}
 	}
 
 }
@@ -878,6 +980,8 @@ void RTG::run(Application &application)
 	std::vector< InputEvent > EventQueue;
 	glfwSetWindowUserPointer(window, &EventQueue);
 
+	uint32_t HeadlessNextImage = 0;
+
 	// setup event handling
 	std::chrono::high_resolution_clock::time_point Before = std::chrono::high_resolution_clock::now();
 
@@ -926,31 +1030,60 @@ void RTG::run(Application &application)
 
 		// acquire an image (resize swapchain if needed)
 		uint32_t ImageIndex = -1U;
+		if(configuration.headless)
+		{
+			assert(swapchain == VK_NULL_HANDLE);
 
+			// acquire the least-recently-used headless swapchain image:
+			assert(HeadlessNextImage< uint32_t(headlessSwapchain.size()));
+			ImageIndex = HeadlessNextImage;
+			HeadlessNextImage = (HeadlessNextImage + 1) % uint32_t(headlessSwapchain.size());
+
+			// wait for image to be done copying to buffer
+			VK( vkWaitForFences(device, 1, &headlessSwapchain[ImageIndex].ImagePresented, VK_TRUE, UINT64_MAX));
+
+			//TODO: save buffer, if needed
+
+			// mark next copy as pending
+			VK( vkResetFences(device, 1, &headlessSwapchain[ImageIndex].ImagePresented));
+
+			// signal GPU that image is "available for rendering to"
+			VkSubmitInfo SubmitInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.signalSemaphoreCount = 1,
+				.pSignalSemaphores = &workspaces[WorkspaceIndex].image_available
+			};
+			VK( vkQueueSubmit(graphics_queue, 1, &SubmitInfo, nullptr));
+		}
+		else
+		{
 retry:	
-		// Ask the swapchain for the next image index -- note careful return handling:
-		if(VkResult Result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, workspaces[WorkspaceIndex].image_available,
-			 VK_NULL_HANDLE, &ImageIndex);
-			Result == VK_ERROR_OUT_OF_DATE_KHR)
-		{
-			// if the swapchain is out-of-date, recreate it and run the loop again:
-			std::cerr << "Recreating swapchain because vkAcquireNextImageKHR returned " << string_VkResult(Result) << "." << std::endl;
+			// Ask the swapchain for the next image index -- note careful return handling:
+			if(VkResult Result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, workspaces[WorkspaceIndex].image_available,
+				VK_NULL_HANDLE, &ImageIndex);
+				Result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				// if the swapchain is out-of-date, recreate it and run the loop again:
+				std::cerr << "Recreating swapchain because vkAcquireNextImageKHR returned " << string_VkResult(Result) << "." << std::endl;
 
-			recreate_swapchain();
-			OnSwapchain();
+				recreate_swapchain();
+				OnSwapchain();
 
-			goto retry;
+				goto retry;
+			}
+			else if(Result == VK_SUBOPTIMAL_KHR)
+			{
+				// if the swapchain is suboptimal, render to it and recreate it later:
+				std::cerr << "Suboptimal swapchain format -- ignoring for the moment." << std::endl;
+			}
+			else if(Result != VK_SUCCESS)
+			{
+				// other non-success results are genuine errors:
+				throw std::runtime_error("Failed to acquire swapchain image (" + std::string(string_VkResult(Result)) + ")!");
+			}
 		}
-		else if(Result == VK_SUBOPTIMAL_KHR)
-		{
-			// if the swapchain is suboptimal, render to it and recreate it later:
-			std::cerr << "Suboptimal swapchain format -- ignoring for the moment." << std::endl;
-		}
-		else if(Result != VK_SUCCESS)
-		{
-			// other non-success results are genuine errors:
-			throw std::runtime_error("Failed to acquire swapchain image (" + std::string(string_VkResult(Result)) + ")!");
-		}
+
 
 		// call render function:
 		application.render(*this, RenderParams
@@ -963,6 +1096,25 @@ retry:
 		});
 
 		// queue the work for presentation:
+		if(configuration.headless)
+		{
+			//in headless mode, submit the copy command we recorded previously:
+
+			// will wait in the transfer stage for image_done to be signaled
+			VkPipelineStageFlags WaitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			VkSubmitInfo SubmitInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.waitSemaphoreCount = 1,
+				.pWaitSemaphores = &swapchain_image_dones[ImageIndex],
+				.pWaitDstStageMask = &WaitStage,
+				.commandBufferCount = 1,
+				.pCommandBuffers = &headlessSwapchain[ImageIndex].CopyCommand,
+			};
+
+			VK( vkQueueSubmit(graphics_queue, 1 , &SubmitInfo, headlessSwapchain[ImageIndex].ImagePresented));
+		}
+		else
 		{
 			VkPresentInfoKHR PresentInfo
 			{
@@ -979,11 +1131,11 @@ retry:
 			// note, again, the careful return handling:
 			VkResult Result = vkQueuePresentKHR(present_queue, &PresentInfo);
 			if(Result && Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
-				{
-					std::cerr << "Recreating swapchain because vkQueuePresentKHR returned " << string_VkResult(Result) << "." << std::endl;
-					recreate_swapchain();
-					OnSwapchain();
-				}
+			{
+				std::cerr << "Recreating swapchain because vkQueuePresentKHR returned " << string_VkResult(Result) << "." << std::endl;
+				recreate_swapchain();
+				OnSwapchain();
+			}
 			else if(Result != VK_SUCCESS)
 			{
 				throw std::runtime_error("failed to queue presentation of image (" + std::string(string_VkResult(Result)) + ")!");
