@@ -15,6 +15,8 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <set>
 
 void RTG::Configuration::parse(int argc, char **argv) 
@@ -43,7 +45,12 @@ void RTG::Configuration::parse(int argc, char **argv)
 			};
 			surface_extent.width = conv("width");
 			surface_extent.height = conv("height");
-		} else {
+		}
+		else if (arg == "--headless") 
+		{
+			headless = true; 
+		}
+		else {
 			throw std::runtime_error("Unrecognized argument '" + arg + "'.");
 		}
 	}
@@ -53,6 +60,7 @@ void RTG::Configuration::usage(std::function< void(const char *, const char *) >
 	callback("--debug, --no-debug", "Turn on/off debug and validation layers.");
 	callback("--physical-device <name>", "Run on the named physical device (guesses, otherwise).");
 	callback("--drawing-size <w> <h>", "Set the size of the surface to draw to.");
+	callback("--headless", "Don't create a window; read events from stdin.");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
@@ -113,25 +121,28 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 			InstanceLayers.emplace_back("VK_LAYER_KHRONOS_validation");
 		}
 
-		// add extensions needed by glfw
+		if(!configuration.headless)
 		{
-			glfwInit();
-			if(!glfwVulkanSupported())
+			// add extensions needed by glfw
 			{
-				throw std::runtime_error("GLFW reports Vulkan is not supported");
-			}
+				glfwInit();
+				if(!glfwVulkanSupported())
+				{
+					throw std::runtime_error("GLFW reports Vulkan is not supported");
+				}
 
-			uint32_t Count;
-			const char **Extensions = glfwGetRequiredInstanceExtensions(&Count);
-			if(Extensions == nullptr)
-			{
-				throw std::runtime_error("GLFW failed to return a list of requested instance extensions. Perhaps it was not compiled with Vulkan support.");
+				uint32_t Count;
+				const char **Extensions = glfwGetRequiredInstanceExtensions(&Count);
+				if(Extensions == nullptr)
+				{
+					throw std::runtime_error("GLFW failed to return a list of requested instance extensions. Perhaps it was not compiled with Vulkan support.");
+				}
+				for (uint32_t i = 0; i < Count; i++)
+				{
+					InstanceExtensions.emplace_back(Extensions[i]);
+				}
+				
 			}
-			for (uint32_t i = 0; i < Count; i++)
-			{
-				InstanceExtensions.emplace_back(Extensions[i]);
-			}
-			
 		}
 
 		// write debug messenger structure
@@ -177,18 +188,21 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 	}
 	
 
-	// create the `window` and `surface` (where things get drawn):
+	if(!configuration.headless)
 	{
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-		window = glfwCreateWindow(configuration.surface_extent.width, configuration.surface_extent.height, configuration.application_info.pApplicationName, nullptr, nullptr);
-
-		if(!window)
+		// create the `window` and `surface` (where things get drawn):
 		{
-			throw std::runtime_error("GLFW failed to create a window.");
-		}
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		VK(glfwCreateWindowSurface(instance, window, nullptr, &surface) );
+			window = glfwCreateWindow(configuration.surface_extent.width, configuration.surface_extent.height, configuration.application_info.pApplicationName, nullptr, nullptr);
+
+			if(!window)
+			{
+				throw std::runtime_error("GLFW failed to create a window.");
+			}
+
+			VK(glfwCreateWindowSurface(instance, window, nullptr, &surface) );
+		}
 	}
 	
 
@@ -274,6 +288,34 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 	}
 
 	// select the `surface_format` and `present_mode` which control how colors are represented on the surface and how new images are supplied to the surface:
+	if(configuration.headless)
+	{
+		//in headless mode, just use the first requested format:
+		if (configuration.surface_formats.empty()) 
+		{
+			throw std::runtime_error("No surface formats requested.");
+		}
+		surface_format = configuration.surface_formats[0];
+
+		//headless mode will always use VK_PRESENT_MODE_FIFO_KHR, so make sure that's an option:
+		bool HaveFifo = false;
+		for (auto const &Mode : configuration.present_modes) 
+		{
+			if (Mode == VK_PRESENT_MODE_FIFO_KHR) 
+			{
+				HaveFifo = true;
+				break;
+			}
+		}
+		if (!HaveFifo) 
+		{
+			throw std::runtime_error("Configured present modes do not contain VK_PRESENT_MODE_FIFO_KHR.");
+		}
+		present_mode = VK_PRESENT_MODE_FIFO_KHR;
+
+		present_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	}
+	else
 	{
 		std::vector< VkSurfaceFormatKHR > Formats;
 		std::vector< VkPresentModeKHR > PresentModes;
@@ -345,6 +387,8 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 			}
 			throw std::runtime_error("No present mode matching requested mode(s) found.");
 		}();
+
+		present_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	}
 
 	// create the `device` (logical interface to the GPU) and the `queue`s to which we can submit commands:
@@ -370,24 +414,32 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 				}
 
 				// if it has present support, set the present queue family:
-				VkBool32 PresentSupport = VK_FALSE;
-				VK( vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, & PresentSupport));
-				if(PresentSupport == VK_TRUE)
+				if(!configuration.headless)
 				{
-					if(!present_queue_family)
+					VkBool32 PresentSupport = VK_FALSE;
+					VK( vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, & PresentSupport));
+					if(PresentSupport == VK_TRUE)
 					{
-						present_queue_family = i;
+						if(!present_queue_family)
+						{
+							present_queue_family = i;
+						}
 					}
 				}
+			}
 
-				if(!graphics_queue_family)
-				{
-					throw std::runtime_error("No queue with graphics support.");
-				}
-				if(!present_queue_family)
-				{
-					throw std::runtime_error("No queue with present support.");
-				}
+			// in headless mode, "present" (copy-to-host) on the graphics queue:
+			if (configuration.headless) 
+			{
+				present_queue_family = graphics_queue_family;
+			}
+			if(!graphics_queue_family)
+			{
+				throw std::runtime_error("No queue with graphics support.");
+			}
+			if(!present_queue_family)
+			{
+				throw std::runtime_error("No queue with present support.");
 			}
 		}
 
@@ -397,7 +449,10 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 		DeviceExtensions.emplace_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 		#endif
 		// Add the swapchain extension:
-		DeviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+		if (!configuration.headless) 
+		{
+			DeviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+		}
 
 		// create the logical device:
 		{
@@ -839,6 +894,38 @@ void RTG::destroy_swapchain()
 
 }
 
+void RTG::HeadlessSwapchainImage::Save() const 
+{
+	if (SaveTo == "") return;
+
+	if (Image.format == VK_FORMAT_B8G8R8A8_SRGB) 
+	{
+		//get a pointer to the image data copied to the buffer:
+		char const *bgra = reinterpret_cast< char const * >(Buffer.allocation.data());
+
+		// convert bgra -> rgb data
+		std::vector< char > rgb(Image.extent.height * Image.extent.width * 3);
+		for (uint32_t y = 0; y < Image.extent.height; ++y) 
+		{
+			for (uint32_t x = 0; x < Image.extent.width; ++x) 
+			{
+				rgb[(y * Image.extent.width + x) * 3 + 0] = bgra[(y * Image.extent.width + x) * 4 + 2];
+				rgb[(y * Image.extent.width + x) * 3 + 1] = bgra[(y * Image.extent.width + x) * 4 + 1];
+				rgb[(y * Image.extent.width + x) * 3 + 2] = bgra[(y * Image.extent.width + x) * 4 + 0];
+			}
+		}
+		// write ppm file
+		std::ofstream ppm(SaveTo, std::ios::binary);
+		ppm << "P6\n"; //magic number + newline
+		ppm << Image.extent.width << " " << Image.extent.height << "\n"; //image size + newline
+		ppm << "255\n"; //max color value + newline
+		ppm.write(rgb.data(), rgb.size()); //rgb data in row-major order, starting from the top left
+	} 
+	else 
+	{
+		std::cerr << "WARNING: saving format " << string_VkFormat(Image.format) << " not supported." << std::endl;
+	}
+}
 
 static void CursorPosCallback(GLFWwindow *window, double PosX, double PosY)
 {
@@ -978,17 +1065,89 @@ void RTG::run(Application &application)
 	
 	// setup event handling:
 	std::vector< InputEvent > EventQueue;
-	glfwSetWindowUserPointer(window, &EventQueue);
+	if(!configuration.headless)
+	{
+		glfwSetWindowUserPointer(window, &EventQueue);
+
+		glfwSetCursorPosCallback(window, CursorPosCallback);
+		glfwSetMouseButtonCallback(window, MouseButtonCallback);
+		glfwSetScrollCallback(window, ScrollCallback);
+		glfwSetKeyCallback(window, KeyCallback);
+	}
+	
 
 	uint32_t HeadlessNextImage = 0;
 
 	// setup event handling
 	std::chrono::high_resolution_clock::time_point Before = std::chrono::high_resolution_clock::now();
 
-	while (!glfwWindowShouldClose(window)) 
+	while (configuration.headless || !glfwWindowShouldClose(window)) 
 	{
+		float HeadlessDt = 0.0f;
+		std::string HeadlessSave = "";
+
 		// event handling:
-		glfwPollEvents();
+		if(configuration.headless)
+		{
+			// read events from stdin
+			std::string Line;
+			while (std::getline(std::cin, Line)) 
+			{
+				// parse event from line
+				try 
+				{
+					std::istringstream iss(Line);
+					iss.imbue(std::locale::classic()); //ensure floating point numbers always parse with '.' as the separator
+
+					// read type
+					std::string type;
+					if (!(iss >> type)) throw std::runtime_error("failed to read event type");
+
+					// type-specific parsing
+					if (type == "AVAILABLE") 
+					{  //AVAILABLE dt [save.ppm]
+
+						// read dt
+						if (!(iss >> HeadlessDt)) throw std::runtime_error("failed to read dt");
+						if (HeadlessDt < 0.0f) throw std::runtime_error("dt less than zero");
+
+						// check for save file name
+						if (iss >> HeadlessSave) 
+						{
+							if (!HeadlessSave.ends_with(".ppm"))
+							{
+								throw std::runtime_error("output filename ("" + headless_save + "") must end with .ppm");
+							}
+						}
+
+						// check for trailing junk
+						char junk;
+						if (iss >> junk) throw std::runtime_error("trailing junk in event line");
+
+						// stop parsing events so a frame can draw
+						break;
+					} 
+					else 
+					{
+						throw std::runtime_error("unrecognized type");
+					}
+
+				} 
+				catch (std::exception &e) 
+				{
+					std::cerr << "WARNING: failed to parse event (" << e.what() << ") from: "" << line << ""; ignoring it." << std::endl;
+				}
+			}
+			//if we've run out of events, stop running the main loop:
+			if (!std::cin)
+			{
+				break;
+			}
+		}
+		else
+		{
+			glfwPollEvents();
+		}
 
 		// deliver all input events to application:
 		for (InputEvent const &input : EventQueue) 
@@ -1005,14 +1164,14 @@ void RTG::run(Application &application)
 			Before = After;
 
 			dt = std::min(dt, 0.1f); // lag if frame rate dips too low
-
+			//in headless mode, override dt:
+			if (configuration.headless)
+			{
+				dt = HeadlessDt;
+			}
 			application.update(dt);
 		}
 
-		glfwSetCursorPosCallback(window, CursorPosCallback);
-		glfwSetMouseButtonCallback(window, MouseButtonCallback);
-		glfwSetScrollCallback(window, ScrollCallback);
-		glfwSetKeyCallback(window, KeyCallback);
 		
 		// acquire a workspace
 		uint32_t WorkspaceIndex;
@@ -1042,7 +1201,14 @@ void RTG::run(Application &application)
 			// wait for image to be done copying to buffer
 			VK( vkWaitForFences(device, 1, &headlessSwapchain[ImageIndex].ImagePresented, VK_TRUE, UINT64_MAX));
 
-			//TODO: save buffer, if needed
+			// save buffer, if needed
+			if(headlessSwapchain[ImageIndex].SaveTo != "")
+			{
+				headlessSwapchain[ImageIndex].Save();
+				headlessSwapchain[ImageIndex].SaveTo = "";
+			}
+			// remember if next frame should be saved:
+			headlessSwapchain[ImageIndex].SaveTo = HeadlessSave;
 
 			// mark next copy as pending
 			VK( vkResetFences(device, 1, &headlessSwapchain[ImageIndex].ImagePresented));
@@ -1129,8 +1295,8 @@ retry:
 			assert(present_queue);
 
 			// note, again, the careful return handling:
-			VkResult Result = vkQueuePresentKHR(present_queue, &PresentInfo);
-			if(Result && Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
+			if(VkResult Result = vkQueuePresentKHR(present_queue, &PresentInfo); 
+				Result == VK_ERROR_OUT_OF_DATE_KHR || Result == VK_SUBOPTIMAL_KHR)
 			{
 				std::cerr << "Recreating swapchain because vkQueuePresentKHR returned " << string_VkResult(Result) << "." << std::endl;
 				recreate_swapchain();
@@ -1143,11 +1309,34 @@ retry:
 		}
 	}
 
-	// tear down event handling
-	glfwSetMouseButtonCallback(window, nullptr);
-	glfwSetCursorPosCallback(window, nullptr);
-	glfwSetScrollCallback(window, nullptr);
-	glfwSetKeyCallback(window, nullptr);
+	if (configuration.headless) {
+		for (size_t i = 0; i < headlessSwapchain.size(); ++i) 
+		{
+			uint32_t ImageIndex = HeadlessNextImage;
+			HeadlessNextImage = (HeadlessNextImage + 1) % uint32_t(headlessSwapchain.size());
 
-	glfwSetWindowUserPointer(window, nullptr);
+			//block until the image is finished being "presented" (copied-to-host):
+			VK( vkWaitForFences(device, 1, &headlessSwapchain[ImageIndex].ImagePresented, VK_TRUE, UINT64_MAX) );
+
+			//save if requested:
+			if (headlessSwapchain[ImageIndex].SaveTo != "") 
+			{
+				headlessSwapchain[ImageIndex].Save();
+				headlessSwapchain[ImageIndex].SaveTo = "";
+			}
+		}
+	}
+	// tear down event handling
+	if(!configuration.headless)
+	{
+		glfwSetWindowUserPointer(window, nullptr);
+
+		glfwSetMouseButtonCallback(window, nullptr);
+		glfwSetCursorPosCallback(window, nullptr);
+		glfwSetScrollCallback(window, nullptr);
+		glfwSetKeyCallback(window, nullptr);
+	}
+
+
+
 }

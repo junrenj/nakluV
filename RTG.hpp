@@ -69,7 +69,7 @@ struct RTG {
 
 		//requested size of the output surface:
 		// `--drawing-size <w> <h>` command-line flag
-		VkExtent2D surface_extent{ .width = 800, .height=540 };
+		VkExtent2D surface_extent{ .width = 4000, .height=4000 };
 
 		//how many "workspaces" (frames that can currently be being worked on by the CPU or GPU) to use:
 		uint32_t workspaces = 2;
@@ -112,9 +112,10 @@ struct RTG {
 	GLFWwindow *window = nullptr;
 
 	//The surface is where rendered images are shown:
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
+	VkSurfaceKHR surface = VK_NULL_HANDLE;	//null in headless mode
 	VkSurfaceFormatKHR surface_format{};
 	VkPresentModeKHR present_mode{};
+	VkImageLayout present_layout = VK_IMAGE_LAYOUT_UNDEFINED; // layout to put images in after render
 
 	//-------------------------------------------------
 	//Stuff used by 'run' to run the main loop (swapchain and workspaces):
@@ -130,6 +131,8 @@ struct RTG {
 		Helpers::AllocatedBuffer Buffer;	// host memory to copy image to after rendering
 		VkCommandBuffer CopyCommand = VK_NULL_HANDLE;	// copy image -> buffer
 		VkFence ImagePresented = VK_NULL_HANDLE;		// fence to signal after copy finishes
+		std::string SaveTo = "";			// (if non-"") file to save to
+		void Save() const;					// save buffer to save_to
 	};
 	std::vector< HeadlessSwapchainImage > headlessSwapchain;
 
