@@ -190,6 +190,8 @@ void Tutorial::LinesPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t
 
         VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &Handle) );
     }
+    vkDestroyShaderModule(rtg.device, Frag_Module, nullptr);
+    vkDestroyShaderModule(rtg.device, Vert_Module, nullptr);
 }
 
 void Tutorial::LinesPipeline::Destroy(RTG &rtg)

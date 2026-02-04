@@ -136,13 +136,7 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
         {
             VkPipelineColorBlendAttachmentState
             {
-                .blendEnable = VK_TRUE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                .colorBlendOp = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp = VK_BLEND_OP_ADD,
+                .blendEnable = VK_FALSE,
                 .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT 
                     | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
             },
@@ -177,6 +171,8 @@ void Tutorial::BackgroundPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uin
 
         VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &handle) );
     }
+    vkDestroyShaderModule(rtg.device, Frag_Module, nullptr);
+    vkDestroyShaderModule(rtg.device, Vert_Module, nullptr);
 }
 
 void Tutorial::BackgroundPipeline::Destroy(RTG &rtg)

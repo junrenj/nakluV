@@ -236,6 +236,10 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
 
         VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &Handle) );
     }
+
+    // modules no longer needed now that pipeline is created:
+	vkDestroyShaderModule(rtg.device, Frag_Module, nullptr);
+	vkDestroyShaderModule(rtg.device, Vert_Module, nullptr);
 }
 
 void Tutorial::ObjectsPipeline::Destroy(RTG &rtg)

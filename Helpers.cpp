@@ -185,22 +185,25 @@ void Helpers::transfer_to_buffer(void const *data, size_t size, AllocatedBuffer 
 	std::memcpy(TransferSrc.allocation.data(), data, size);
 
 	// record CPU->GPU transfer to command buffer
-	VkCommandBufferBeginInfo BeginInfo
 	{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // will record again every submit
-	};
-	VK( vkBeginCommandBuffer(TransferCommandBuffer, &BeginInfo));
+		VK( vkResetCommandBuffer(TransferCommandBuffer, 0));
+		VkCommandBufferBeginInfo BeginInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // will record again every submit
+		};
+		VK( vkBeginCommandBuffer(TransferCommandBuffer, &BeginInfo));
 
-	VkBufferCopy CopyRegion
-	{
-		.srcOffset = 0,
-		.dstOffset = 0,
-		.size = size
-	};
-	vkCmdCopyBuffer(TransferCommandBuffer, TransferSrc.handle, target.handle, 1, &CopyRegion);
+		VkBufferCopy CopyRegion
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = size
+		};
+		vkCmdCopyBuffer(TransferCommandBuffer, TransferSrc.handle, target.handle, 1, &CopyRegion);
 
-	VK( vkEndCommandBuffer(TransferCommandBuffer) );
+		VK( vkEndCommandBuffer(TransferCommandBuffer) );
+	}
 
 	// run command buffer
 	{

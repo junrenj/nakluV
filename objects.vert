@@ -9,7 +9,7 @@ struct Transform
 
 layout(set=1, binding=0, std140) readonly buffer Transforms
 {
-	Transform TRANSFORMS[];
+	Transform[] TRANSFORMS;
 };
 
 layout(location=0) in vec3 Position;
