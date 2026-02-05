@@ -1,7 +1,8 @@
 #include "Tutorial.hpp"
-#include "VK.hpp"
 
 #include "Helpers.hpp"
+#include "refsol.hpp"
+#include "VK.hpp"
 
 static uint32_t vert_code[] =
 #include "spv/objects.vert.inl"
@@ -11,82 +12,74 @@ static uint32_t frag_code[] =
 #include "spv/objects.frag.inl"
 ;
 
-void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t Subpass)
-{
-    VkShaderModule Vert_Module = rtg.helpers.create_shader_module(vert_code);
-    VkShaderModule Frag_Module = rtg.helpers.create_shader_module(frag_code);
+void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
+    VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
+    VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
 
-    // the set0_World layout holds world info in a uniform buffer used in the fragment shader:
-    {
-        std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
-        {
-			VkDescriptorSetLayoutBinding
-            {
+    { //the set0_World layout holds world info in a uniform buffer used in the fragment shader:
+		std::array< VkDescriptorSetLayoutBinding, 1 > bindings{
+			VkDescriptorSetLayoutBinding{
 				.binding = 0,
 				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 				.descriptorCount = 1,
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
 			},
 		};
-
-        VkDescriptorSetLayoutCreateInfo CreateInfo
-        {
-			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			.bindingCount = uint32_t(Bindings.size()),
-			.pBindings = Bindings.data(),
-		};
-
-        VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set0_World) );
-    }
-
-    // the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
-    {
-        //the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
-        std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
-        {
-			VkDescriptorSetLayoutBinding
-            {
-				.binding = 0,
-				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-				.descriptorCount = 1,
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-			},
-		};
 		
-		VkDescriptorSetLayoutCreateInfo CreateInfo
-        {
+		VkDescriptorSetLayoutCreateInfo create_info{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			.bindingCount = uint32_t(Bindings.size()),
-			.pBindings = Bindings.data(),
+			.bindingCount = uint32_t(bindings.size()),
+			.pBindings = bindings.data(),
 		};
 
-		VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set1_Transforms) );
-    }
+		VK( vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set0_World) );
+	}
 
-    // the set2_TEXTURE layout has a single descriptor for a sampler2D used in the fragment shader:
-    {
-        std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
-        {
-            VkDescriptorSetLayoutBinding
-            {
+    { //the set1_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings {
+            VkDescriptorSetLayoutBinding {
                 .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                 .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
             },
         };
 
-        VkDescriptorSetLayoutCreateInfo CreateInfo
-        {
+        VkDescriptorSetLayoutCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = uint32_t(Bindings.size()),
-            .pBindings = Bindings.data(),
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
         };
 
-        VK( vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set2_TEXTURE) );
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set1_Transforms));
     }
 
-    {
+    { //the set2_TEXTURE layout has a single descriptor for a sampler2D used in the fragment shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings{
+            VkDescriptorSetLayoutBinding{
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+        };
+
+        VkDescriptorSetLayoutCreateInfo create_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set2_TEXTURE));
+    }
+
+    { //create pipeline layout:
+        std::array<VkDescriptorSetLayout, 3> layouts {
+            Set0_World,
+            Set1_Transforms,
+            Set2_TEXTURE,
+        };
+        
         VkPushConstantRange Range
         {
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
@@ -94,79 +87,57 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
             .size = sizeof(Push),
         };
 
-        std::array< VkDescriptorSetLayout, 3 > Layouts
-        {
-            Set0_World,  // we'd like to say "VK_NULL_HANDLE" here, but that's not valid without an extension
-            Set1_Transforms,
-            Set2_TEXTURE,
-        };
-
-        VkPipelineLayoutCreateInfo CreateInfo
-        {
+        VkPipelineLayoutCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = uint32_t(Layouts.size()),
-            .pSetLayouts = Layouts.data(),
+            .setLayoutCount = uint32_t(layouts.size()),
+            .pSetLayouts = layouts.data(),
             .pushConstantRangeCount = 1,
             .pPushConstantRanges = &Range,
         };
 
-        VK( vkCreatePipelineLayout(rtg.device, &CreateInfo, nullptr, &Layout));
+        VK ( vkCreatePipelineLayout(rtg.device, &create_info, nullptr, &Layout));
     }
 
     {
-        // Create Pipeline
-
-        // Shader code for vertex and fragment pipeline stages:
-        std::array< VkPipelineShaderStageCreateInfo, 2 > Stages
-        {
-            VkPipelineShaderStageCreateInfo
-            {
+        std::array <VkPipelineShaderStageCreateInfo, 2> stages {
+            VkPipelineShaderStageCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .module = Vert_Module,
+                .module = vert_module,
                 .pName = "main",
             },
-            VkPipelineShaderStageCreateInfo
-            {
+            VkPipelineShaderStageCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .module = Frag_Module,
+                .module = frag_module,
                 .pName = "main",
             },
         };
 
-        // The viewport and scissor state will be set at runtime for the pipeline:
-        std::vector< VkDynamicState> DynamicStates
-        {
+        std::vector<VkDynamicState> dynamic_states {
             VK_DYNAMIC_STATE_VIEWPORT,
-			VK_DYNAMIC_STATE_SCISSOR,
-        };
-        VkPipelineDynamicStateCreateInfo DynamicState
-        {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            .dynamicStateCount = uint32_t(DynamicStates.size()),
-            .pDynamicStates = DynamicStates.data(),
+            VK_DYNAMIC_STATE_SCISSOR,
         };
 
-        // This pipeline will draw lines:
-        VkPipelineInputAssemblyStateCreateInfo InputAssemblyState
-        {
+        VkPipelineDynamicStateCreateInfo dynamic_state {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .dynamicStateCount = (uint32_t) (dynamic_states.size()),
+            .pDynamicStates = dynamic_states.data(),
+        };
+
+        VkPipelineInputAssemblyStateCreateInfo input_assembly_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .primitiveRestartEnable = VK_FALSE,
         };
 
-        // This pipeline will render to one viewport and scissor rectangle:
-        VkPipelineViewportStateCreateInfo ViewportState
-        {
+        VkPipelineViewportStateCreateInfo viewport_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
             .viewportCount = 1,
             .scissorCount = 1,
         };
 
-        // The rasterizer will cull back faces and fill polygons:
-        VkPipelineRasterizationStateCreateInfo RasterizationState
-        {
+        VkPipelineRasterizationStateCreateInfo rasterization_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
             .depthClampEnable = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
@@ -177,17 +148,13 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
             .lineWidth = 1.0f,
         };
 
-        // Multisampling will be disabled (one sample per pixel):
-        VkPipelineMultisampleStateCreateInfo MultisampleState
-        {
+        VkPipelineMultisampleStateCreateInfo multisample_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
             .sampleShadingEnable = VK_FALSE,
         };
 
-        // Depth test will be less, and stencil test will be disabled:
-        VkPipelineDepthStencilStateCreateInfo DepthStencilState
-        {
+        VkPipelineDepthStencilStateCreateInfo depth_stencil_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
             .depthTestEnable = VK_TRUE,
             .depthWriteEnable = VK_TRUE,
@@ -196,81 +163,67 @@ void Tutorial::ObjectsPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32
             .stencilTestEnable = VK_FALSE,
         };
 
-        // There will be one color attachment with blending disabled:
-        std::array< VkPipelineColorBlendAttachmentState, 1 > AttachmentStates
-        {
-            VkPipelineColorBlendAttachmentState
-            {
+        std::array< VkPipelineColorBlendAttachmentState, 1 > attachment_states {
+            VkPipelineColorBlendAttachmentState {
                 .blendEnable = VK_FALSE,
-                .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT 
-                    | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+                .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
             },
         };
-        VkPipelineColorBlendStateCreateInfo ColorBlendState
-        {
+
+        VkPipelineColorBlendStateCreateInfo color_blend_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             .logicOpEnable = VK_FALSE,
-            .attachmentCount = uint32_t(AttachmentStates.size()),
-            .pAttachments = AttachmentStates.data(),
-            .blendConstants{0.0f, 0.0f, 0.0f, 0.0f},
+            .attachmentCount = (uint32_t) (attachment_states.size()),
+            .pAttachments = attachment_states.data(),
+            .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
         };
 
-        // All of the above structures get bundled together into one very large create_info:
-        VkGraphicsPipelineCreateInfo CreateInfo
-        {
+        VkGraphicsPipelineCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            .stageCount = uint32_t(Stages.size()),
-            .pStages = Stages.data(),
+            .stageCount = (uint32_t) (stages.size()),
+            .pStages = stages.data(),
             .pVertexInputState = &Vertex::ArrayInputState,
-            .pInputAssemblyState = &InputAssemblyState,
-			.pViewportState = &ViewportState,
-            .pRasterizationState = &RasterizationState,
-			.pMultisampleState = &MultisampleState,
-			.pDepthStencilState = &DepthStencilState,
-			.pColorBlendState = &ColorBlendState,
-			.pDynamicState = &DynamicState,
-			.layout = Layout,
-			.renderPass = RenderPass,
-			.subpass = Subpass,
+            .pInputAssemblyState = &input_assembly_state,
+            .pViewportState = &viewport_state,
+            .pRasterizationState = &rasterization_state,
+            .pMultisampleState = &multisample_state,
+            .pDepthStencilState = &depth_stencil_state,
+            .pColorBlendState = &color_blend_state,
+            .pDynamicState = &dynamic_state,
+            .layout = Layout,
+            .renderPass = render_pass,
+            .subpass = subpass,
         };
 
-        VK( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &CreateInfo, nullptr, &Handle) );
+        VK ( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &create_info, nullptr, &Handle));
     }
 
-    // modules no longer needed now that pipeline is created:
-	vkDestroyShaderModule(rtg.device, Frag_Module, nullptr);
-	vkDestroyShaderModule(rtg.device, Vert_Module, nullptr);
+    vkDestroyShaderModule(rtg.device, frag_module, nullptr);
+    vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 
-void Tutorial::ObjectsPipeline::Destroy(RTG &rtg)
-{
-    if (Set0_World != VK_NULL_HANDLE) 
-    {
+void Tutorial::ObjectsPipeline::Destroy(RTG &rtg) {
+    if (Set0_World != VK_NULL_HANDLE) {
 		vkDestroyDescriptorSetLayout(rtg.device, Set0_World, nullptr);
 		Set0_World = VK_NULL_HANDLE;
 	}
 
-
-    if(Set1_Transforms != VK_NULL_HANDLE)
-    {
+    if (Set1_Transforms != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(rtg.device, Set1_Transforms, nullptr);
         Set1_Transforms = VK_NULL_HANDLE;
     }
 
-    if(Set2_TEXTURE != VK_NULL_HANDLE)
-    {
+    if (Set2_TEXTURE != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(rtg.device, Set2_TEXTURE, nullptr);
         Set2_TEXTURE = VK_NULL_HANDLE;
     }
-
-    if(Layout != VK_NULL_HANDLE)
-    {
+    
+    if (Layout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
         Layout = VK_NULL_HANDLE;
     }
 
-    if(Handle != VK_NULL_HANDLE)
-    {
+    if (Handle != VK_NULL_HANDLE) {
         vkDestroyPipeline(rtg.device, Handle, nullptr);
         Handle = VK_NULL_HANDLE;
     }

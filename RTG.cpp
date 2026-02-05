@@ -850,7 +850,7 @@ void RTG::destroy_swapchain()
 	for (auto & Semaphore : swapchain_image_dones)
 	{
 		vkDestroySemaphore(device, Semaphore, nullptr);
-		Semaphore = nullptr;
+		Semaphore = VK_NULL_HANDLE;
 	}
 	swapchain_image_dones.clear();
 

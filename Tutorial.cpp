@@ -11,10 +11,6 @@
 #include <iostream>
 #include "ImageLoader.hpp"
 
-
-const Tutorial::Vec2 Tutorial::Vec2::Zero{0.0f, 0.0f};
-const Tutorial::Vec2 Tutorial::Vec2::One{1.0f, 1.0f};
-
 Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_) 
 {
 	// select a depth format:
@@ -25,17 +21,6 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 	);
-
-	// Create Command pool
-	{
-		VkCommandPoolCreateInfo CreateInfo
-		{
-			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-			.queueFamilyIndex = rtg.graphics_queue_family.value(),
-		};
-		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &command_pool) );
-	}
 
 	// Create render pass
 	{
@@ -129,6 +114,17 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		VK( vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &render_pass));
 	}
 
+	// Create Command pool
+	{
+		VkCommandPoolCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			.queueFamilyIndex = rtg.graphics_queue_family.value(),
+		};
+		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &command_pool) );
+	}
+
 	BackgroundPipeline.Create(rtg, render_pass, 0);
 	LinesPipeline.Create(rtg, render_pass, 0);
 	ObjectsPipeline.Create(rtg, render_pass, 0);
@@ -213,7 +209,7 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		workspace.WorldSrc = rtg.helpers.create_buffer
 		(
 			sizeof(ObjectsPipeline::World),
-			VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			Helpers::Mapped
 		);
@@ -326,54 +322,8 @@ Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_)
 		}
 	}
 
-	 // make some textures
-	{
-		Textures.reserve(2);
-
-		// First Texture
-		{
-			int Width,Height;
-			std::vector< uint32_t > Data;
-			Data = ImageLoader::Load("../Textures/YellowPaint.jpg", Width, Height);
-			assert(Data.size() == Width*Height);
-
-			// make a place for the texture to live on the GPU
-			Textures.emplace_back(rtg.helpers.create_image
-			(
-				VkExtent2D{ .width = (uint32_t)Width , .height = (uint32_t)Height }, // size of image
-				VK_FORMAT_R8G8B8A8_UNORM, // how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
-				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // will sample and upload
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // should be device-local
-				Helpers::Unmapped
-			));
-
-			// transfer data
-			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
-		}
-
-		// Texture 1 will be a classic 'xor' texture
-		{
-			int Width,Height;
-			std::vector< uint32_t > Data;
-			Data = ImageLoader::Load("../Textures/WaterMask.png", Width, Height);
-			assert(Data.size() == Width*Height);
-
-			// Make a place for the texture to live on the GPU:
-			Textures.emplace_back(rtg.helpers.create_image
-			(
-			VkExtent2D{ .width = (uint32_t)Width  , .height = (uint32_t)Height }, // size of image
-			VK_FORMAT_R8G8B8A8_SRGB, 	// how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 	// will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 							// should be device-local
-			Helpers::Unmapped
-			));
-
-			// Transfer data:
-			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
-		}
-	}
+	// make some Textures
+	LoadDefaultComputeTextures();
 
 	 // make image views for the textures
 	{
@@ -595,16 +545,17 @@ Tutorial::~Tutorial() {
 	}
 	workspaces.clear();
 
-	BackgroundPipeline.Destroy(rtg);
-	LinesPipeline.Destroy(rtg);
-	ObjectsPipeline.Destroy(rtg);
-
 	if(DescriptorPool)
 	{
 		vkDestroyDescriptorPool(rtg.device, DescriptorPool, nullptr);
 		DescriptorPool = nullptr;
 		// (this also frees the descriptor sets allocated from the pool)
 	}
+
+	BackgroundPipeline.Destroy(rtg);
+	LinesPipeline.Destroy(rtg);
+	ObjectsPipeline.Destroy(rtg);
+
 
 	// Destroy command pool
 	if(command_pool != VK_NULL_HANDLE)
@@ -725,104 +676,6 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 		};
 		VK(vkBeginCommandBuffer(workspace.command_buffer, &begin_info));
 	}
-	
-	// GPU commands here:
-	// Line Render Pipeline
-	{
-		// Upload line vertices
-		if(!LinesVertices.empty())
-		{
-			// [re-]allocate lines buffers if needed:
-			size_t NeededBytes = LinesVertices.size() * sizeof(LinesVertices[0]);
-			if(workspace.LinesVerticesSrc.handle == VK_NULL_HANDLE ||
-				workspace.LinesVerticesSrc.size < NeededBytes)
-			{
-				size_t NewBytes = ((NeededBytes + 4096) / 4096) * 4096;
-				if(workspace.LinesVerticesSrc.handle)
-				{
-					rtg.helpers.destroy_buffer(std::move(workspace.LinesVerticesSrc));
-				}
-				if(workspace.LinesVertices.handle)
-				{
-					rtg.helpers.destroy_buffer(std::move(workspace.LinesVertices));
-				}
-
-				workspace.LinesVerticesSrc = rtg.helpers.create_buffer
-				(
-					NewBytes,
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 											// going to have GPU copy from this memory
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, // host-visible memory, coherent (no special sync needed)
-					Helpers::Mapped 															// get a pointer to the memory
-				);
-				workspace.LinesVertices = rtg.helpers.create_buffer
-				(
-					NewBytes,
-					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 	// going to use as vertex buffer, also going to have GPU into this memory
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 									// GPU-local memory
-					Helpers::Unmapped 														// don't get a pointer to the memory
-				);
-
-				std::cout << "Re-allocated lines buffers to " << NewBytes << " bytes." << std::endl;
-			}
-
-			assert(workspace.LinesVerticesSrc.size == workspace.LinesVertices.size);
-			assert(workspace.LinesVerticesSrc.size >= NeededBytes);
-
-			// Host-side copy into LinesVerticesSrc:
-			assert(workspace.LinesVerticesSrc.allocation.mapped);
-			std::memcpy(workspace.LinesVerticesSrc.allocation.data(), LinesVertices.data(), NeededBytes);
-
-			// Device-side copy from LinesVerticesSrc -> LineVertices
-			VkBufferCopy CopyRegion
-			{
-				.srcOffset = 0,
-				.dstOffset = 0,
-				.size = NeededBytes,
-			};
-			vkCmdCopyBuffer(workspace.command_buffer, workspace.LinesVerticesSrc.handle, 
-							workspace.LinesVertices.handle, 1, &CopyRegion);
-		}
-	}
-
-	// upload camera info:
-	{ 
-		LinesPipeline::Camera Camera
-		{
-			.CLIP_FROM_WORLD = CLIP_FROM_WORLD
-		};
-		assert(workspace.CameraSrc.size == sizeof(Camera));
-
-		// host-side copy into Camera_src:
-		memcpy(workspace.CameraSrc.allocation.data(), &Camera, sizeof(Camera));
-
-		// add device-side copy from Camera_src -> Camera:
-		assert(workspace.CameraSrc.size == workspace.Camera.size);
-		VkBufferCopy CopyRegion
-		{
-			.srcOffset = 0,
-			.dstOffset = 0,
-			.size = workspace.CameraSrc.size,
-		};
-		vkCmdCopyBuffer(workspace.command_buffer, workspace.CameraSrc.handle, workspace.Camera.handle, 1, &CopyRegion);
-	}
-
-	// upload world info:
-	{
-		assert(workspace.CameraSrc.size == sizeof(World));
-
-		//host-side copy into World_src:
-		memcpy(workspace.WorldSrc.allocation.data(), &World, sizeof(World));
-
-		//add device-side copy from World_src -> World:
-		assert(workspace.WorldSrc.size == workspace.World.size);
-		VkBufferCopy CopyRegion
-		{
-			.srcOffset = 0,
-			.dstOffset = 0,
-			.size = workspace.WorldSrc.size,
-		};
-		vkCmdCopyBuffer(workspace.command_buffer, workspace.WorldSrc.handle, workspace.World.handle, 1, &CopyRegion);
-	}
 
 	if(!ObjectInstances.empty())
 	{
@@ -911,6 +764,46 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			vkCmdCopyBuffer(workspace.command_buffer, workspace.TransformsSrc.handle, workspace.Transforms.handle, 1, &CopyRegion);
 		}
 	}
+	
+	// upload camera info:
+	{ 
+		LinesPipeline::Camera Camera
+		{
+			.CLIP_FROM_WORLD = CLIP_FROM_WORLD
+		};
+		assert(workspace.CameraSrc.size == sizeof(Camera));
+
+		// host-side copy into Camera_src:
+		memcpy(workspace.CameraSrc.allocation.data(), &Camera, sizeof(Camera));
+
+		// add device-side copy from Camera_src -> Camera:
+		assert(workspace.CameraSrc.size == workspace.Camera.size);
+		VkBufferCopy CopyRegion
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = workspace.CameraSrc.size,
+		};
+		vkCmdCopyBuffer(workspace.command_buffer, workspace.CameraSrc.handle, workspace.Camera.handle, 1, &CopyRegion);
+	}
+
+	// upload world info:
+	{
+		assert(workspace.CameraSrc.size == sizeof(World));
+
+		//host-side copy into World_src:
+		memcpy(workspace.WorldSrc.allocation.data(), &World, sizeof(World));
+
+		//add device-side copy from World_src -> World:
+		assert(workspace.WorldSrc.size == workspace.World.size);
+		VkBufferCopy CopyRegion
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = workspace.WorldSrc.size,
+		};
+		vkCmdCopyBuffer(workspace.command_buffer, workspace.WorldSrc.handle, workspace.World.handle, 1, &CopyRegion);
+	}
 
 	// Memory Barrier
 	{
@@ -983,7 +876,8 @@ void Tutorial::render(RTG &rtg_, RTG::RenderParams const &render_params) {
 			vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
 		}
 		
-		RenderCustom(workspace);
+		RenderBackgroundPipeline(workspace);
+		RenderObjectsPipeline(workspace);
 		
 		vkCmdEndRenderPass(workspace.command_buffer);
 	}
@@ -1043,7 +937,6 @@ void Tutorial::RenderCustom(Workspace &workspace)
 		case Grid:
 		default:
 			RenderBackgroundPipeline(workspace);
-			RenderLinesPipeline(workspace);
 			RenderObjectsPipeline(workspace);
 			break;
 	}
@@ -1053,7 +946,6 @@ void Tutorial::RenderBackgroundPipeline(Workspace &workspace)
 {
 	// draw with the background pipeline:
 	{
-		
 		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.handle);
 		
 		// Push time here
@@ -1198,7 +1090,7 @@ void Tutorial::update(float dt)
 			10000.0f // far
 		) * Look_at
 		(
-			3.0f * std::cos(Angle), 3.0f * std::sin(Angle), 1.8f, // eye
+			10.0f * std::cos(Angle), 10.0f * std::sin(Angle), 10.0f, // eye
 			0.0f, 0.0f, 0.5f, // target
 			0.0f, 0.0f, 1.0f // up
 		);
@@ -1223,19 +1115,19 @@ void Tutorial::update(float dt)
 	}
 
  	// Pattern Switch
-	switch (PatternType)
-	{
-		case Grid:
-			MakePatternGrid();
-			break;
-		case BlackHole:
-			MakePatternBlackHole();
-			break;
-		case X:
-		default:
-			MakePatternX();
-			break;
-	}
+	// switch (PatternType)
+	// {
+	// 	case Grid:
+	// 		MakePatternGrid();
+	// 		break;
+	// 	case BlackHole:
+	// 		MakePatternBlackHole();
+	// 		break;
+	// 	case X:
+	// 	default:
+	// 		MakePatternX();
+	// 		break;
+	// }
 
 	// static sun and sky
 	{
@@ -1512,7 +1404,7 @@ void Tutorial::MakePatternBlackHole()
 
 	// float RandomOffset = 138.985f;
 
-	Vec2 CircleCenter = Vec2::Zero;
+	Vec2 CircleCenter = Vec2(0, 0);
 
 	
 	constexpr size_t count = GoldenRatioIterate * 48 * LinesNum;
@@ -1524,12 +1416,6 @@ void Tutorial::MakePatternBlackHole()
 		{
 			for (uint32_t j = 0; j < VerticesNumNow; ++j)
 			{
-				// RandomOffset *= RandomOffset;
-				// float intPart;
-				// float ColorOffset = std::modf(RandomOffset, &intPart);
-				// ColorOffset = ColorOffset >= 0.05f ? 0.05f : ColorOffset;
-				// uint8_t ColorValue = 0xff / (uint8_t)VerticesNumsPerArcBegin * (uint8_t)j + uint8_t(ColorOffset * 255);
-
 				Radians = Angle * 3.1415926f / 180.0f;
 				Vec2 PointPos = CircleCenter + Vec2(cosf(Radians) * RadiusNow ,sinf(Radians) * RadiusNow);
 				LinesVertices.emplace_back(PosColVertex
@@ -1555,7 +1441,7 @@ void Tutorial::MakePatternBlackHole()
 		RadiusNow = RadiusBegin;
 		Angle = fmodf(k * 8.0f, 360.0f);
 		PosZ = 0.0f;
-		CircleCenter = Vec2::Zero;
+		CircleCenter = Vec2(0, 0);
 		VerticesNumNow = VerticesNumsPerArcBegin;
 	}
 	
@@ -1671,3 +1557,123 @@ void Tutorial::InstantializeTorus(std::vector< PosNorTexVertex > &Vertices)
 	TorusVertices.count = uint32_t(Vertices.size()) - TorusVertices.first;
 }
 //END~ Instantialize Mesh's Vertices
+
+//BEGIN~ Load Textures
+void Tutorial::LoadDefaultComputeTextures()
+{
+	Textures.reserve(2);
+	//texture 0 will be a dark grey / light grey checkerboard with a red square at the origin.
+	{ 
+		//actually make the texture:
+		uint32_t size = 128;
+		std::vector< uint32_t > data;
+		data.reserve(size * size);
+		for (uint32_t y = 0; y < size; ++y) {
+			float fy = (y + 0.5f) / float(size);
+			for (uint32_t x = 0; x < size; ++x) {
+				float fx = (x + 0.5f) / float(size);
+				//highlight the origin:
+				if      (fx < 0.05f && fy < 0.05f) data.emplace_back(0xff0000ff); //red
+				else if ( (fx < 0.5f) == (fy < 0.5f)) data.emplace_back(0xff444444); //dark grey
+				else data.emplace_back(0xffbbbbbb); //light grey
+			}
+		}
+		assert(data.size() == size*size);
+
+		// make a place for the texture to live on the GPU
+		Textures.emplace_back(rtg.helpers.create_image(
+			VkExtent2D{ .width = size , .height = size }, //size of image
+			VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+			Helpers::Unmapped
+		));
+
+		// transfer data
+		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
+	}
+	// texture 1 will be a classic 'xor' texture:
+	{ 
+		//actually make the texture:
+		uint32_t size = 256;
+		std::vector< uint32_t > data;
+		data.reserve(size * size);
+		for (uint32_t y = 0; y < size; ++y) {
+			for (uint32_t x = 0; x < size; ++x) {
+				uint8_t r = uint8_t(x) ^ uint8_t(y);
+				uint8_t g = uint8_t(x + 128) ^ uint8_t(y);
+				uint8_t b = uint8_t(x) ^ uint8_t(y + 27);
+				uint8_t a = 0xff;
+				data.emplace_back( uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24) );
+			}
+		}
+		assert(data.size() == size*size);
+
+		//make a place for the texture to live on the GPU:
+		Textures.emplace_back(rtg.helpers.create_image(
+			VkExtent2D{ .width = size , .height = size }, //size of image
+			VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+			Helpers::Unmapped
+		));
+
+		//transfer data:
+		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
+	}
+}
+
+void Tutorial::LoadDonutAndWaterTextures()
+{
+	 // make some textures
+	{
+		Textures.reserve(2);
+
+		// First Texture
+		{
+			int Width,Height;
+			std::vector< uint32_t > Data;
+			Data = ImageLoader::Load("../Textures/YellowPaint.jpg", Width, Height);
+			assert(Data.size() == Width*Height);
+
+			// make a place for the texture to live on the GPU
+			Textures.emplace_back(rtg.helpers.create_image
+			(
+				VkExtent2D{ .width = (uint32_t)Width , .height = (uint32_t)Height }, // size of image
+				VK_FORMAT_R8G8B8A8_UNORM, // how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // will sample and upload
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // should be device-local
+				Helpers::Unmapped
+			));
+
+			// transfer data
+			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
+		}
+
+		// Texture 1 will be a classic 'xor' texture
+		{
+			int Width,Height;
+			std::vector< uint32_t > Data;
+			Data = ImageLoader::Load("../Textures/WaterMask.png", Width, Height);
+			assert(Data.size() == Width*Height);
+
+			// Make a place for the texture to live on the GPU:
+			Textures.emplace_back(rtg.helpers.create_image
+			(
+			VkExtent2D{ .width = (uint32_t)Width  , .height = (uint32_t)Height }, // size of image
+			VK_FORMAT_R8G8B8A8_SRGB, 	// how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 	// will sample and upload
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 							// should be device-local
+			Helpers::Unmapped
+			));
+
+			// Transfer data:
+			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
+		}
+	}
+}
+//END~ Load Textures

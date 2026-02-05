@@ -177,7 +177,7 @@ struct Tutorial : RTG::Application {
 	};
 	ObjectVerticesInfo PlaneVertices;
 	ObjectVerticesInfo TorusVertices;
-	ObjectVerticesInfo FriedEggVertices;
+	ObjectVerticesInfo pyramid_vertices;
 	ObjectVerticesInfo PanVertices;
 
 	std::vector< Helpers::AllocatedImage > Textures;
@@ -307,4 +307,8 @@ struct Tutorial : RTG::Application {
 // Different Mesh Vertices Instantialize
 	void InstantializePlane(std::vector< PosNorTexVertex > &Vertices);
 	void InstantializeTorus(std::vector< PosNorTexVertex > &Vertices);
+
+// Texture Loader
+	void LoadDefaultComputeTextures();
+	void LoadDonutAndWaterTextures();
 };
