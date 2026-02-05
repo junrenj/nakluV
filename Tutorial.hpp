@@ -177,8 +177,6 @@ struct Tutorial : RTG::Application {
 	};
 	ObjectVerticesInfo PlaneVertices;
 	ObjectVerticesInfo TorusVertices;
-	ObjectVerticesInfo pyramid_vertices;
-	ObjectVerticesInfo PanVertices;
 
 	std::vector< Helpers::AllocatedImage > Textures;
 	std::vector< VkImageView > TextureViews;
