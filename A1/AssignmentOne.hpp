@@ -1,0 +1,208 @@
+#pragma once
+
+#include "../RTG.hpp"
+#include "../mat4.hpp"
+
+struct UAssignmentOne : RTG::Application
+{
+    UAssignmentOne(RTG &);
+	UAssignmentOne(UAssignmentOne const &) = delete; //you shouldn't be copying this object
+	~UAssignmentOne();
+
+    // Kept for use in destructor:
+    RTG &rtg;
+
+    //--------------------------------------------------------------------
+	//Resources that last the lifetime of the application:
+
+	//chosen format for depth buffer:
+	VkFormat DepthFormat{};
+	//Render passes describe how pipelines write to images:
+	VkRenderPass RenderPass = VK_NULL_HANDLE;
+
+    // Background Pipeline
+    struct FBackgroundPipeline
+    {
+		VkPipelineLayout Layout = VK_NULL_HANDLE;
+
+		VkPipeline Handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass RenderPass, uint32_t subpass);
+		void Destroy(RTG &);
+
+		struct FPush
+		{
+			float time;
+		};
+    }BackgroundPipeline;
+
+    struct FLambertPipeline
+    {
+        // Descriptor set Layouts:
+		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set1_World = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set2_Transforms = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set3_TEXTURE = VK_NULL_HANDLE;
+
+        // types for descriptors:
+		struct FWorld
+		{
+			struct { float x, y, z, padding_; } SKY_DIRECTION;
+			struct { float r, g, b, padding_; } SKY_ENERGY;
+			struct { float x, y, z, padding_; } SUN_DIRECTION;
+			struct { float r, g, b, padding_; } SUN_ENERGY;
+
+			void DirectionNormalize()
+			{ 
+				float Length2 = SUN_DIRECTION.x * SUN_DIRECTION.x +
+								SUN_DIRECTION.y * SUN_DIRECTION.y +
+								SUN_DIRECTION.z * SUN_DIRECTION.z;
+
+
+				if (Length2 > 0.0f)
+				{
+					float LenInv = 1.0f / std::sqrt(Length2);
+					SUN_DIRECTION.x *= LenInv;
+					SUN_DIRECTION.y *= LenInv;
+					SUN_DIRECTION.z *= LenInv;
+				}
+			}
+		};
+        static_assert(sizeof(FWorld) == 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
+
+		struct FCamera
+		{
+			Mat4 CLIP_FROM_WORLD;
+		};
+		static_assert(sizeof(FCamera) == 16*4, "camera buffer structure is packed");
+
+		struct FTransform
+		{
+			Mat4 CLIP_FROM_LOCAL;
+			Mat4 WORLD_FROM_LOCAL;
+			Mat4 WORLD_FROM_LOCAL_NORMAL;
+		};
+        static_assert(sizeof(FTransform) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
+		
+		// no push constants
+
+		VkPipelineLayout Layout = VK_NULL_HANDLE;
+		
+		VkPipeline Handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass Render_pass, uint32_t Subpass);
+		void Destroy(RTG &);
+		
+		}LambertPipeline;
+
+		VkCommandPool CommandPool = VK_NULL_HANDLE;
+		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
+    
+		//workspaces hold per-render resources:
+		struct FWorkspace 
+		{
+			VkCommandBuffer command_buffer = VK_NULL_HANDLE; //from the command pool above; reset at the start of every render.
+
+			//location for ObjectsPipeline::World data: (streamed to GPU per-frame)
+			Helpers::AllocatedBuffer WorldSrc; 	// host coherent; mapped
+			Helpers::AllocatedBuffer World; 	// device-local
+			VkDescriptorSet WorldDescriptors; 	// references World
+
+			// Location for lines data:( streamed to GPU per-frame)
+			Helpers::AllocatedBuffer LinesVerticesSrc;	// host coherent; mapped
+			Helpers::AllocatedBuffer LinesVertices;		// device-local
+
+			// location for LinesPipeline::Camera data: (streamed to GPU per-frame)
+			Helpers::AllocatedBuffer CameraSrc;	// host coherent; mapped
+			Helpers::AllocatedBuffer Camera;		// device-local
+			VkDescriptorSet CameraDescriptors;		// references Camera
+
+			// location for ObjectsPipeline::Transforms data: (streamed to GPU per-frame)
+			Helpers::AllocatedBuffer TransformsSrc;	// host coherent; mapped
+			Helpers::AllocatedBuffer Transforms;	// device-local
+			VkDescriptorSet TransformDescriptors;	// references Transforms
+		};
+		std::vector< FWorkspace > workspaces;
+
+		//-------------------------------------------------------------------
+		//static scene resources:
+		Helpers::AllocatedBuffer ObjectVertices;
+		struct FObjectVertices
+		{
+			uint32_t first = 0;
+			uint32_t count = 0;
+		};
+		FObjectVertices PlaneVertices;
+		FObjectVertices TorusVertices;
+
+		std::vector< Helpers::AllocatedImage > Textures;
+		std::vector< VkImageView > TextureViews;
+		VkSampler TextureSampler = VK_NULL_HANDLE;
+		VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
+		std::vector< VkDescriptorSet > TextureDescriptors;
+
+		//--------------------------------------------------------------------
+		//Resources that change when the swapchain is resized:
+
+		virtual void on_swapchain(RTG &, RTG::SwapchainEvent const &) override;
+
+		Helpers::AllocatedImage SwapchainDepthImage;
+		VkImageView SwapchainDepthImageView = VK_NULL_HANDLE;
+		std::vector< VkFramebuffer > SwapchainFramebuffer;
+		//used from on_swapchain and the destructor: (framebuffers are created in on_swapchain)
+		void DestroyFramebuffers();
+
+		//--------------------------------------------------------------------
+		//Resources that change when time passes or the user interacts:
+
+		virtual void update(float dt) override;
+		virtual void on_input(InputEvent const &) override;
+
+		// Modal action, intercepts inputs
+		std::function< void(InputEvent const &) > Action; 
+
+		float Time = 0.0f;
+
+		enum class ECameraMode
+		{
+			Scene = 0,
+			Free = 1,
+		} CameraMode = ECameraMode::Free;
+
+		// Used when cameraMode == cameraMode::Free
+		struct FOrbitCamera
+		{
+			float TargetX = 0.0f, TargetY = 0.0f, TargetZ = 0.0f; // Where Camera Looking + Orbiting
+			float Radius = 2.0f; 	// Distance from camera to target
+			float Azimuth = 0.0f; 	// Counterclockwise angle around z axis between x axis and camera direction (radians)
+			float Elevation = 0.25f * float(M_PI); // Angle up from xy plane to camera direction(radians)
+
+			float FOV = 60.0f / 180.0f * float(M_PI);	// vertical field of view (radians)
+			float Near = 0.1f;		// Near Clippping plane
+			float Far = 1000.0f;	// Far Clipping plane 
+		} FreeCamera;
+
+		// Computed from the current camera (as set by camera_mode) during update():
+		Mat4 CLIP_FROM_WORLD;
+
+		FLambertPipeline::FWorld World;
+
+		struct FObjectInstance
+		{
+			FObjectVertices Vertices;
+			FLambertPipeline::FTransform Transform;
+			uint32_t Texture = 0;
+		};
+
+		std::vector<FObjectInstance> ObjectInstances;
+
+		//--------------------------------------------------------------------
+		//Rendering function, uses all the resources above to queue work to draw a frame:
+
+		virtual void render(RTG &, RTG::RenderParams const &) override;
+
+		
+		void RenderBackgroundPipeline(FWorkspace &workspace);
+		void RenderLambertPipeline(FWorkspace &workspace);
+
+};
