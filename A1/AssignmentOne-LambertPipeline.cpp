@@ -1,33 +1,110 @@
 #include "AssignmentOne.hpp"
+#include "AssignmentOne-Vertex.hpp"
 
 #include "../Helpers.hpp"
 #include "../VK.hpp"
 
 static uint32_t vert_code[] =
-#include "../spv/A1/background.vert.inl"
+#include "../spv/A1/lambert.vert.inl"
 ;
 
 static uint32_t frag_code[] =
-#include "../spv/A1/background.frag.inl"
+#include "../spv/A1/lambert.frag.inl"
 ;
 
-void UAssignmentOne::FBackgroundPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
+void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
 
-    {
-        VkPushConstantRange range {
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset = 0,
-            .size = sizeof(FPush),
+    { //the set0_Camera layout holds world info in a uniform buffer used in the fragment shader:
+		std::array< VkDescriptorSetLayoutBinding, 1 > bindings{
+			VkDescriptorSetLayoutBinding{
+				.binding = 0,
+				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = 1,
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+			},
+		};
+		
+		VkDescriptorSetLayoutCreateInfo create_info{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = uint32_t(bindings.size()),
+			.pBindings = bindings.data(),
+		};
+
+		VK( vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set0_Camera) );
+	}
+    { //the set1_World layout holds world info in a uniform buffer used in the fragment shader:
+		std::array< VkDescriptorSetLayoutBinding, 1 > bindings{
+			VkDescriptorSetLayoutBinding{
+				.binding = 0,
+				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = 1,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+			},
+		};
+		
+		VkDescriptorSetLayoutCreateInfo create_info{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = uint32_t(bindings.size()),
+			.pBindings = bindings.data(),
+		};
+
+		VK( vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set1_World) );
+	}
+
+    { //the set2_Transforms layout holds an array of Transform structures in a storage buffer used in the vertex shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings {
+            VkDescriptorSetLayoutBinding {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            },
+        };
+
+        VkDescriptorSetLayoutCreateInfo create_info {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set2_Transforms));
+    }
+
+    { //the set3_TEXTURE layout has a single descriptor for a sampler2D used in the fragment shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings{
+            VkDescriptorSetLayoutBinding{
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+        };
+
+        VkDescriptorSetLayoutCreateInfo create_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set3_TEXTURE));
+    }
+
+    { //create pipeline layout:
+        std::array<VkDescriptorSetLayout, 4> layouts {
+            Set0_Camera,
+            Set1_World,
+            Set2_Transforms,
+            Set3_TEXTURE,
         };
 
         VkPipelineLayoutCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = 0,
-            .pSetLayouts = nullptr,
-            .pushConstantRangeCount = 1,
-            .pPushConstantRanges = &range,
+            .setLayoutCount = uint32_t(layouts.size()),
+            .pSetLayouts = layouts.data(),
+            .pushConstantRangeCount = 0,
+            .pPushConstantRanges = nullptr,
         };
 
         VK ( vkCreatePipelineLayout(rtg.device, &create_info, nullptr, &Layout));
@@ -58,14 +135,6 @@ void UAssignmentOne::FBackgroundPipeline::Create(RTG &rtg, VkRenderPass render_p
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             .dynamicStateCount = (uint32_t) (dynamic_states.size()),
             .pDynamicStates = dynamic_states.data(),
-        };
-
-        VkPipelineVertexInputStateCreateInfo vertex_input_state {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            .vertexBindingDescriptionCount = 0,
-            .pVertexBindingDescriptions = nullptr,
-            .vertexAttributeDescriptionCount = 0,
-            .pVertexAttributeDescriptions = nullptr,
         };
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly_state {
@@ -99,7 +168,9 @@ void UAssignmentOne::FBackgroundPipeline::Create(RTG &rtg, VkRenderPass render_p
 
         VkPipelineDepthStencilStateCreateInfo depth_stencil_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .depthTestEnable = VK_FALSE,
+            .depthTestEnable = VK_TRUE,
+            .depthWriteEnable = VK_TRUE,
+            .depthCompareOp = VK_COMPARE_OP_LESS,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
         };
@@ -123,7 +194,7 @@ void UAssignmentOne::FBackgroundPipeline::Create(RTG &rtg, VkRenderPass render_p
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = (uint32_t) (stages.size()),
             .pStages = stages.data(),
-            .pVertexInputState = &vertex_input_state,
+            .pVertexInputState = &FVertexDataSet::ArrayInputState,
             .pInputAssemblyState = &input_assembly_state,
             .pViewportState = &viewport_state,
             .pRasterizationState = &rasterization_state,
@@ -143,7 +214,29 @@ void UAssignmentOne::FBackgroundPipeline::Create(RTG &rtg, VkRenderPass render_p
     vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 
-void UAssignmentOne::FBackgroundPipeline::Destroy(RTG &rtg) {
+void UAssignmentOne::FLambertPipeline::Destroy(RTG &rtg) 
+{
+    if (Set0_Camera != VK_NULL_HANDLE) 
+    {
+		vkDestroyDescriptorSetLayout(rtg.device, Set0_Camera, nullptr);
+		Set0_Camera = VK_NULL_HANDLE;
+	}
+    if (Set1_World != VK_NULL_HANDLE) 
+    {
+		vkDestroyDescriptorSetLayout(rtg.device, Set1_World, nullptr);
+		Set1_World = VK_NULL_HANDLE;
+	}
+
+    if (Set2_Transforms != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(rtg.device, Set2_Transforms, nullptr);
+        Set2_Transforms = VK_NULL_HANDLE;
+    }
+
+    if (Set3_TEXTURE != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(rtg.device, Set3_TEXTURE, nullptr);
+        Set3_TEXTURE = VK_NULL_HANDLE;
+    }
+    
     if (Layout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
         Layout = VK_NULL_HANDLE;

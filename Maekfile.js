@@ -29,6 +29,7 @@ custom_flags_and_rules();
 const main_objs = [
 	maek.CPP('Tutorial.cpp'),
 	maek.CPP('A1/AssignmentOne.cpp'),
+	maek.CPP('A1/AssignmentOne-Vertex.cpp'),
 	maek.CPP('PosColVertex.cpp'),
 	maek.CPP('PosNorTexVertex.cpp'),
 	maek.CPP('RTG.cpp'),
@@ -59,6 +60,19 @@ const objects_shaders = [
 	maek.GLSLC('objects.frag'),
 ];
 main_objs.push( maek.CPP('Tutorial-ObjectsPipeline.cpp', undefined, { depends:[...objects_shaders] } ) );
+
+// A1
+const A1_background_shaders = [
+	maek.GLSLC('A1/background.vert'),
+	maek.GLSLC('A1/background.frag'),
+];
+main_objs.push( maek.CPP('A1/AssignmentOne-BackgroundPipeline.cpp', undefined, { depends:[...A1_background_shaders] } ) );
+
+const A1_lambert_shaders = [
+	maek.GLSLC('A1/lambert.vert'),
+	maek.GLSLC('A1/lambert.frag'),
+];
+main_objs.push( maek.CPP('A1/AssignmentOne-LambertPipeline.cpp', undefined, { depends:[...A1_lambert_shaders] } ) );
 
 
 const main_exe = maek.LINK([...main_objs], 'bin/main');

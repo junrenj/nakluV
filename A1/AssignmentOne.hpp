@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AssignmentOne-Vertex.hpp"
 #include "../RTG.hpp"
 #include "../mat4.hpp"
 
@@ -84,7 +85,7 @@ struct UAssignmentOne : RTG::Application
 		};
         static_assert(sizeof(FTransform) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
 		
-		// no push constants
+		using FVertex = FVertexDataSet;
 
 		VkPipelineLayout Layout = VK_NULL_HANDLE;
 		
@@ -205,4 +206,10 @@ struct UAssignmentOne : RTG::Application
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);
 
+		// Different Mesh Vertices Instantialize
+		void InstantializePlane(std::vector< FVertexDataSet > &Vertices);
+		void InstantializeTorus(std::vector< FVertexDataSet > &Vertices);
+
+		// Texture Loader
+		void LoadDefaultComputeTextures();
 };
