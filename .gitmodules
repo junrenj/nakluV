@@ -1,6 +1,3 @@
 [submodule "external/glm"]
 	path = external/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "external/sejp"]
-	path = external/sejp
-	url = https://github.com/ixchow/sejp.git
