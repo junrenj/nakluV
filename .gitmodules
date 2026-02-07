@@ -1,3 +1,6 @@
 [submodule "external/glm"]
 	path = external/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "external/s72Loader"]
+	path = external/s72Loader
+	url = https://github.com/15-472/s72-loader.git
