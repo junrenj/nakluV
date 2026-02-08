@@ -8,9 +8,17 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include "../A1/Render/RenderScene.hpp"
+#include "../A1/Render/RenderExtractor.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/glm/gtx/string_cast.hpp"
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
+	// load the scene
+	InitializeRenderScene();
+	PrintRenderSceneMesh();
+
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
     (
@@ -1203,6 +1211,45 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 			return;
 		}
 	}
+}
+
+void UAssignmentOne::InitializeRenderScene()
+{
+	URenderExtractor::BuildRenderScene(FilePath, Scene);
+}
+
+void UAssignmentOne::PrintRenderSceneMesh()
+{
+	std::cout << "======= Render Scene Mesh Debug Info =======" << std::endl;
+    
+    int MeshIndex = 0;
+    for (const auto& [NodePtr, Mesh] : Scene.RenderMeshes) {
+        std::cout << "\n[Mesh #" << MeshIndex++ << "]" << std::endl;
+        
+        
+        std::cout << "Bounding Box Min: " << glm::to_string(Mesh->BoundingBox.Min) << std::endl;
+        std::cout << "Bounding Box Max: " << glm::to_string(Mesh->BoundingBox.Max) << std::endl;
+        
+        
+        std::cout << "Vertex Count: " << Mesh->VertexCount << std::endl;
+        
+        
+        const uint8_t* DataPtr = Mesh->VertexData.data();
+        
+        for (uint32_t i = 0; i < Mesh->VertexCount; ++i) {
+            size_t Offset = i * Mesh->VertexStride;
+            
+            const auto* Vertex = reinterpret_cast<const URenderMesh::FVertex*>(DataPtr + Offset);
+            
+            if (i < 5 || i == Mesh->VertexCount - 1) { 
+                std::cout << "  Vertex [" << i << "] Position: " 
+                          << glm::to_string(Vertex->Position) << std::endl;
+            } else if (i == 5) {
+                std::cout << "  ... (skipping intermediate vertices) ..." << std::endl;
+            }
+        }
+    }
+    std::cout << "============================================" << std::endl;
 }
 
 //BEGIN~ Instantialize Mesh's Vertices

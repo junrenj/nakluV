@@ -30,11 +30,18 @@ const main_objs = [
 	maek.CPP('Tutorial.cpp'),
 	maek.CPP('A1/AssignmentOne.cpp'),
 	maek.CPP('A1/AssignmentOne-Vertex.cpp'),
+	maek.CPP('A1/Render/RenderScene.cpp'),
+	maek.CPP('A1/Render/RenderExtractor.cpp'),
 	maek.CPP('PosColVertex.cpp'),
 	maek.CPP('PosNorTexVertex.cpp'),
 	maek.CPP('RTG.cpp'),
 	maek.CPP('Helpers.cpp'),
 	maek.CPP('main.cpp'),
+	
+	// s72Loader
+	maek.CPP('external/s72Loader/sejp.cpp'),
+	maek.CPP('external/s72Loader/S72.cpp'),
+	// maek.CPP('external/s72Loader/print_scene.cpp'),
 ];
 
 //maek.GLSLC(...) builds a glsl source file:
@@ -124,6 +131,7 @@ function custom_flags_and_rules() {
 			'/wd4146', //-1U is unsigned
 			`/I${VULKAN_SDK}/Include`,
 			`/I../glfw-3.4.bin.WIN64/include`,
+			'/Iexternal',
 		];
 
 		maek.options.LINKLibs = [

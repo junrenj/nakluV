@@ -3,6 +3,8 @@
 #include "AssignmentOne-Vertex.hpp"
 #include "../RTG.hpp"
 #include "../mat4.hpp"
+#include "Render/RenderScene.hpp"
+
 
 struct UAssignmentOne : RTG::Application
 {
@@ -202,6 +204,11 @@ struct UAssignmentOne : RTG::Application
 
 		virtual void render(RTG &, RTG::RenderParams const &) override;
 
+		// Load Scene
+		std::string FilePath = "external/s72Loader/example_scene/example.s72";
+		URenderScene Scene;
+		void InitializeRenderScene();
+		void PrintRenderSceneMesh();
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);

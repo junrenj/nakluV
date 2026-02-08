@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}",
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/external",
                 "${env:VULKAN_SDK}/Include"
             ],
             "defines": [
