@@ -20,6 +20,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	InitializeRenderScene();
 	PrintRenderSceneMesh();
 	PrintRenderProxies();
+	PrintMaterial();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -331,7 +332,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				Helpers::Unmapped
 			);
-			rtg.helpers.transfer_to_buffer(Scene.StagingData.data(), Scene.TotalBytes, ObjectVertices);
+			rtg.helpers.transfer_to_buffer(Scene.AllVertexData.data(), Scene.TotalBytes, ObjectVertices);
 		}
 	}
 
@@ -1233,6 +1234,60 @@ void UAssignmentOne::PrintRenderProxies() {
         
         PrintMatrix("WORLD_FROM_LOCAL", p->Transform.WORLD_FROM_LOCAL);
         std::cout << "-----------------------------------------------" << std::endl;
+    }
+}
+
+std::string UAssignmentOne::FormatTexIdx(uint32_t idx) 
+{
+    if (idx == INVALID_TEXTURE) return "[None]";
+    return std::to_string(idx);
+}
+
+std::string UAssignmentOne::ToString(EMaterialType type) 
+{
+    switch (type) {
+        case EMaterialType::PBR:         return "PBR";
+        case EMaterialType::Lambertian:  return "Lambertian";
+        case EMaterialType::Mirror:      return "Mirror";
+        case EMaterialType::Environment: return "Environment";
+        default:                         return "Unknown";
+    }
+}
+
+void UAssignmentOne::PrintMaterial()
+{
+	const std::vector<UMaterial*>& MaterialList = Scene.Materials;
+    std::cout << "\n========== Render Scene Materials (Count: " << MaterialList.size() << ") ==========\n";
+    
+    for (size_t i = 0; i < MaterialList.size(); ++i) {
+        const UMaterial* mat = MaterialList[i];
+        if (!mat) continue;
+
+        std::cout << "Material [" << i << "] (" << ToString(mat->Type) << "):\n";
+        
+        std::cout << "  > Common Maps: \n";
+        std::cout << "    NormalMap: " << FormatTexIdx(mat->NormalTexIdx) 
+                  << " | Displacement: " << FormatTexIdx(mat->DisplacementIdx) << "\n";
+
+        if (mat->Type == EMaterialType::PBR || mat->Type == EMaterialType::Lambertian) {
+            std::cout << "  > Surface Attributes:\n";
+            std::cout << "    Albedo:    [" << mat->Albedo.r << ", " << mat->Albedo.g << ", " << mat->Albedo.b << "]\n";
+            
+            if (mat->Type == EMaterialType::PBR) {
+                std::cout << "    Roughness: " << mat->Roughness << " | Metalness: " << mat->Metalness << "\n";
+            }
+            
+            std::cout << "  > Surface Maps:\n";
+            std::cout << "    AlbedoTex:    " << FormatTexIdx(mat->AlbedoTex) << "\n";
+            if (mat->Type == EMaterialType::PBR) {
+                std::cout << "    RoughnessTex: " << FormatTexIdx(mat->RoughnessTex) << "\n";
+                std::cout << "    MetalnessTex: " << FormatTexIdx(mat->MetalnessTex) << "\n";
+            }
+        } else if (mat->Type == EMaterialType::Mirror) {
+            std::cout << "  > Attributes: Perfect specular reflection (Roughness=0, Metal=1)\n";
+        }
+
+        std::cout << "------------------------------------------------------------------\n";
     }
 }
 

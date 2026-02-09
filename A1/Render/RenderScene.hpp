@@ -7,11 +7,11 @@
 #include "glm/glm/glm.hpp"
 #include "glm/glm/gtc/quaternion.hpp"
 #include "Texture.hpp"
+#include "Material.hpp"
 
 
 // forward declarations so we can write the scene's objects in the same order as in the spec:
 class URenderMesh;
-class UMaterial;
 class UEnvironment;
 class ULight;
 class UCamera;
@@ -73,30 +73,36 @@ class URenderScene
 {
 public:
 
-    std::unordered_map<UNode*, URenderMesh*> Nodes2RenderMeshes;
-    std::unordered_map<URenderMesh*, UNode*> RenderMeshes2Nodes;
-    std::vector<URenderMesh*> AllMeshes;
-    std::unordered_map<UNode*, URenderMesh*> VisibleRenderMeshes;
-
     // Nodes Tree
     UNode* RootNode;
     std::vector<UNode*> Nodes;
 
+    // Mutual Dictionary for Node and Mesh
+    std::unordered_map<UNode*, URenderMesh*> Nodes2RenderMeshes;
+    std::unordered_map<URenderMesh*, UNode*> RenderMeshes2Nodes;
+
+    // Mesh Data
+    std::vector<URenderMesh*> AllMeshes;
+    std::unordered_map<UNode*, URenderMesh*> VisibleRenderMeshes;
+
+    // Other Data
+    std::vector<UTexture*> Textures;
+    std::vector<UMaterial*> Materials;
     std::unordered_map<UNode*, UCamera*> Cameras;
-    std::unordered_map<UNode*, UMaterial*> Materials;
     std::unordered_map<UNode*, ULight*> Lights;
     std::unordered_map<UNode*, UEnvironment*> Environments;
 
     // VertexBuffer
     uint32_t TotalBytes = 0;
-    std::vector<uint8_t> VertexBuffer;
-    std::vector<uint8_t> StagingData;
+    std::vector<uint8_t> AllVertexData;
 
     // ProxyData
     std::vector<URenderProxy*> ProxyInstances;
 
     void GenerateWholeVertexBuffer();
     void UpdateVisibleMesh();
+
+    uint32_t GetTextureIdx(UTexture* Texture) const;
 };
 
 class URenderMesh
@@ -129,11 +135,6 @@ public:
     URenderProxy* RenderProxy;
 };
 
-class UMaterial
-{
-    std::vector<UTexture*> TextureSet;
-};
-
 class UCamera
 {
 public:
@@ -150,7 +151,8 @@ public:
 
 class UEnvironment
 {
-    UTexture* EnvTexture;
+public:
+    uint32_t EnvTexture = INVALID_TEXTURE;
 };
 
 class ULight

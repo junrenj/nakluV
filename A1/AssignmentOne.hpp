@@ -210,7 +210,10 @@ struct UAssignmentOne : RTG::Application
 		// TODO:delete function below
 		void PrintRenderSceneMesh();
 		void PrintRenderProxies();
-		void PrintMatrix(const std::string& name, const glm::mat4& m) ;
+		void PrintMatrix(const std::string& name, const glm::mat4& m);
+		std::string FormatTexIdx(uint32_t idx);
+		std::string ToString(EMaterialType type);
+		void PrintMaterial();
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);

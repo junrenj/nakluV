@@ -9,11 +9,17 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
 {
     CurrentS72 = S72::load(S72Path);
 
-    // get Texture Resources Ready
+    std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
+    std::unordered_map< const S72::Material* , UMaterial* > S72Mat2UMat;
 
+    // 0. Get Dependency ready
+    // get Texture Resources Ready
+    BuildUTextureData(S72Tex2UTex, RenderScene);
+    // get Material Resources Ready
+    BuildUMaterialData(S72Mat2UMat, S72Tex2UTex, RenderScene);
 
     // 1. Build UNode Tree
-    BuildUNodeTree(RenderScene);
+    BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat);
     // 2. Build UNode BBox
     BuildUNodesBBoxIterate(RenderScene.RootNode);
     // 3. Generate Vertex Buffer
@@ -21,7 +27,9 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
 }
 
 //BEGIN: UNode Data Extract
-void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene)
+void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene,
+    std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
+    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat)
 {
     // Build a single unique root node for all nodes data
     UNode* Root = new UNode();
@@ -32,12 +40,16 @@ void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene)
         if(CurrentS72.scene.roots[i])
         {
             const S72::Node& InS72Node = *(CurrentS72.scene.roots[i]);
-            Root->Children.push_back(BuildUNodeTreeIterate(InS72Node, RenderScene, Root));
+            Root->Children.push_back(BuildUNodeTreeIterate(InS72Node, RenderScene, Root, S72Tex2UTex, S72Mat2UMat));
         }
     }
 }
 
-UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node, URenderScene& RenderScene, UNode* Parent)
+UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node, 
+    URenderScene& RenderScene, 
+    UNode* Parent,
+    std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
+    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat)
 {
     UNode* NewNode = new UNode();
     NewNode->Parent = Parent;
@@ -52,7 +64,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node, URend
     {
         const S72::Mesh& S72Mesh = *InS72Node.mesh;
         URenderMesh* NewMesh = new URenderMesh();
-        CloneRenderMeshFromS72Mesh(S72Mesh, *NewMesh);
+        CloneRenderMeshFromS72Mesh(S72Mesh, *NewMesh, S72Mat2UMat);
         NewNode->Mesh = NewMesh;
         RenderScene.Nodes2RenderMeshes[NewNode] = NewMesh;
         RenderScene.RenderMeshes2Nodes[NewMesh] = NewNode;
@@ -67,8 +79,6 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node, URend
         std::visit([&](auto const& S72Camera)
         {
             using T = std::decay_t<decltype(S72Camera)>;
-
-            // -------- Sun --------
             if constexpr (std::is_same_v<T, S72::Camera::Perspective>)
             {
                 UCamera::FPerspective Projection;
@@ -90,7 +100,16 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node, URend
     {
         // const S72::Environment& S72Environment = *InS72Node.environment;
         UEnvironment* NewEnvironment = new UEnvironment();
-        //  TODO: Environment data
+        //  Environment data
+        if(InS72Node.environment->radiance)
+        {
+            auto it = S72Tex2UTex.find(InS72Node.environment->radiance);
+            if (it != S72Tex2UTex.end())
+            {
+                NewEnvironment->EnvTexture = RenderScene.GetTextureIdx(it->second);
+            }
+        }
+
         NewNode->environment = NewEnvironment;
         RenderScene.Environments[NewNode] = NewEnvironment;
     }
@@ -155,7 +174,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node, URend
         for (size_t i = 0; i < InS72Node.children.size(); i++)
         {
             const S72::Node& Child = *InS72Node.children[i];
-            NewNode->Children.push_back(BuildUNodeTreeIterate(Child, RenderScene, NewNode));
+            NewNode->Children.push_back(BuildUNodeTreeIterate(Child, RenderScene, NewNode,S72Tex2UTex, S72Mat2UMat));
         }
     }
     RenderScene.Nodes.push_back(NewNode);
@@ -183,27 +202,158 @@ void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
 
     InNode->BoundingBox = NewBBox;
 }
+//END:  UNode Data Extract
 
-//BEGIN: Data Extract from BinaryFile
-std::vector<uint8_t> URenderExtractor::ReadBinaryFile(const std::string& path)
+//BEGIN: Material Data Extract
+void URenderExtractor::BuildUMaterialData(
+    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, 
+    std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
+    URenderScene& Scene)
 {
-    std::ifstream file(path, std::ios::binary);
-    if (!file) {
-        throw std::runtime_error("Failed to open file: " + path);
+    for (const auto& [Name, Mat] : CurrentS72.materials)
+    {
+        UMaterial* NewMaterial = CloneUMaterialFromS72Material(Mat, S72Tex2UTex, Scene);
+        S72Mat2UMat[&Mat] = NewMaterial;
+        Scene.Materials.push_back(NewMaterial);
     }
-
-    file.seekg(0, std::ios::end);
-    size_t size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::vector<uint8_t> data(size);
-    file.read(reinterpret_cast<char*>(data.data()), size);
-    return data;
 }
 
-std::unique_ptr<UTexture> URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
+UMaterial* URenderExtractor::CloneUMaterialFromS72Material(
+    const S72::Material& InS72Mat, 
+    std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
+    const URenderScene& Scene)
 {
-    std::unique_ptr<UTexture> NewTexture = std::make_unique<UTexture>();
+    UMaterial* NewMat = new UMaterial();
+
+    // 1. Get general Tex Idx
+    if(InS72Mat.normal_map)
+    {
+        const S72::Texture& S72Tex = *InS72Mat.normal_map;
+        UTexture* Tex = S72Tex2UTex[&S72Tex];
+        NewMat->NormalTexIdx = Scene.GetTextureIdx(Tex);
+    }
+
+    if(InS72Mat.displacement_map)
+    {
+        const S72::Texture& S72Tex = *InS72Mat.displacement_map;
+        UTexture* Tex = S72Tex2UTex[&S72Tex];
+        NewMat->DisplacementIdx = Scene.GetTextureIdx(Tex);
+    }
+
+    // 2. deal with variant
+    std::visit([&](auto&& arg) 
+    {
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, S72::Material::PBR>) 
+        {
+            NewMat->Type = EMaterialType::PBR;
+            
+            // Albedo
+            if (auto* col = std::get_if<S72::color>(&arg.albedo)) 
+            {
+                NewMat->Albedo = glm::vec4(col->r, col->g, col->b, 1.0f);
+            } 
+            else 
+            {
+                auto* Albedo = std::get<S72::Texture*>(arg.albedo);
+                if(Albedo)
+                {
+                    const S72::Texture& S72Tex = *Albedo;
+                    UTexture* Tex = S72Tex2UTex[&S72Tex];
+                    NewMat->AlbedoTex = Scene.GetTextureIdx(Tex);
+                }
+                NewMat->Albedo = glm::vec4(1.0f);
+            }
+
+            // Roughness
+            if (auto* val = std::get_if<float>(&arg.roughness)) 
+            {
+                NewMat->Roughness = *val;
+            } 
+            else 
+            {
+                auto* Roughness = std::get<S72::Texture*>(arg.roughness);
+                if(Roughness)
+                {
+                    const S72::Texture& S72Tex = *Roughness;
+                    UTexture* Tex = S72Tex2UTex[&S72Tex];
+                    NewMat->RoughnessTex = Scene.GetTextureIdx(Tex);
+                }
+                NewMat->Roughness = 1.0f;
+            }
+
+            // Metalness
+            if (auto* val = std::get_if<float>(&arg.metalness)) 
+            {
+                NewMat->Metalness = *val;
+            } else 
+            {
+                auto* Metalness = std::get<S72::Texture*>(arg.metalness);
+                if(Metalness)
+                {
+                    const S72::Texture& S72Tex = *Metalness;
+                    UTexture* Tex = S72Tex2UTex[&S72Tex];
+                    NewMat->MetalnessTex = Scene.GetTextureIdx(Tex);
+                }
+                NewMat->Metalness = 1.0f;
+            }
+        }
+        else if constexpr (std::is_same_v<T, S72::Material::Lambertian>) 
+        {
+            NewMat->Type = EMaterialType::Lambertian;
+            // Lambertian 
+            if (auto* col = std::get_if<S72::color>(&arg.albedo)) 
+            {
+                NewMat->Albedo = glm::vec4(col->r, col->g, col->b, 1.0f);
+            } 
+            else 
+            {
+                auto* Albedo = std::get<S72::Texture*>(arg.albedo);
+                if(Albedo)
+                {
+                    const S72::Texture& S72Tex = *Albedo;
+                    UTexture* Tex = S72Tex2UTex[&S72Tex];
+                    NewMat->AlbedoTex = Scene.GetTextureIdx(Tex);
+                }
+            }
+            NewMat->Roughness = 1.0f;
+            NewMat->Metalness = 0.0f;
+        }
+        else if constexpr (std::is_same_v<T, S72::Material::Mirror>) 
+        {
+            NewMat->Type = EMaterialType::Mirror;
+            NewMat->Albedo = glm::vec4(1.0f);
+            NewMat->Roughness = 0.0f;
+            NewMat->Metalness = 1.0f;
+        }
+        else if constexpr (std::is_same_v<T, S72::Material::Environment>) 
+        {
+            NewMat->Type = EMaterialType::Environment;
+        }
+    }, InS72Mat.brdf);
+
+    return NewMat;
+}
+
+//END: Material Data Extract
+
+//BEGIN: Texture Data Extract
+void URenderExtractor::BuildUTextureData(
+    std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
+    URenderScene& Scene)
+{
+    for (const auto& [Name, Tex] : CurrentS72.textures)
+    {
+        UTexture* Texture = ReadBulkDataFromImage(Tex);
+        S72Tex2UTex[&Tex] = Texture;
+        Scene.Textures.push_back(Texture);
+    }
+}
+
+UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
+{
+    UTexture* NewTexture = new UTexture();
     NewTexture->Type = InTexture.type == S72::Texture::Type::cube ? UTexture::EType::Cube : UTexture::EType::Flat;
 
     if(InTexture.format == S72::Texture::Format::srgb)
@@ -243,11 +393,32 @@ std::unique_ptr<UTexture> URenderExtractor::ReadBulkDataFromImage(const S72::Tex
 
     return NewTexture;
 }
+//END: Texture Data Extract
 
-void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URenderMesh& OutMesh)
+//BEGIN: URenerMesh Data Extract
+std::vector<uint8_t> URenderExtractor::ReadBinaryFile(const std::string& path)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        throw std::runtime_error("Failed to open file: " + path);
+    }
+
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<uint8_t> data(size);
+    file.read(reinterpret_cast<char*>(data.data()), size);
+    return data;
+}
+
+void URenderExtractor::CloneRenderMeshFromS72Mesh(
+    const S72::Mesh& S72Mesh, 
+    URenderMesh& OutMesh,
+    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat)
 {
     // 1. type of mesh(can be changed if debug mode on)
-    OutMesh.topology = InMesh.topology;
+    OutMesh.topology = S72Mesh.topology;
 
     // 2. Vertex Data Layout
     OutMesh.VertexStride = sizeof(URenderMesh::FVertex);
@@ -257,7 +428,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URend
     OutMesh.UVOffset = offsetof(URenderMesh::FVertex, UV);
 
     // 3. Vertex Count
-    OutMesh.VertexCount = InMesh.count;
+    OutMesh.VertexCount = S72Mesh.count;
     OutMesh.IndexCount = 0;
 
     OutMesh.VertexData.resize(OutMesh.VertexCount * OutMesh.VertexStride);
@@ -275,7 +446,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URend
 
     // 5. Get POSITION to Calculate BBox
     {
-        const auto& Attribute = InMesh.attributes.at("POSITION");
+        const auto& Attribute = S72Mesh.attributes.at("POSITION");
         const S72::DataFile& DataFile = Attribute.src;
         
         const uint8_t* SrcPtr = LoadedBinary.at(DataFile.path).data() + Attribute.offset;
@@ -296,7 +467,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URend
     }
 
     // 6. Get NORMAL
-    if (auto it = InMesh.attributes.find("NORMAL"); it != InMesh.attributes.end()) 
+    if (auto it = S72Mesh.attributes.find("NORMAL"); it != S72Mesh.attributes.end()) 
     {
         auto& Attribute = it->second;
         const S72::DataFile& DataFile = Attribute.src;
@@ -314,7 +485,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URend
     }
 
     // 7. Get TANGENT
-    if (auto it = InMesh.attributes.find("TANGENT"); it != InMesh.attributes.end()) 
+    if (auto it = S72Mesh.attributes.find("TANGENT"); it != S72Mesh.attributes.end()) 
     {
         auto& Attribute = it->second;
         const S72::DataFile& DataFile = Attribute.src;
@@ -332,7 +503,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URend
     }
 
     // 8. Get TEXCOORD
-    if (auto it = InMesh.attributes.find("TEXCOORD"); it != InMesh.attributes.end()) 
+    if (auto it = S72Mesh.attributes.find("TEXCOORD"); it != S72Mesh.attributes.end()) 
     {
         auto& Attribute = it->second;
         const S72::DataFile& DataFile = Attribute.src;
@@ -347,6 +518,13 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URend
                 sizeof(glm::vec2)
             );
         }
+    }
+
+    // 9. Material
+    auto it = S72Mat2UMat.find(S72Mesh.material);
+    if (it != S72Mat2UMat.end())
+    {
+        OutMesh.Material = it->second;
     }
 }
 //END: URenerMesh Data Extract

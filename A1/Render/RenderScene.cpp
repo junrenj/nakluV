@@ -4,15 +4,16 @@
 void URenderScene::GenerateWholeVertexBuffer()
 {
     TotalBytes = 0;
-    int Index = 0;
+    uint32_t Index = 0;
     const uint32_t BytePerVertex = static_cast<uint32_t>(sizeof(URenderMesh::FVertex));
     for (auto& Mesh : AllMeshes)
     {
         URenderProxy* ProxyInstance = new URenderProxy();
+        const UNode* BindingNode = RenderMeshes2Nodes.find(Mesh)->second;
         const uint32_t MeshBytesCount = static_cast<uint32_t>(Mesh->VertexData.size());
+        // Data Collect
         ProxyInstance->FirstVertexIdx = Index;
         ProxyInstance->VertexNum = MeshBytesCount / BytePerVertex;
-        const UNode* BindingNode = RenderMeshes2Nodes.find(Mesh)->second;
         ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(BindingNode);
 
         Mesh->RenderProxy = ProxyInstance;
@@ -23,12 +24,12 @@ void URenderScene::GenerateWholeVertexBuffer()
     }
 
     // Create Vertex Buffer CPU Data
-    StagingData.reserve(TotalBytes);
+    AllVertexData.reserve(TotalBytes);
     uint32_t BytesOffset = 0;
     for (const auto& Mesh : AllMeshes) 
     {
         std::memcpy(
-            StagingData.data() + BytesOffset, 
+            AllVertexData.data() + BytesOffset, 
             Mesh->VertexData.data(), 
             Mesh->VertexData.size()
         );
@@ -39,6 +40,21 @@ void URenderScene::GenerateWholeVertexBuffer()
 void URenderScene::UpdateVisibleMesh()
 {
 
+}
+
+uint32_t URenderScene::GetTextureIdx(UTexture* Texture) const
+{
+    auto It = std::find(Textures.begin(), Textures.end(), Texture);
+
+    if(It != Textures.end())
+    {
+        // find it
+        return static_cast<uint32_t>(std::distance(Textures.begin(), It));
+    }
+    else
+    {
+        return INVALID_TEXTURE;
+    }
 }
 
 glm::mat4 UNode::GetLocal2WorldMatrix(const UNode* InNode)
