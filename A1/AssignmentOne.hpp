@@ -1,5 +1,4 @@
 #pragma once
-
 #include "AssignmentOne-Vertex.hpp"
 #include "../RTG.hpp"
 #include "../mat4.hpp"
@@ -208,7 +207,10 @@ struct UAssignmentOne : RTG::Application
 		std::string FilePath = "external/s72Loader/example_scene/example.s72";
 		URenderScene Scene;
 		void InitializeRenderScene();
+		// TODO:delete function below
 		void PrintRenderSceneMesh();
+		void PrintRenderProxies();
+		void PrintMatrix(const std::string& name, const glm::mat4& m) ;
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);

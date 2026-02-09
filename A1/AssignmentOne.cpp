@@ -8,16 +8,18 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include <iomanip>	// TODO: delete this include
 #include "../A1/Render/RenderScene.hpp"
 #include "../A1/Render/RenderExtractor.hpp"
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/glm/gtx/string_cast.hpp"
+#define GLM_ENABLE_EXPERIMENTAL	// TODO: delete this include
+#include "glm/glm/gtx/string_cast.hpp"	// TODO: delete this include
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
 	// load the scene
 	InitializeRenderScene();
 	PrintRenderSceneMesh();
+	PrintRenderProxies();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -299,27 +301,37 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				nullptr 					// pDescriptorCopies
 			);
 		}
-        // Create Object Vertices
+        
+		// Create Object Vertices
 		{
-			std::vector< FVertexDataSet > Vertices;
+			// std::vector< URenderMesh::FVertex > Vertices;
 			// Create Quadrilateral:
-			InstantializePlane(Vertices);
+			// InstantializePlane(Vertices);
 
 			// Create Torus
-			InstantializeTorus(Vertices);
+			// InstantializeTorus(Vertices);
 
-			size_t Bytes = Vertices.size() * sizeof(Vertices[0]);
+			// size_t Bytes = Vertices.size() * sizeof(Vertices[0]);
 
+			// ObjectVertices = rtg.helpers.create_buffer
+			// (
+			// 	Bytes,
+			// 	VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			// 	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			// 	Helpers::Unmapped
+			// );
+
+			// // copy data to buffer
+			// rtg.helpers.transfer_to_buffer(Vertices.data(), Bytes, ObjectVertices);
+			// TODO: Upload all mesh vertices
 			ObjectVertices = rtg.helpers.create_buffer
 			(
-				Bytes,
+				Scene.TotalBytes,
 				VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				Helpers::Unmapped
 			);
-
-			// copy data to buffer
-			rtg.helpers.transfer_to_buffer(Vertices.data(), Bytes, ObjectVertices);
+			rtg.helpers.transfer_to_buffer(Scene.StagingData.data(), Scene.TotalBytes, ObjectVertices);
 		}
 	}
 
@@ -655,9 +667,6 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 	FWorkspace &workspace = workspaces[render_params.workspace_index];
 	VkFramebuffer framebuffer = SwapchainFramebuffer[render_params.image_index];
 
-	// //record (into `workspace.command_buffer`) commands that run a `render_pass` that just clears `framebuffer`:
-	// refsol::Tutorial_render_record_blank_frame(rtg, render_pass, framebuffer, &workspace.command_buffer);
-
 	// Reset the command buffer (clear old commands)
 	VK(vkResetCommandBuffer(workspace.command_buffer, 0));
 	{
@@ -669,10 +678,10 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 		VK(vkBeginCommandBuffer(workspace.command_buffer, &begin_info));
 	}
 
-	if(!ObjectInstances.empty())
+	if(!Scene.ProxyInstances.empty())
 	{
 		// upload object transforms:
-		size_t NeededBytes = ObjectInstances.size() * sizeof(UAssignmentOne::FLambertPipeline::FTransform);
+		size_t NeededBytes = Scene.ProxyInstances.size() * sizeof(UAssignmentOne::FLambertPipeline::FTransform);
 		if(workspace.TransformsSrc.handle == VK_NULL_HANDLE ||
 			workspace.TransformsSrc.size < NeededBytes)
 		{
@@ -737,10 +746,10 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			// Copy Transform into TransformSrc
 			{
 				assert(workspace.TransformsSrc.allocation.mapped);
-				FLambertPipeline::FTransform *Out = reinterpret_cast< FLambertPipeline::FTransform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
-				for (FObjectInstance const &Inst : ObjectInstances)
+				URenderProxy::FTransform *Out = reinterpret_cast< URenderProxy::FTransform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				for (URenderProxy* Inst : Scene.ProxyInstances)
 				{
-					*Out = Inst.Transform;
+					*Out = Inst->Transform;
 					++Out;
 				}
 			}
@@ -932,7 +941,7 @@ void UAssignmentOne::RenderBackgroundPipeline(FWorkspace &workspace)
 void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 {
     // Draw with the objects pipeline:
-	if (!ObjectInstances.empty()) 
+	if (!Scene.ProxyInstances.empty()) 
 	{ 
 		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, LambertPipeline.Handle);
 	}
@@ -965,23 +974,25 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 
 	// Camera descriptor set is still bound, but unused(!)
 
-	// Draw all Instances:
-	for (FObjectInstance const &Inst : ObjectInstances)
+	// Use FRenderProxy as ObjectInstance
+	const std::vector<URenderProxy*>& ProxyList = Scene.ProxyInstances;
+	for (uint32_t i = 0; i < ProxyList.size(); i++)
 	{
-		uint32_t Index = uint32_t(&Inst - &ObjectInstances[0]);
-		
+		const URenderProxy* Inst = ProxyList[i];
 		vkCmdBindDescriptorSets
 		(
 			workspace.command_buffer,			// Command buffer
 			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
 			LambertPipeline.Layout,				// Pipeline Layout
 			3, 	// Third Sets
-			1, &TextureDescriptors[Inst.Texture],	// descriptor sets count, ptr
+			1, &TextureDescriptors[Inst->Texture],	// descriptor sets count, ptr
 			0, nullptr	// Dynamic offsets count, ptr
 		);
-		
-		vkCmdDraw(workspace.command_buffer, Inst.Vertices.count, 1, Inst.Vertices.first, Index);
+
+		vkCmdDraw(workspace.command_buffer, Inst->VertexNum, 1, Inst->FirstVertexIdx, i);
 	}
+
+
 }
 
 void UAssignmentOne::update(float dt)
@@ -1044,58 +1055,6 @@ void UAssignmentOne::update(float dt)
 		World.SUN_ENERGY.r = 1.0f;
 		World.SUN_ENERGY.g = 1.0f;
 		World.SUN_ENERGY.b = 0.9f;		
-	}
-
-	// Make some Objects
-	{
-		ObjectInstances.clear();
-		{
-			// Plane translated + x by one unit:
-			Mat4 WORLD_FROM_LOCAL
-			{
-				1.0f, 0.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				1.0f, 0.0f, 0.0f, 1.0f,
-			};
-
-			ObjectInstances.emplace_back(FObjectInstance
-			{
-				.Vertices = PlaneVertices,
-				.Transform
-				{
-					.CLIP_FROM_LOCAL = CLIP_FROM_WORLD * WORLD_FROM_LOCAL,
-					.WORLD_FROM_LOCAL = WORLD_FROM_LOCAL,
-					.WORLD_FROM_LOCAL_NORMAL = WORLD_FROM_LOCAL,
-				},
-				.Texture = 1,
-			});
-		}
-
-		{
-			// Torus translated -x by one unit and rotated CCW around +y:
-			float Angle = Time / 60.0f * 2.0f * float(M_PI) * 10.0f;
-			float Ca = std::cos(Angle);
-			float Sa = std::sin(Angle);
-			Mat4 WORLD_FROM_LOCAL
-			{
-				Ca, 0.0f, -Sa, 0.0f,
-				0.0f, 1.0f, 0.0f, 0.0f,
-				Sa, 0.0f, Ca, 0.0f,
-				-1.0f, 0.0f, 0.0f, 1.0f, 
-			};
-
-			ObjectInstances.emplace_back(FObjectInstance
-			{
-				.Vertices = TorusVertices,
-				.Transform
-				{
-					.CLIP_FROM_LOCAL = CLIP_FROM_WORLD * WORLD_FROM_LOCAL,
-					.WORLD_FROM_LOCAL = WORLD_FROM_LOCAL,
-					.WORLD_FROM_LOCAL_NORMAL = WORLD_FROM_LOCAL,
-				}
-			});
-		}
 	}
 }
 
@@ -1218,12 +1177,13 @@ void UAssignmentOne::InitializeRenderScene()
 	URenderExtractor::BuildRenderScene(FilePath, Scene);
 }
 
+//TODO: Delete this function
 void UAssignmentOne::PrintRenderSceneMesh()
 {
 	std::cout << "======= Render Scene Mesh Debug Info =======" << std::endl;
     
     int MeshIndex = 0;
-    for (const auto& [NodePtr, Mesh] : Scene.RenderMeshes) {
+    for (const auto& [NodePtr, Mesh] : Scene.Nodes2RenderMeshes) {
         std::cout << "\n[Mesh #" << MeshIndex++ << "]" << std::endl;
         
         
@@ -1252,46 +1212,70 @@ void UAssignmentOne::PrintRenderSceneMesh()
     std::cout << "============================================" << std::endl;
 }
 
+void UAssignmentOne::PrintMatrix(const std::string& name, const glm::mat4& m) {
+    std::cout << "    " << name << ":" << std::endl;
+    for (int i = 0; i < 4; ++i) {
+        std::cout << "      [ ";
+        for (int j = 0; j < 4; ++j) {
+            std::cout << std::setw(8) << std::fixed << std::setprecision(2) << m[j][i] << " ";
+        }
+        std::cout << "]" << std::endl;
+    }
+}
+
+void UAssignmentOne::PrintRenderProxies() {
+    std::cout << "=== Render Scene Proxies (Count: " << Scene.ProxyInstances.size() << ") ===" << std::endl;
+    for (size_t i = 0; i < Scene.ProxyInstances.size(); ++i) {
+        const auto& p = Scene.ProxyInstances[i];
+        std::cout << "Proxy [" << i << "]:" << std::endl;
+        std::cout << "  - Vertex: StartIdx=" << p->FirstVertexIdx << ", Count=" << p->VertexNum << std::endl;
+        std::cout << "  - Texture ID: " << p->Texture << std::endl;
+        
+        PrintMatrix("WORLD_FROM_LOCAL", p->Transform.WORLD_FROM_LOCAL);
+        std::cout << "-----------------------------------------------" << std::endl;
+    }
+}
+
 //BEGIN~ Instantialize Mesh's Vertices
 void UAssignmentOne::InstantializePlane(std::vector< FVertexDataSet > &Vertices)
 {
 	PlaneVertices.first = uint32_t(Vertices.size());
 	Vertices.emplace_back(FVertexDataSet
 	{
-		.Position{ .x = -100.0f, .y = -100.0f, .z = -0.14f },
+		.Position{ .x = -10.0f, .y = -10.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
 		.Texcoord{ .u = 0.0f, .v = 0.0f },
 	});
 	Vertices.emplace_back(FVertexDataSet
 	{
-		.Position{ .x = 100.0f, .y = -100.0f, .z = -0.14f },
+		.Position{ .x = 10.0f, .y = -10.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 100.0f, .v = 0.0f },
+		.Texcoord{ .u = 10.0f, .v = 0.0f },
 	});
 	Vertices.emplace_back(FVertexDataSet
 	{
-		.Position{ .x = -100.0f, .y = 100.0f, .z = -0.14f },
+		.Position{ .x = -10.0f, .y = 10.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 0.0f, .v = 100.0f },
+		.Texcoord{ .u = 0.0f, .v = 10.0f },
 	});
 	
 	Vertices.emplace_back(FVertexDataSet
 	{
-		.Position{ .x = 100.0f, .y = 100.0f, .z = -0.14f },
+		.Position{ .x = 10.0f, .y = 10.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 100.0f, .v = 100.0f },
+		.Texcoord{ .u = 10.0f, .v = 10.0f },
 	});
 	Vertices.emplace_back(FVertexDataSet
 	{
-		.Position{ .x = -100.0f, .y = 100.0f, .z = -0.14f },
+		.Position{ .x = -10.0f, .y = 10.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
-		.Texcoord{ .u = 0.0f, .v = 100.0f },
+		.Texcoord{ .u = 0.0f, .v = 10.0f },
 	});
 	Vertices.emplace_back(FVertexDataSet
 	{
-		.Position{ .x = 100.0f, .y = -100.0f, .z = -0.14f },
+		.Position{ .x = 10.0f, .y = -10.0f, .z = -0.14f },
 		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
-		.Texcoord{ .u = 100.0f, .v = 0.0f },
+		.Texcoord{ .u = 10.0f, .v = 0.0f },
 	});
 
 	PlaneVertices.count = uint32_t(Vertices.size() - PlaneVertices.first);

@@ -12,7 +12,7 @@ static std::array< VkVertexInputBindingDescription, 1 > Bindings
     }
 };
 
-static std::array< VkVertexInputAttributeDescription, 3 > Attributes
+static std::array< VkVertexInputAttributeDescription, 4 > Attributes
 {
     VkVertexInputAttributeDescription
     {
@@ -25,12 +25,19 @@ static std::array< VkVertexInputAttributeDescription, 3 > Attributes
     {
         .location = 1,
         .binding = 0,
-        .format = VK_FORMAT_R8G8B8A8_UNORM,
+        .format = VK_FORMAT_R32G32B32_SFLOAT,
         .offset = offsetof(FVertexDataSet, Normal),
     },
     VkVertexInputAttributeDescription
     {
         .location = 2,
+        .binding = 0,
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+        .offset = offsetof(FVertexDataSet, Tangent),
+    },
+    VkVertexInputAttributeDescription
+    {
+        .location = 3,
         .binding = 0,
         .format = VK_FORMAT_R32G32_SFLOAT,
         .offset = offsetof(FVertexDataSet, Texcoord),

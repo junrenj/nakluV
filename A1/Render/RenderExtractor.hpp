@@ -11,13 +11,14 @@ public:
 
     // New Node Tree
     static void BuildUNodeTree(URenderScene& RenderScene);
-    static UNode* BuildUNodeTreeIterate(const S72::Node& InS72Nodes, URenderScene& RenderScene);
+    static UNode* BuildUNodeTreeIterate(const S72::Node& InS72Nodes, URenderScene& RenderScene, UNode* Parent);
     static void BuildUNodesBBoxIterate(UNode* InNode);
     // New RenderMesh Structure
     static void CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URenderMesh& OutMesh);
 
 private:
     static std::vector<uint8_t> ReadBinaryFile(const std::string& path);
+    static std::unique_ptr<UTexture> ReadBulkDataFromImage(const S72::Texture& InTexture);
 
 private:
     inline static S72 CurrentS72;

@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
-#include "ImageLoader.hpp"
+// #include "ImageLoader.hpp"
 
 Tutorial::Tutorial(RTG &rtg_) : rtg(rtg_) 
 {
@@ -1561,119 +1561,119 @@ void Tutorial::InstantializeTorus(std::vector< PosNorTexVertex > &Vertices)
 //BEGIN~ Load Textures
 void Tutorial::LoadDefaultComputeTextures()
 {
-	Textures.reserve(2);
-	//texture 0 will be a dark grey / light grey checkerboard with a red square at the origin.
-	{ 
-		//actually make the texture:
-		uint32_t size = 128;
-		std::vector< uint32_t > data;
-		data.reserve(size * size);
-		for (uint32_t y = 0; y < size; ++y) {
-			float fy = (y + 0.5f) / float(size);
-			for (uint32_t x = 0; x < size; ++x) {
-				float fx = (x + 0.5f) / float(size);
-				//highlight the origin:
-				if      (fx < 0.05f && fy < 0.05f) data.emplace_back(0xff0000ff); //red
-				else if ( (fx < 0.5f) == (fy < 0.5f)) data.emplace_back(0xff444444); //dark grey
-				else data.emplace_back(0xffbbbbbb); //light grey
-			}
-		}
-		assert(data.size() == size*size);
+// 	Textures.reserve(2);
+// 	//texture 0 will be a dark grey / light grey checkerboard with a red square at the origin.
+// 	{ 
+// 		//actually make the texture:
+// 		uint32_t size = 128;
+// 		std::vector< uint32_t > data;
+// 		data.reserve(size * size);
+// 		for (uint32_t y = 0; y < size; ++y) {
+// 			float fy = (y + 0.5f) / float(size);
+// 			for (uint32_t x = 0; x < size; ++x) {
+// 				float fx = (x + 0.5f) / float(size);
+// 				//highlight the origin:
+// 				if      (fx < 0.05f && fy < 0.05f) data.emplace_back(0xff0000ff); //red
+// 				else if ( (fx < 0.5f) == (fy < 0.5f)) data.emplace_back(0xff444444); //dark grey
+// 				else data.emplace_back(0xffbbbbbb); //light grey
+// 			}
+// 		}
+// 		assert(data.size() == size*size);
 
-		// make a place for the texture to live on the GPU
-		Textures.emplace_back(rtg.helpers.create_image(
-			VkExtent2D{ .width = size , .height = size }, //size of image
-			VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
-			Helpers::Unmapped
-		));
+// 		// make a place for the texture to live on the GPU
+// 		Textures.emplace_back(rtg.helpers.create_image(
+// 			VkExtent2D{ .width = size , .height = size }, //size of image
+// 			VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+// 			VK_IMAGE_TILING_OPTIMAL,
+// 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+// 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+// 			Helpers::Unmapped
+// 		));
 
-		// transfer data
-		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
-	}
-	// texture 1 will be a classic 'xor' texture:
-	{ 
-		//actually make the texture:
-		uint32_t size = 256;
-		std::vector< uint32_t > data;
-		data.reserve(size * size);
-		for (uint32_t y = 0; y < size; ++y) {
-			for (uint32_t x = 0; x < size; ++x) {
-				uint8_t r = uint8_t(x) ^ uint8_t(y);
-				uint8_t g = uint8_t(x + 128) ^ uint8_t(y);
-				uint8_t b = uint8_t(x) ^ uint8_t(y + 27);
-				uint8_t a = 0xff;
-				data.emplace_back( uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24) );
-			}
-		}
-		assert(data.size() == size*size);
+// 		// transfer data
+// 		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
+// 	}
+// 	// texture 1 will be a classic 'xor' texture:
+// 	{ 
+// 		//actually make the texture:
+// 		uint32_t size = 256;
+// 		std::vector< uint32_t > data;
+// 		data.reserve(size * size);
+// 		for (uint32_t y = 0; y < size; ++y) {
+// 			for (uint32_t x = 0; x < size; ++x) {
+// 				uint8_t r = uint8_t(x) ^ uint8_t(y);
+// 				uint8_t g = uint8_t(x + 128) ^ uint8_t(y);
+// 				uint8_t b = uint8_t(x) ^ uint8_t(y + 27);
+// 				uint8_t a = 0xff;
+// 				data.emplace_back( uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24) );
+// 			}
+// 		}
+// 		assert(data.size() == size*size);
 
-		//make a place for the texture to live on the GPU:
-		Textures.emplace_back(rtg.helpers.create_image(
-			VkExtent2D{ .width = size , .height = size }, //size of image
-			VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
-			Helpers::Unmapped
-		));
+// 		//make a place for the texture to live on the GPU:
+// 		Textures.emplace_back(rtg.helpers.create_image(
+// 			VkExtent2D{ .width = size , .height = size }, //size of image
+// 			VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
+// 			VK_IMAGE_TILING_OPTIMAL,
+// 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+// 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+// 			Helpers::Unmapped
+// 		));
 
-		//transfer data:
-		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
-	}
-}
+// 		//transfer data:
+// 		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
+// 	}
+// }
 
-void Tutorial::LoadDonutAndWaterTextures()
-{
-	 // make some textures
-	{
-		Textures.reserve(2);
+// void Tutorial::LoadDonutAndWaterTextures()
+// {
+// 	 // make some textures
+// 	{
+// 		Textures.reserve(2);
 
-		// First Texture
-		{
-			int Width,Height;
-			std::vector< uint32_t > Data;
-			Data = ImageLoader::Load("../Textures/YellowPaint.jpg", Width, Height);
-			assert(Data.size() == Width*Height);
+// 		// First Texture
+// 		{
+// 			int Width,Height;
+// 			std::vector< uint32_t > Data;
+// 			Data = ImageLoader::Load("../Textures/YellowPaint.jpg", Width, Height);
+// 			assert(Data.size() == Width*Height);
 
-			// make a place for the texture to live on the GPU
-			Textures.emplace_back(rtg.helpers.create_image
-			(
-				VkExtent2D{ .width = (uint32_t)Width , .height = (uint32_t)Height }, // size of image
-				VK_FORMAT_R8G8B8A8_UNORM, // how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
-				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // will sample and upload
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // should be device-local
-				Helpers::Unmapped
-			));
+// 			// make a place for the texture to live on the GPU
+// 			Textures.emplace_back(rtg.helpers.create_image
+// 			(
+// 				VkExtent2D{ .width = (uint32_t)Width , .height = (uint32_t)Height }, // size of image
+// 				VK_FORMAT_R8G8B8A8_UNORM, // how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+// 				VK_IMAGE_TILING_OPTIMAL,
+// 				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // will sample and upload
+// 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // should be device-local
+// 				Helpers::Unmapped
+// 			));
 
-			// transfer data
-			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
-		}
+// 			// transfer data
+// 			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
+// 		}
 
-		// Texture 1 will be a classic 'xor' texture
-		{
-			int Width,Height;
-			std::vector< uint32_t > Data;
-			Data = ImageLoader::Load("../Textures/WaterMask.png", Width, Height);
-			assert(Data.size() == Width*Height);
+// 		// Texture 1 will be a classic 'xor' texture
+// 		{
+// 			int Width,Height;
+// 			std::vector< uint32_t > Data;
+// 			Data = ImageLoader::Load("../Textures/WaterMask.png", Width, Height);
+// 			assert(Data.size() == Width*Height);
 
-			// Make a place for the texture to live on the GPU:
-			Textures.emplace_back(rtg.helpers.create_image
-			(
-			VkExtent2D{ .width = (uint32_t)Width  , .height = (uint32_t)Height }, // size of image
-			VK_FORMAT_R8G8B8A8_SRGB, 	// how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 	// will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 							// should be device-local
-			Helpers::Unmapped
-			));
+// 			// Make a place for the texture to live on the GPU:
+// 			Textures.emplace_back(rtg.helpers.create_image
+// 			(
+// 			VkExtent2D{ .width = (uint32_t)Width  , .height = (uint32_t)Height }, // size of image
+// 			VK_FORMAT_R8G8B8A8_SRGB, 	// how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
+// 			VK_IMAGE_TILING_OPTIMAL,
+// 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 	// will sample and upload
+// 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 							// should be device-local
+// 			Helpers::Unmapped
+// 			));
 
-			// Transfer data:
-			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
-		}
-	}
+// 			// Transfer data:
+// 			rtg.helpers.transfer_to_image(Data.data(), sizeof(Data[0]) * Data.size(), Textures.back());
+// 		}
+// 	}
 }
 //END~ Load Textures
