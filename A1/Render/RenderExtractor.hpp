@@ -12,7 +12,9 @@ public:
     // New Node Tree
     static void BuildUNodeTree(URenderScene& RenderScene, std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
     static UNode* BuildUNodeTreeIterate(const S72::Node& InS72Nodes, URenderScene& RenderScene, UNode* Parent,std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
+    // Bounding Box
     static void BuildUNodesBBoxIterate(UNode* InNode);
+    static void UpdateBBoxWithTransform(UBoundingBox& OutBox, const UBoundingBox& LocalBox, const glm::mat4& Transform);
     // New Material Structure
     static void BuildUMaterialData(std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex , URenderScene& Scene);
     static UMaterial* CloneUMaterialFromS72Material(const S72::Material& InS72Mat, std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, const URenderScene& Scene);

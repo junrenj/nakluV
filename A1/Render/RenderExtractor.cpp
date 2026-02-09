@@ -183,24 +183,47 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
 
 void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
 {
-    UBoundingBox NewBBox;
-    NewBBox.Min = glm::vec3(FLT_MAX);
-    NewBBox.Max = glm::vec3(-FLT_MAX);
+    UBoundingBox BBox_World;
+    BBox_World.Min = glm::vec3(FLT_MAX);
+    BBox_World.Max = glm::vec3(-FLT_MAX);
     // if has mesh first use mesh's bounding box
     if(InNode->Mesh)
     {
-        NewBBox = InNode->Mesh->BoundingBox;
+        glm::mat4 Local2World = UNode::GetLocal2WorldMatrix(InNode);
+        UBoundingBox BBox_Local = InNode->Mesh->BoundingBox;
+        UpdateBBoxWithTransform(BBox_World, BBox_Local, Local2World);
     }
 
     // Iterate Child
     for (UNode* Child : InNode->Children)
     {
         BuildUNodesBBoxIterate(Child);
-        NewBBox.Min = glm::min(NewBBox.Min, Child->BoundingBox.Min);
-        NewBBox.Max = glm::max(NewBBox.Max, Child->BoundingBox.Max);
+        BBox_World.Min = glm::min(BBox_World.Min, Child->BoundingBox.Min);
+        BBox_World.Max = glm::max(BBox_World.Max, Child->BoundingBox.Max);
     }
 
-    InNode->BoundingBox = NewBBox;
+    InNode->BoundingBox = BBox_World;
+}
+
+void URenderExtractor::UpdateBBoxWithTransform(UBoundingBox& OutBox, const UBoundingBox& LocalBox, const glm::mat4& Transform)
+{
+    glm::vec3 Corners[8] = {
+        LocalBox.Min,
+        glm::vec3(LocalBox.Min.x, LocalBox.Min.y, LocalBox.Max.z),
+        glm::vec3(LocalBox.Min.x, LocalBox.Max.y, LocalBox.Min.z),
+        glm::vec3(LocalBox.Min.x, LocalBox.Max.y, LocalBox.Max.z),
+        glm::vec3(LocalBox.Max.x, LocalBox.Min.y, LocalBox.Min.z),
+        glm::vec3(LocalBox.Max.x, LocalBox.Min.y, LocalBox.Max.z),
+        glm::vec3(LocalBox.Max.x, LocalBox.Max.y, LocalBox.Min.z),
+        LocalBox.Max
+    };
+
+    for (int i = 0; i < 8; i++)
+    {
+        glm::vec4 Position = Transform * glm::vec4(Corners[i], 1.0f);
+        OutBox.Min = glm::min(OutBox.Min, glm::vec3(Position));
+        OutBox.Max = glm::max(OutBox.Max, glm::vec3(Position));
+    }
 }
 //END:  UNode Data Extract
 

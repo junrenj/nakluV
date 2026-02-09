@@ -14,6 +14,7 @@
 #define GLM_ENABLE_EXPERIMENTAL	// TODO: delete this include
 #include "glm/glm/gtx/string_cast.hpp"	// TODO: delete this include
 
+
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
 	// load the scene
@@ -305,26 +306,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
         
 		// Create Object Vertices
 		{
-			// std::vector< URenderMesh::FVertex > Vertices;
-			// Create Quadrilateral:
-			// InstantializePlane(Vertices);
-
-			// Create Torus
-			// InstantializeTorus(Vertices);
-
-			// size_t Bytes = Vertices.size() * sizeof(Vertices[0]);
-
-			// ObjectVertices = rtg.helpers.create_buffer
-			// (
-			// 	Bytes,
-			// 	VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			// 	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			// 	Helpers::Unmapped
-			// );
-
-			// // copy data to buffer
-			// rtg.helpers.transfer_to_buffer(Vertices.data(), Bytes, ObjectVertices);
-			// TODO: Upload all mesh vertices
 			ObjectVertices = rtg.helpers.create_buffer
 			(
 				Scene.TotalBytes,
@@ -1178,7 +1159,7 @@ void UAssignmentOne::InitializeRenderScene()
 	URenderExtractor::BuildRenderScene(FilePath, Scene);
 }
 
-//TODO: Delete this function
+//TODO: Delete these function
 void UAssignmentOne::PrintRenderSceneMesh()
 {
 	std::cout << "======= Render Scene Mesh Debug Info =======" << std::endl;

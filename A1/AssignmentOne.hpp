@@ -2,6 +2,7 @@
 #include "AssignmentOne-Vertex.hpp"
 #include "../RTG.hpp"
 #include "../mat4.hpp"
+#include "../PosColVertex.hpp"
 #include "Render/RenderScene.hpp"
 
 
@@ -37,6 +38,26 @@ struct UAssignmentOne : RTG::Application
 			float time;
 		};
     }BackgroundPipeline;
+
+	// Linepipeline used for Debug
+	struct FLinesPipeline
+	{
+		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
+		struct Camera
+		{
+			Mat4 CLIP_FROM_WORLD;
+		};
+		static_assert(sizeof(Camera) == 16*4, "camera buffer structure is packed");
+	
+		VkPipelineLayout Layout = VK_NULL_HANDLE;
+
+		using Vertex = PosColVertex;
+
+		VkPipeline Handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass RenderPass, uint32_t Subpass);
+		void Destroy(RTG &);
+	}LinesPipeline;
 
     struct FLambertPipeline
     {
@@ -207,7 +228,7 @@ struct UAssignmentOne : RTG::Application
 		std::string FilePath = "external/s72Loader/example_scene/example.s72";
 		URenderScene Scene;
 		void InitializeRenderScene();
-		// TODO:delete function below
+		// TODO:delete functions below
 		void PrintRenderSceneMesh();
 		void PrintRenderProxies();
 		void PrintMatrix(const std::string& name, const glm::mat4& m);
