@@ -228,6 +228,7 @@ struct UAssignmentOne : RTG::Application
 		std::string FilePath = "external/s72Loader/example_scene/example.s72";
 		URenderScene Scene;
 		void InitializeRenderScene();
+		void ReserveTextures();		// Reserve Texture to gpu
 		// TODO:delete functions below
 		void PrintRenderSceneMesh();
 		void PrintRenderProxies();

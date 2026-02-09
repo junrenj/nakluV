@@ -318,7 +318,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	}
 
     // make some Textures
-	LoadDefaultComputeTextures();
+	ReserveTextures();
 
      // make image views for the textures
 	{
@@ -1159,6 +1159,27 @@ void UAssignmentOne::InitializeRenderScene()
 	URenderExtractor::BuildRenderScene(FilePath, Scene);
 }
 
+void UAssignmentOne::ReserveTextures()
+{
+    const std::vector<UTexture*>& TexturesData = Scene.Textures;
+    Textures.reserve(TexturesData.size());
+    // TODO: if we have mipmap, it would pull more on it. for now mipmap level0 is enough
+    for (uint32_t i = 0; i < Textures.size(); i++)
+    {
+        const UTexture::FTextureMipMap& MipmapData = *(TexturesData[i]->MipmapsData[0]);
+        Textures.emplace_back(rtg.helpers.create_image(
+			VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
+			VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+			Helpers::Unmapped
+		));
+        // transfer data
+        rtg.helpers.transfer_to_image(MipmapData.BulkData.data(), sizeof(MipmapData.BulkData[0]) * MipmapData.BulkData.size(), Textures.back());
+    }
+    
+}
 //TODO: Delete these function
 void UAssignmentOne::PrintRenderSceneMesh()
 {

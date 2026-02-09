@@ -401,7 +401,7 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
     }
 
     // 3. Mipmap Structure
-    std::unique_ptr<UTexture::FTextureMipMap> Mip0 = std::make_unique<UTexture::FTextureMipMap>();
+    UTexture::FTextureMipMap* Mip0 = new UTexture::FTextureMipMap();
     Mip0->SizeX = static_cast<uint32_t>(Width);
     Mip0->SizeY = static_cast<uint32_t>(Height);
     
@@ -409,7 +409,7 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
     Mip0->BulkData.resize(ImageSize);
     std::memcpy(Mip0->BulkData.data(), Pixels, ImageSize);
 
-    NewTexture->MipmapData.push_back(std::move(Mip0));
+    NewTexture->MipmapsData.push_back(std::move(Mip0));
 
     // 4. release data
     stbi_image_free(Pixels);

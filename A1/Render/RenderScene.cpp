@@ -15,6 +15,8 @@ void URenderScene::GenerateWholeVertexBuffer()
         ProxyInstance->FirstVertexIdx = Index;
         ProxyInstance->VertexNum = MeshBytesCount / BytePerVertex;
         ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(BindingNode);
+        // TODO: Add more Textures and also separate logic
+        ProxyInstance->Texture = 0;//Mesh->Material->AlbedoTex;
 
         Mesh->RenderProxy = ProxyInstance;
         ProxyInstances.push_back(ProxyInstance);
@@ -44,6 +46,10 @@ void URenderScene::UpdateVisibleMesh()
 
 uint32_t URenderScene::GetTextureIdx(UTexture* Texture) const
 {
+    if(!Texture)
+    {
+        return INVALID_TEXTURE;
+    }
     auto It = std::find(Textures.begin(), Textures.end(), Texture);
 
     if(It != Textures.end())

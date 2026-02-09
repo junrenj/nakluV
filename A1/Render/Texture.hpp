@@ -25,5 +25,5 @@ public:
         std::vector<uint8_t> BulkData;
     };
 
-    std::vector<std::unique_ptr<FTextureMipMap> > MipmapData;
+    std::vector<FTextureMipMap* > MipmapsData;
 };
