@@ -22,6 +22,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	PrintRenderSceneMesh();
 	PrintRenderProxies();
 	PrintMaterial();
+    PrintTextureSizes();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -1290,6 +1291,25 @@ void UAssignmentOne::PrintMaterial()
         }
 
         std::cout << "------------------------------------------------------------------\n";
+    }
+}
+
+void UAssignmentOne::PrintTextureSizes() {
+    const std::vector<UTexture*>& Textures_Data = Scene.Textures;
+    for (size_t i = 0; i < Textures_Data.size(); ++i) {
+        const auto& Tex = Textures_Data[i];
+        
+        if (!Tex->MipmapsData.empty() && Tex->MipmapsData[0] != nullptr) {
+            uint32_t width  = Tex->MipmapsData[0]->SizeX;
+            uint32_t height = Tex->MipmapsData[0]->SizeY;
+            
+            std::cout << "Texture [" << i << "] - " 
+                      << "Level 0 Size: " << width << " x " << height 
+                      << (Tex->Type == UTexture::EType::Cube ? " (Cube)" : " (Flat)")
+                      << std::endl;
+        } else {
+            std::cerr << "Texture [" << i << "] - Warning: No Mipmap data found!" << std::endl;
+        }
     }
 }
 

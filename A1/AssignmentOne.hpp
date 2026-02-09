@@ -236,6 +236,7 @@ struct UAssignmentOne : RTG::Application
 		std::string FormatTexIdx(uint32_t idx);
 		std::string ToString(EMaterialType type);
 		void PrintMaterial();
+		void PrintTextureSizes();
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);
