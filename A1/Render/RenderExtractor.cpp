@@ -119,12 +119,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
     if(InS72Node.light)
     {
         const S72::Light& S72Light = *InS72Node.light;
-        ULight* NewLight = new ULight();
-        // Light data
-        NewLight->Tint.r = S72Light.tint.r;
-        NewLight->Tint.g = S72Light.tint.g;
-        NewLight->Tint.b = S72Light.tint.b;
-        NewLight->shadow = S72Light.shadow;
+        ULight* NewLight = nullptr;
 
         std::visit([&](auto const& S72Light)
         {
@@ -133,41 +128,49 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
             // -------- Sun --------
             if constexpr (std::is_same_v<T, S72::Light::Sun>)
             {
-                ULight_Sun Sun;
-                Sun.Angle = S72Light.angle;
-                Sun.Strength = S72Light.strength;
+                ULight_Sun* Sun = new ULight_Sun();
+                Sun->Angle = S72Light.angle;
+                Sun->Strength = S72Light.strength;
 
-                NewLight = &Sun;
+                NewLight = Sun;
             }
 
             // -------- Sphere --------
             else if constexpr (std::is_same_v<T, S72::Light::Sphere>)
             {
-                ULight_Sphere Sphere;
-                Sphere.Radius = S72Light.radius;
-                Sphere.Power  = S72Light.power;
-                Sphere.Limit  = S72Light.limit;
+                ULight_Sphere* Sphere = new ULight_Sphere();
+                Sphere->Radius = S72Light.radius;
+                Sphere->Power  = S72Light.power;
+                Sphere->Limit  = S72Light.limit;
 
-                NewLight = &Sphere;
+                NewLight = Sphere;
             }
 
             // -------- Spot --------
             else if constexpr (std::is_same_v<T, S72::Light::Spot>)
             {
-                ULight_Spot Spot;
-                Spot.Radius = S72Light.radius;
-                Spot.Power  = S72Light.power;
-                Spot.Limit  = S72Light.limit;
-                Spot.Fov    = S72Light.fov;
-                Spot.Blend  = S72Light.blend;
+                ULight_Spot* Spot = new ULight_Spot();
+                Spot->Radius = S72Light.radius;
+                Spot->Power  = S72Light.power;
+                Spot->Limit  = S72Light.limit;
+                Spot->Fov    = S72Light.fov;
+                Spot->Blend  = S72Light.blend;
 
-                NewLight = &Spot;
+                NewLight = Spot;
             }
 
         }, S72Light.source);
 
-        NewNode->light = NewLight;
-        RenderScene.Lights[NewLight] = NewNode;
+        if(NewLight)
+        {
+            // Light data
+            NewLight->Tint.r = S72Light.tint.r;
+            NewLight->Tint.g = S72Light.tint.g;
+            NewLight->Tint.b = S72Light.tint.b;
+            NewLight->shadow = S72Light.shadow;
+            NewNode->light = NewLight;
+            RenderScene.Lights[NewLight] = NewNode;
+        }
     }
 
     // 3. Iterate and bind children
