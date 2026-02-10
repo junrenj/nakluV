@@ -31,6 +31,7 @@ void URenderScene::GenerateMeshProxy()
         ProxyInstance->FirstVertexIdx = Index;
         ProxyInstance->VertexNum = MeshBytesCount / BytePerVertex;
         ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(BindingNode);
+        ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = UNode::GetLocal2WorldMatrix(BindingNode);
         // TODO: Add more Textures and also separate logic
         if(Mesh->Material->Type == EMaterialType::Environment)
         {
@@ -75,7 +76,7 @@ void URenderScene::GenerateLightProxy()
                 LightProxy->Position = glm::vec3(0,0,0);
                 LightProxy->Color = glm::vec3(Sun->Tint.r * Sun->Strength, Sun->Tint.g * Sun->Strength, Sun->Tint.b * Sun->Strength);
 
-                const glm::vec4 LocalDir = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+                const glm::vec4 LocalDir = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
                 glm::vec4 WorldDir = UNode::GetLocal2WorldMatrix(Node) * LocalDir;
                 LightProxy->Direction = glm::vec3(WorldDir);
                 break;

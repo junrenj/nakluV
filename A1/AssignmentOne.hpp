@@ -74,22 +74,6 @@ struct UAssignmentOne : RTG::Application
 			struct { float r, g, b, padding_; } SKY_ENERGY;
 			struct { float x, y, z, padding_; } SUN_DIRECTION;
 			struct { float r, g, b, padding_; } SUN_ENERGY;
-
-			void DirectionNormalize()
-			{ 
-				float Length2 = SUN_DIRECTION.x * SUN_DIRECTION.x +
-								SUN_DIRECTION.y * SUN_DIRECTION.y +
-								SUN_DIRECTION.z * SUN_DIRECTION.z;
-
-
-				if (Length2 > 0.0f)
-				{
-					float LenInv = 1.0f / std::sqrt(Length2);
-					SUN_DIRECTION.x *= LenInv;
-					SUN_DIRECTION.y *= LenInv;
-					SUN_DIRECTION.z *= LenInv;
-				}
-			}
 		};
         static_assert(sizeof(FWorld) == 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
 

@@ -959,7 +959,7 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 
 	// Camera descriptor set is still bound, but unused(!)
 
-	// Use FRenderProxy as ObjectInstance
+	// Use UMeshRenderProxy as ObjectInstance
 	const std::vector<UMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
 	for (uint32_t i = 0; i < ProxyList.size(); i++)
 	{
@@ -1034,7 +1034,6 @@ void UAssignmentOne::update(float dt)
 		World.SUN_DIRECTION.x = Scene.LightProxyInstances[0]->Direction.x;
 		World.SUN_DIRECTION.y = Scene.LightProxyInstances[0]->Direction.y;
 		World.SUN_DIRECTION.z = Scene.LightProxyInstances[0]->Direction.z;
-		World.DirectionNormalize();		// Normalize vector
 
 
 		World.SUN_ENERGY.r = Scene.LightProxyInstances[0]->Color.x;
