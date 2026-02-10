@@ -70,6 +70,15 @@ void RTG::Configuration::parse(int argc, char **argv)
     		argi += 1;
     		FilePath = argv[argi];
 		}
+		else if(arg == "--camera")
+		{
+			if (argi + 1 >= argc) 
+			{
+        		throw std::runtime_error("--camera requires a parameter (name of the camera you want to use).");
+    		}
+    		argi += 1;
+    		CameraName = argv[argi];
+		}
 		else 
 		{
 			throw std::runtime_error("Unrecognized argument '" + arg + "'.");
@@ -83,6 +92,7 @@ void RTG::Configuration::usage(std::function< void(const char *, const char *) >
 	callback("--drawing-size <w> <h>", "Set the size of the surface to draw to.");
 	callback("--headless", "Don't create a window; read events from stdin.");
 	callback("--scene FILEPATH", "replace FILEPATH with your filepath ex: external/s72Loader/example_scene/example.s72");
+	callback("--camera NAME", "replace NAME with camera's name you want to use ex: Camera001");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(

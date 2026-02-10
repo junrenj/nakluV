@@ -985,7 +985,7 @@ void UAssignmentOne::update(float dt)
     Time = std::fmod(Time + dt, 60.0f);
 
 	// camera orbiting the origin:
-	if(CameraMode == ECameraMode::Scene)
+	if(CameraMode == ECameraMode::Orbit)
 	{
 		// camera rotating around the origin:
 		float Angle = float(M_PI) * 2.0f * 2.0f * (Time / 60.0f);
@@ -1002,6 +1002,22 @@ void UAssignmentOne::update(float dt)
 			0.0f, 0.0f, 1.0f // up
 		);
 	}
+    else if(CameraMode == ECameraMode::Scene)
+    {
+        // TODO: read the data from camera list
+        const UCamera& NowCamera = Scene.Cameras[ActiveCameraIdx];
+        CLIP_FROM_WORLD = Perspective
+		(
+			FreeCamera.FOV,
+			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height),	// Aspect
+			FreeCamera.Near,
+			FreeCamera.Far
+		) * orbit
+		(
+			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
+			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
+		);
+    }
 	else if(CameraMode == ECameraMode::Free)
 	{
 		CLIP_FROM_WORLD = Perspective
@@ -1345,177 +1361,7 @@ void UAssignmentOne::PrintLightProxy()
     }
 }
 
-//BEGIN~ Instantialize Mesh's Vertices
-void UAssignmentOne::InstantializePlane(std::vector< FVertexDataSet > &Vertices)
+void UAssignmentOne::CameraUpdate()
 {
-	PlaneVertices.first = uint32_t(Vertices.size());
-	Vertices.emplace_back(FVertexDataSet
-	{
-		.Position{ .x = -10.0f, .y = -10.0f, .z = -0.14f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 0.0f, .v = 0.0f },
-	});
-	Vertices.emplace_back(FVertexDataSet
-	{
-		.Position{ .x = 10.0f, .y = -10.0f, .z = -0.14f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 10.0f, .v = 0.0f },
-	});
-	Vertices.emplace_back(FVertexDataSet
-	{
-		.Position{ .x = -10.0f, .y = 10.0f, .z = -0.14f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 0.0f, .v = 10.0f },
-	});
-	
-	Vertices.emplace_back(FVertexDataSet
-	{
-		.Position{ .x = 10.0f, .y = 10.0f, .z = -0.14f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f },
-		.Texcoord{ .u = 10.0f, .v = 10.0f },
-	});
-	Vertices.emplace_back(FVertexDataSet
-	{
-		.Position{ .x = -10.0f, .y = 10.0f, .z = -0.14f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
-		.Texcoord{ .u = 0.0f, .v = 10.0f },
-	});
-	Vertices.emplace_back(FVertexDataSet
-	{
-		.Position{ .x = 10.0f, .y = -10.0f, .z = -0.14f },
-		.Normal{ .x = 0.0f, .y = 0.0f, .z = 1.0f},
-		.Texcoord{ .u = 10.0f, .v = 0.0f },
-	});
 
-	PlaneVertices.count = uint32_t(Vertices.size() - PlaneVertices.first);
 }
-
-void UAssignmentOne::InstantializeTorus(std::vector< FVertexDataSet > &Vertices)
-{
-	TorusVertices.first = uint32_t(Vertices.size());
-
-	// will parameterize with (u,v) where:
-	// - u is angle around main axis (+z)
-	// - v is angle around the tube
-
-	constexpr float R1 = 0.75f; // main radius
-	constexpr float R2 = 0.25f; // tube radius
-
-	constexpr uint32_t U_STEPS = 20;
-	constexpr uint32_t V_STEPS = 16;
-
-	// texture repeats around the torus:
-	constexpr float V_REPEATS = 2.0f;
-	constexpr float U_REPEATS = int(V_REPEATS / R2 * R1 + 0.999f); // approximately square, rounded up
-
-	auto emplace_vertex = [&](uint32_t ui, uint32_t vi) {
-		// convert steps to angles:
-		// (doing the mod since trig on 2 M_PI may not exactly match 0)
-		float ua = (ui % U_STEPS) / float(U_STEPS) * 2.0f * float(M_PI);
-		float va = (vi % V_STEPS) / float(V_STEPS) * 2.0f * float(M_PI);
-
-		Vertices.emplace_back( FVertexDataSet
-			{
-			.Position
-			{
-				.x = (R1 + R2 * std::cos(va)) * std::cos(ua),
-				.y = (R1 + R2 * std::cos(va)) * std::sin(ua),
-				.z = R2 * std::sin(va),
-			},
-			.Normal
-			{
-				.x = std::cos(va) * std::cos(ua),
-				.y = std::cos(va) * std::sin(ua),
-				.z = std::sin(va),
-			},
-			.Texcoord
-			{
-				.u = ui / float(U_STEPS) * U_REPEATS,
-				.v = vi / float(V_STEPS) * V_REPEATS,
-			},
-		});
-	};
-
-	for (uint32_t ui = 0; ui < U_STEPS; ++ui) 
-	{
-		for (uint32_t vi = 0; vi < V_STEPS; ++vi) 
-		{
-			emplace_vertex(ui, vi);
-			emplace_vertex(ui+1, vi);
-			emplace_vertex(ui, vi+1);
-
-			emplace_vertex(ui, vi+1);
-			emplace_vertex(ui+1, vi);
-			emplace_vertex(ui+1, vi+1);
-		}
-	}
-
-	TorusVertices.count = uint32_t(Vertices.size()) - TorusVertices.first;
-}
-
-void UAssignmentOne::LoadDefaultComputeTextures()
-{
-    Textures.reserve(2);
-	//texture 0 will be a dark grey / light grey checkerboard with a red square at the origin.
-	{ 
-		//actually make the texture:
-		uint32_t size = 128;
-		std::vector< uint32_t > data;
-		data.reserve(size * size);
-		for (uint32_t y = 0; y < size; ++y) {
-			float fy = (y + 0.5f) / float(size);
-			for (uint32_t x = 0; x < size; ++x) {
-				float fx = (x + 0.5f) / float(size);
-				//highlight the origin:
-				if      (fx < 0.05f && fy < 0.05f) data.emplace_back(0xff0000ff); //red
-				else if ( (fx < 0.5f) == (fy < 0.5f)) data.emplace_back(0xff444444); //dark grey
-				else data.emplace_back(0xffbbbbbb); //light grey
-			}
-		}
-		assert(data.size() == size*size);
-
-		// make a place for the texture to live on the GPU
-		Textures.emplace_back(rtg.helpers.create_image(
-			VkExtent2D{ .width = size , .height = size }, //size of image
-			VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
-			Helpers::Unmapped
-		));
-
-		// transfer data
-		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
-	}
-	// texture 1 will be a classic 'xor' texture:
-	{ 
-		//actually make the texture:
-		uint32_t size = 256;
-		std::vector< uint32_t > data;
-		data.reserve(size * size);
-		for (uint32_t y = 0; y < size; ++y) {
-			for (uint32_t x = 0; x < size; ++x) {
-				uint8_t r = uint8_t(x) ^ uint8_t(y);
-				uint8_t g = uint8_t(x + 128) ^ uint8_t(y);
-				uint8_t b = uint8_t(x) ^ uint8_t(y + 27);
-				uint8_t a = 0xff;
-				data.emplace_back( uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24) );
-			}
-		}
-		assert(data.size() == size*size);
-
-		//make a place for the texture to live on the GPU:
-		Textures.emplace_back(rtg.helpers.create_image(
-			VkExtent2D{ .width = size , .height = size }, //size of image
-			VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, SRGB-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
-			Helpers::Unmapped
-		));
-
-		//transfer data:
-		rtg.helpers.transfer_to_image(data.data(), sizeof(data[0]) * data.size(), Textures.back());
-	}
-}
-//END~

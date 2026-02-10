@@ -134,13 +134,6 @@ struct UAssignmentOne : RTG::Application
 		//-------------------------------------------------------------------
 		//static scene resources:
 		Helpers::AllocatedBuffer ObjectVertices;
-		struct FObjectVertices
-		{
-			uint32_t first = 0;
-			uint32_t count = 0;
-		};
-		FObjectVertices PlaneVertices;
-		FObjectVertices TorusVertices;
 
 		std::vector< Helpers::AllocatedImage > Textures;
 		std::vector< VkImageView > TextureViews;
@@ -173,7 +166,8 @@ struct UAssignmentOne : RTG::Application
 		enum class ECameraMode
 		{
 			Scene = 0,
-			Free = 1,
+			Orbit = 1,
+			Free = 2,
 		} CameraMode = ECameraMode::Free;
 
 		// Used when cameraMode == cameraMode::Free
@@ -194,15 +188,6 @@ struct UAssignmentOne : RTG::Application
 
 		FLambertPipeline::FWorld World;
 
-		struct FObjectInstance
-		{
-			FObjectVertices Vertices;
-			FLambertPipeline::FTransform Transform;
-			uint32_t Texture = 0;
-		};
-
-		std::vector<FObjectInstance> ObjectInstances;
-
 		//--------------------------------------------------------------------
 		//Rendering function, uses all the resources above to queue work to draw a frame:
 
@@ -210,8 +195,8 @@ struct UAssignmentOne : RTG::Application
 
 		// Load Scene
 		URenderScene Scene;
+		uint8_t ActiveCameraIdx = 0;
 		void InitializeRenderScene();
-		void ReserveTextures();		// Reserve Texture to gpu
 		// TODO:delete functions below
 		void PrintRenderSceneMesh();
 		void PrintRenderProxies();
@@ -225,10 +210,9 @@ struct UAssignmentOne : RTG::Application
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);
 
-		// Different Mesh Vertices Instantialize
-		void InstantializePlane(std::vector< FVertexDataSet > &Vertices);
-		void InstantializeTorus(std::vector< FVertexDataSet > &Vertices);
-
 		// Texture Loader
-		void LoadDefaultComputeTextures();
+		void ReserveTextures();		// Reserve Texture to gpu
+
+		// Camera Function
+		void CameraUpdate();
 };

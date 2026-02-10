@@ -80,6 +80,10 @@ struct RTG {
 		// file path to open
 		std::string FilePath = "external/s72Loader/example_scene/example.s72";
 
+		// Camera to use, if user inputs a specific name for a camera
+		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
+		uint8_t CameraIdx = 0;					// the index for active scene camera
+
 		//for configuration construction + management:
 		Configuration() = default;
 		void parse(int argc, char **argv); //parse command-line options; throws on error

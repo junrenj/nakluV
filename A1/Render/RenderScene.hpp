@@ -1,3 +1,4 @@
+// URenderScene is a Object to contain all datas in the scene.
 #pragma once
 
 #include <vector>
@@ -45,7 +46,6 @@ public:
     UNode* Parent = nullptr;    // If a node no Parent, which means it is root
     std::vector< UNode * > Children;
     URenderMesh* Mesh = nullptr;
-	UCamera* camera = nullptr;
 	UEnvironment* environment = nullptr;
 	ULight* light = nullptr;
 
@@ -89,7 +89,7 @@ public:
     // Other Data
     std::vector<UTexture*> Textures;
     std::vector<UMaterial*> Materials;
-    std::unordered_map<UNode*, UCamera*> Cameras;
+    std::vector<UCamera*> Cameras;
     std::unordered_map<ULight*, UNode*> Lights;
     std::unordered_map<UNode*, UEnvironment*> Environments;
 
@@ -143,15 +143,15 @@ public:
 class UCamera
 {
 public:
+    std::string Name;
+    UNode* BindingNode;
     struct FPerspective
     {
         float Aspect;
 		float Vfov;
 		float Near;
 		float Far = std::numeric_limits< float >::infinity();
-    };
-
-    std::variant< FPerspective > Projection;
+    }Projection;
 };
 
 class UEnvironment
