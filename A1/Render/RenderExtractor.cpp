@@ -22,7 +22,9 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat);
     // 2. Build UNode BBox
     BuildUNodesBBoxIterate(RenderScene.RootNode);
-    // 3. Generate Vertex Buffer
+    // 3. Generate RenderProxy
+    RenderScene.GenerateMeshProxy();
+    RenderScene.GenerateLightProxy();
     RenderScene.GenerateWholeVertexBuffer();
 }
 
@@ -56,7 +58,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
 
     // 1. Transform
     NewNode->Transform.Translation = glm::vec3(InS72Node.translation.x, InS72Node.translation.y, InS72Node.translation.z);
-    NewNode->Transform.Rotation = glm::quat(InS72Node.rotation.x, InS72Node.rotation.y, InS72Node.rotation.z, InS72Node.rotation.w);
+    NewNode->Transform.Rotation = glm::quat(InS72Node.rotation.w, InS72Node.rotation.x, InS72Node.rotation.y, InS72Node.rotation.z);
     NewNode->Transform.Scale = glm::vec3(InS72Node.scale.x, InS72Node.scale.y, InS72Node.scale.z);
 
     // 2. Other Data
@@ -131,41 +133,41 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
             // -------- Sun --------
             if constexpr (std::is_same_v<T, S72::Light::Sun>)
             {
-                ULight::FSun Sun;
+                ULight_Sun Sun;
                 Sun.Angle = S72Light.angle;
                 Sun.Strength = S72Light.strength;
 
-                NewLight->Source = Sun;
+                NewLight = &Sun;
             }
 
             // -------- Sphere --------
             else if constexpr (std::is_same_v<T, S72::Light::Sphere>)
             {
-                ULight::FSphere Sphere;
+                ULight_Sphere Sphere;
                 Sphere.Radius = S72Light.radius;
                 Sphere.Power  = S72Light.power;
                 Sphere.Limit  = S72Light.limit;
 
-                NewLight->Source = Sphere;
+                NewLight = &Sphere;
             }
 
             // -------- Spot --------
             else if constexpr (std::is_same_v<T, S72::Light::Spot>)
             {
-                ULight::FSpot Spot;
+                ULight_Spot Spot;
                 Spot.Radius = S72Light.radius;
                 Spot.Power  = S72Light.power;
                 Spot.Limit  = S72Light.limit;
                 Spot.Fov    = S72Light.fov;
                 Spot.Blend  = S72Light.blend;
 
-                NewLight->Source = Spot;
+                NewLight = &Spot;
             }
 
         }, S72Light.source);
 
         NewNode->light = NewLight;
-        RenderScene.Lights[NewNode] = NewLight;
+        RenderScene.Lights[NewLight] = NewNode;
     }
 
     // 3. Iterate and bind children

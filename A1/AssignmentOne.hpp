@@ -225,7 +225,6 @@ struct UAssignmentOne : RTG::Application
 		virtual void render(RTG &, RTG::RenderParams const &) override;
 
 		// Load Scene
-		std::string FilePath = "external/s72Loader/example_scene/example.s72";
 		URenderScene Scene;
 		void InitializeRenderScene();
 		void ReserveTextures();		// Reserve Texture to gpu
@@ -237,6 +236,7 @@ struct UAssignmentOne : RTG::Application
 		std::string ToString(EMaterialType type);
 		void PrintMaterial();
 		void PrintTextureSizes();
+		void PrintLightProxy();
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);

@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include <cstdint>
 
 class UTexture
 {
@@ -26,4 +28,8 @@ public:
     };
 
     std::vector<FTextureMipMap* > MipmapsData;
+
+    void GenerateMipmap(uint8_t MipmapLevel);
+
+    void Get1x1PixelTexture(float R, float G, float B);
 };

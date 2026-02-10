@@ -23,8 +23,9 @@ public:
     uint32_t NormalTexIdx = INVALID_TEXTURE;
     uint32_t DisplacementIdx = INVALID_TEXTURE;
 
-    // PBR Only
+    // PBR and Lambertian Only
     glm::vec4 Albedo;   // for better alignment
+    // PBR Only
     float Roughness;
     float Metalness;
 

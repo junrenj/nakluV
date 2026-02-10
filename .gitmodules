@@ -4,3 +4,6 @@
 [submodule "external/s72Loader"]
 	path = external/s72Loader
 	url = https://github.com/15-472/s72-loader.git
+[submodule "external/s72"]
+	path = external/s72
+	url = https://github.com/15-472/s72.git

@@ -22,7 +22,6 @@ public:
     static void BuildUTextureData(std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, URenderScene& Scene);
     static UTexture* ReadBulkDataFromImage(const S72::Texture& InTexture);
 
-
     // New RenderMesh Structure
     static void CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URenderMesh& OutMesh, std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
 

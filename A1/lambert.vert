@@ -28,8 +28,8 @@ layout(location=2) out vec2 texcoord;
 
 void main() 
 {
-	// mat4 NewMat = CLIP_FROM_WORLD * WORLD_FROM_LOCAL;
-	gl_Position = CLIP_FROM_WORLD * vec4(Position, 1.0);
+	mat4 CLIP_FROM_LOCAL = CLIP_FROM_WORLD * TRANSFORMS[gl_InstanceIndex].WORLD_FROM_LOCAL;
+	gl_Position = CLIP_FROM_LOCAL * vec4(Position, 1.0);
 	position = mat4x3(TRANSFORMS[gl_InstanceIndex].WORLD_FROM_LOCAL) * vec4(Position, 1.0);
 	normal = mat3(TRANSFORMS[gl_InstanceIndex].WORLD_FROM_LOCAL_NORMAL) * Normal;
 	texcoord = Texcoord;

@@ -77,6 +77,9 @@ struct RTG {
 		// run without a window, read events from stdin
 		bool headless = false;
 
+		// file path to open
+		std::string FilePath = "external/s72Loader/example_scene/example.s72";
+
 		//for configuration construction + management:
 		Configuration() = default;
 		void parse(int argc, char **argv); //parse command-line options; throws on error

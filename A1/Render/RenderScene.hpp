@@ -8,6 +8,7 @@
 #include "glm/glm/gtc/quaternion.hpp"
 #include "Texture.hpp"
 #include "Material.hpp"
+#include "Light.hpp"
 
 
 // forward declarations so we can write the scene's objects in the same order as in the spec:
@@ -53,7 +54,7 @@ public:
     static glm::mat4 GetLocal2WorldMatrix(const UNode* InNode);
 };
 
-class URenderProxy
+class UMeshRenderProxy
 {
 public: 
     uint32_t FirstVertexIdx = 0;
@@ -89,7 +90,7 @@ public:
     std::vector<UTexture*> Textures;
     std::vector<UMaterial*> Materials;
     std::unordered_map<UNode*, UCamera*> Cameras;
-    std::unordered_map<UNode*, ULight*> Lights;
+    std::unordered_map<ULight*, UNode*> Lights;
     std::unordered_map<UNode*, UEnvironment*> Environments;
 
     // VertexBuffer
@@ -97,12 +98,16 @@ public:
     std::vector<uint8_t> AllVertexData;
 
     // ProxyData
-    std::vector<URenderProxy*> ProxyInstances;
+    std::vector<UMeshRenderProxy*> MeshProxyInstances;
+    std::vector<ULightRenderProxy*> LightProxyInstances;
 
     void GenerateWholeVertexBuffer();
+    void GenerateMeshProxy();
+    void GenerateLightProxy();
     void UpdateVisibleMesh();
 
     uint32_t GetTextureIdx(UTexture* Texture) const;
+
 };
 
 class URenderMesh
@@ -132,7 +137,7 @@ public:
     UMaterial* Material;
 
     std::vector<uint8_t> VertexData;    // Include data of POSITION,NORMAL,TANGENT,UV
-    URenderProxy* RenderProxy;
+    UMeshRenderProxy* RenderProxy;
 };
 
 class UCamera
@@ -153,33 +158,4 @@ class UEnvironment
 {
 public:
     uint32_t EnvTexture = INVALID_TEXTURE;
-};
-
-class ULight
-{
-public:
-    uint32_t shadow = 0; //optional, if not set will be '0'
-    struct FColor
-    {
-        float r, g, b = 1.0f;
-    }Tint;
-    
-    //light has exactly one of these sources:
-    struct FSun {
-        float Angle;
-        float Strength;
-    };
-    struct FSphere {
-        float Radius;
-        float Power;
-        float Limit = std::numeric_limits< float >::infinity(); //optional, will be infinity if not specified
-    };
-    struct FSpot {
-        float Radius;
-        float Power;
-        float Limit = std::numeric_limits< float >::infinity(); //optional, will be infinity if not specified
-        float Fov;
-        float Blend;
-    };
-    std::variant< FSun, FSphere, FSpot > Source;
 };

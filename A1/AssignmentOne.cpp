@@ -23,6 +23,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	PrintRenderProxies();
 	PrintMaterial();
     PrintTextureSizes();
+	PrintLightProxy();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -320,6 +321,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 
     // make some Textures
 	ReserveTextures();
+	// LoadDefaultComputeTextures();
 
      // make image views for the textures
 	{
@@ -661,10 +663,10 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 		VK(vkBeginCommandBuffer(workspace.command_buffer, &begin_info));
 	}
 
-	if(!Scene.ProxyInstances.empty())
+	if(!Scene.MeshProxyInstances.empty())
 	{
 		// upload object transforms:
-		size_t NeededBytes = Scene.ProxyInstances.size() * sizeof(UAssignmentOne::FLambertPipeline::FTransform);
+		size_t NeededBytes = Scene.MeshProxyInstances.size() * sizeof(UAssignmentOne::FLambertPipeline::FTransform);
 		if(workspace.TransformsSrc.handle == VK_NULL_HANDLE ||
 			workspace.TransformsSrc.size < NeededBytes)
 		{
@@ -729,8 +731,8 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			// Copy Transform into TransformSrc
 			{
 				assert(workspace.TransformsSrc.allocation.mapped);
-				URenderProxy::FTransform *Out = reinterpret_cast< URenderProxy::FTransform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
-				for (URenderProxy* Inst : Scene.ProxyInstances)
+				UMeshRenderProxy::FTransform *Out = reinterpret_cast< UMeshRenderProxy::FTransform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				for (UMeshRenderProxy* Inst : Scene.MeshProxyInstances)
 				{
 					*Out = Inst->Transform;
 					++Out;
@@ -924,7 +926,7 @@ void UAssignmentOne::RenderBackgroundPipeline(FWorkspace &workspace)
 void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 {
     // Draw with the objects pipeline:
-	if (!Scene.ProxyInstances.empty()) 
+	if (!Scene.MeshProxyInstances.empty()) 
 	{ 
 		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, LambertPipeline.Handle);
 	}
@@ -958,10 +960,10 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 	// Camera descriptor set is still bound, but unused(!)
 
 	// Use FRenderProxy as ObjectInstance
-	const std::vector<URenderProxy*>& ProxyList = Scene.ProxyInstances;
+	const std::vector<UMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
 	for (uint32_t i = 0; i < ProxyList.size(); i++)
 	{
-		const URenderProxy* Inst = ProxyList[i];
+		const UMeshRenderProxy* Inst = ProxyList[i];
 		vkCmdBindDescriptorSets
 		(
 			workspace.command_buffer,			// Command buffer
@@ -1029,15 +1031,15 @@ void UAssignmentOne::update(float dt)
 		World.SKY_ENERGY.g = 0.1f;
 		World.SKY_ENERGY.b = 0.2f;
 
-		World.SUN_DIRECTION.x = Time * 10 / 23.0f;
-		World.SUN_DIRECTION.y = 13.0f / 23.0f;
-		World.SUN_DIRECTION.z = 18.0f / 23.0f;
+		World.SUN_DIRECTION.x = Scene.LightProxyInstances[0]->Direction.x;
+		World.SUN_DIRECTION.y = Scene.LightProxyInstances[0]->Direction.y;
+		World.SUN_DIRECTION.z = Scene.LightProxyInstances[0]->Direction.z;
 		World.DirectionNormalize();		// Normalize vector
 
 
-		World.SUN_ENERGY.r = 1.0f;
-		World.SUN_ENERGY.g = 1.0f;
-		World.SUN_ENERGY.b = 0.9f;		
+		World.SUN_ENERGY.r = Scene.LightProxyInstances[0]->Color.x;
+		World.SUN_ENERGY.g = Scene.LightProxyInstances[0]->Color.y;
+		World.SUN_ENERGY.b = Scene.LightProxyInstances[0]->Color.z;		
 	}
 }
 
@@ -1157,7 +1159,7 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 
 void UAssignmentOne::InitializeRenderScene()
 {
-	URenderExtractor::BuildRenderScene(FilePath, Scene);
+	URenderExtractor::BuildRenderScene(rtg.configuration.FilePath, Scene);
 }
 
 void UAssignmentOne::ReserveTextures()
@@ -1165,12 +1167,12 @@ void UAssignmentOne::ReserveTextures()
     const std::vector<UTexture*>& TexturesData = Scene.Textures;
     Textures.reserve(TexturesData.size());
     // TODO: if we have mipmap, it would pull more on it. for now mipmap level0 is enough
-    for (uint32_t i = 0; i < Textures.size(); i++)
+    for (uint32_t i = 0; i < TexturesData.size(); i++)
     {
         const UTexture::FTextureMipMap& MipmapData = *(TexturesData[i]->MipmapsData[0]);
         Textures.emplace_back(rtg.helpers.create_image(
 			VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
-			VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+			VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
@@ -1228,9 +1230,9 @@ void UAssignmentOne::PrintMatrix(const std::string& name, const glm::mat4& m) {
 }
 
 void UAssignmentOne::PrintRenderProxies() {
-    std::cout << "=== Render Scene Proxies (Count: " << Scene.ProxyInstances.size() << ") ===" << std::endl;
-    for (size_t i = 0; i < Scene.ProxyInstances.size(); ++i) {
-        const auto& p = Scene.ProxyInstances[i];
+    std::cout << "=== Render Scene Proxies (Count: " << Scene.MeshProxyInstances.size() << ") ===" << std::endl;
+    for (size_t i = 0; i < Scene.MeshProxyInstances.size(); ++i) {
+        const auto& p = Scene.MeshProxyInstances[i];
         std::cout << "Proxy [" << i << "]:" << std::endl;
         std::cout << "  - Vertex: StartIdx=" << p->FirstVertexIdx << ", Count=" << p->VertexNum << std::endl;
         std::cout << "  - Texture ID: " << p->Texture << std::endl;
@@ -1310,6 +1312,37 @@ void UAssignmentOne::PrintTextureSizes() {
         } else {
             std::cerr << "Texture [" << i << "] - Warning: No Mipmap data found!" << std::endl;
         }
+    }
+}
+
+void UAssignmentOne::PrintLightProxy()
+{
+	const std::vector<ULightRenderProxy*>& LightProxies = Scene.LightProxyInstances;
+	std::cout << "\n==================== GPU Light Proxies (" << LightProxies.size() << ") ====================\n";
+    std::cout << std::left << std::setw(6) << "Idx" 
+              << std::setw(18) << "Type" 
+              << std::setw(25) << "Color (RGB)" << "\n";
+    std::cout << "----------------------------------------------------------------------\n";
+
+    for (size_t i = 0; i < LightProxies.size(); ++i) {
+        const auto& lp = LightProxies[i];
+
+
+        std::cout << std::left << "[" << i << "] " 
+                  << std::setw(18) << lp->Type
+                  << "[" << lp->Color.r << ", " << lp->Color.g << ", " << lp->Color.b << "]\n";
+
+
+        if (lp->Type == 0) { // Sun
+            std::cout << "      Dir: [" << lp->Direction.x << ", " << lp->Direction.y << ", " << lp->Direction.z << "]\n";
+        } 
+        else if (lp->Type == 1 || lp->Type == 2) {
+            std::cout << "      Pos: [" << lp->Position.x << ", " << lp->Position.y << ", " << lp->Position.z << "]\n";
+            if (lp->Type == 2) {
+                std::cout << "      Dir: [" << lp->Direction.x << ", " << lp->Direction.y << ", " << lp->Direction.z << "]\n";
+            }
+        }
+        std::cout << "----------------------------------------------------------------------\n";
     }
 }
 

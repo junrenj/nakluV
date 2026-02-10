@@ -21,23 +21,34 @@
 
 void RTG::Configuration::parse(int argc, char **argv) 
 {
-	for (int argi = 1; argi < argc; ++argi) {
+	for (int argi = 1; argi < argc; ++argi) 
+	{
 		std::string arg = argv[argi];
-		if (arg == "--debug") {
+		if (arg == "--debug") 
+		{
 			debug = true;
-		} else if (arg == "--no-debug") {
+		} 
+		else if (arg == "--no-debug") 
+		{
 			debug = false;
-		} else if (arg == "--physical-device") {
+		} 
+		else if (arg == "--physical-device") 
+		{
 			if (argi + 1 >= argc) throw std::runtime_error("--physical-device requires a parameter (a device name).");
 			argi += 1;
 			physical_device_name = argv[argi];
-		} else if (arg == "--drawing-size") {
+		} 
+		else if (arg == "--drawing-size") 
+		{
 			if (argi + 2 >= argc) throw std::runtime_error("--drawing-size requires two parameters (width and height).");
-			auto conv = [&](std::string const &what) {
+			auto conv = [&](std::string const &what) 
+			{
 				argi += 1;
 				std::string val = argv[argi];
-				for (size_t i = 0; i < val.size(); ++i) {
-					if (val[i] < '0' || val[i] > '9') {
+				for (size_t i = 0; i < val.size(); ++i) 
+				{
+					if (val[i] < '0' || val[i] > '9') 
+					{
 						throw std::runtime_error("--drawing-size " + what + " should match [0-9]+, got '" + val + "'.");
 					}
 				}
@@ -50,7 +61,17 @@ void RTG::Configuration::parse(int argc, char **argv)
 		{
 			headless = true; 
 		}
-		else {
+		else if (arg == "--scene") 
+		{
+    		if (argi + 1 >= argc) 
+			{
+        		throw std::runtime_error("--scene requires a parameter (path to the scene file).");
+    		}
+    		argi += 1;
+    		FilePath = argv[argi];
+		}
+		else 
+		{
 			throw std::runtime_error("Unrecognized argument '" + arg + "'.");
 		}
 	}
@@ -61,6 +82,7 @@ void RTG::Configuration::usage(std::function< void(const char *, const char *) >
 	callback("--physical-device <name>", "Run on the named physical device (guesses, otherwise).");
 	callback("--drawing-size <w> <h>", "Set the size of the surface to draw to.");
 	callback("--headless", "Don't create a window; read events from stdin.");
+	callback("--scene FILEPATH", "replace FILEPATH with your filepath ex: external/s72Loader/example_scene/example.s72");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
