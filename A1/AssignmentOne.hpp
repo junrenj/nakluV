@@ -202,20 +202,8 @@ struct UAssignmentOne : RTG::Application
 		uint8_t ActiveCameraIdx = 0;
 		void InitializeRenderScene();
 		// TODO:delete functions below
-		void PrintRenderSceneMesh();
-		void PrintRenderProxies();
-		void PrintMatrix(const std::string& name, const glm::mat4& m);
-		std::string FormatTexIdx(uint32_t idx);
-		std::string ToString(EMaterialType type);
-		void PrintMaterial();
-		void PrintTextureSizes();
-		void PrintLightProxy();
 		// Debug
-		uint8_t DebugBBoxColor[4] = {255, 255, 255, 255};		// White
-		uint8_t DebugCameraLineColor[4] = {255, 0 ,0 ,255};	// Red
 		void RenderDebugLine();
-		void GenerateBBoxVertices(const UBoundingBox& BBox);
-		void GenerateFrustumVertices(const UCamera& Camera);
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
 		void RenderLinesPipeline(FWorkspace &workspace);

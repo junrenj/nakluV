@@ -8,11 +8,8 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
-#include <iomanip>	// TODO: delete this include
 #include "../A1/Render/RenderScene.hpp"
 #include "../A1/Render/RenderExtractor.hpp"
-#define GLM_ENABLE_EXPERIMENTAL	// TODO: delete this include
-#include "glm/glm/gtx/string_cast.hpp"	// TODO: delete this include
 #include "glm/glm/gtc/type_ptr.hpp"
 
 
@@ -20,11 +17,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
 	// load the scene
 	InitializeRenderScene();
-	// PrintRenderSceneMesh();
-	// PrintRenderProxies();
-	// PrintMaterial();
-    // PrintTextureSizes();
-	// PrintLightProxy();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -1096,8 +1088,6 @@ void UAssignmentOne::update(float dt)
 
 	UpdateCamera();
 
-	RenderDebugLine();
-
 	// static sun and sky
 	{
 		World.SKY_DIRECTION.x = 0.0f;
@@ -1291,168 +1281,6 @@ void UAssignmentOne::ReserveTextures()
     }
     
 }
-//TODO: Delete these function
-void UAssignmentOne::PrintRenderSceneMesh()
-{
-	std::cout << "======= Render Scene Mesh Debug Info =======" << std::endl;
-    
-    int MeshIndex = 0;
-    for (const auto& [NodePtr, Mesh] : Scene.Nodes2RenderMeshes) {
-        std::cout << "\n[Mesh #" << MeshIndex++ << "]" << std::endl;
-        
-        
-        std::cout << "Bounding Box Min: " << glm::to_string(Mesh->BoundingBox.Min) << std::endl;
-        std::cout << "Bounding Box Max: " << glm::to_string(Mesh->BoundingBox.Max) << std::endl;
-        
-        
-        std::cout << "Vertex Count: " << Mesh->VertexCount << std::endl;
-        
-        
-        const uint8_t* DataPtr = Mesh->VertexData.data();
-        
-        for (uint32_t i = 0; i < Mesh->VertexCount; ++i) {
-            size_t Offset = i * Mesh->VertexStride;
-            
-            const auto* Vertex = reinterpret_cast<const URenderMesh::FVertex*>(DataPtr + Offset);
-            
-            if (i < 5 || i == Mesh->VertexCount - 1) { 
-                std::cout << "  Vertex [" << i << "] Position: " 
-                          << glm::to_string(Vertex->Position) << std::endl;
-            } else if (i == 5) {
-                std::cout << "  ... (skipping intermediate vertices) ..." << std::endl;
-            }
-        }
-    }
-    std::cout << "============================================" << std::endl;
-}
-
-void UAssignmentOne::PrintMatrix(const std::string& name, const glm::mat4& m) {
-    std::cout << "    " << name << ":" << std::endl;
-    for (int i = 0; i < 4; ++i) {
-        std::cout << "      [ ";
-        for (int j = 0; j < 4; ++j) {
-            std::cout << std::setw(8) << std::fixed << std::setprecision(2) << m[j][i] << " ";
-        }
-        std::cout << "]" << std::endl;
-    }
-}
-
-void UAssignmentOne::PrintRenderProxies() {
-    std::cout << "=== Render Scene Proxies (Count: " << Scene.MeshProxyInstances.size() << ") ===" << std::endl;
-    for (size_t i = 0; i < Scene.MeshProxyInstances.size(); ++i) {
-        const auto& p = Scene.MeshProxyInstances[i];
-        std::cout << "Proxy [" << i << "]:" << std::endl;
-        std::cout << "  - Vertex: StartIdx=" << p->FirstVertexIdx << ", Count=" << p->VertexNum << std::endl;
-        std::cout << "  - Texture ID: " << p->Texture << std::endl;
-        
-        PrintMatrix("WORLD_FROM_LOCAL", p->Transform.WORLD_FROM_LOCAL);
-        std::cout << "-----------------------------------------------" << std::endl;
-    }
-}
-
-std::string UAssignmentOne::FormatTexIdx(uint32_t idx) 
-{
-    if (idx == INVALID_TEXTURE) return "[None]";
-    return std::to_string(idx);
-}
-
-std::string UAssignmentOne::ToString(EMaterialType type) 
-{
-    switch (type) {
-        case EMaterialType::PBR:         return "PBR";
-        case EMaterialType::Lambertian:  return "Lambertian";
-        case EMaterialType::Mirror:      return "Mirror";
-        case EMaterialType::Environment: return "Environment";
-        default:                         return "Unknown";
-    }
-}
-
-void UAssignmentOne::PrintMaterial()
-{
-	const std::vector<UMaterial*>& MaterialList = Scene.Materials;
-    std::cout << "\n========== Render Scene Materials (Count: " << MaterialList.size() << ") ==========\n";
-    
-    for (size_t i = 0; i < MaterialList.size(); ++i) {
-        const UMaterial* mat = MaterialList[i];
-        if (!mat) continue;
-
-        std::cout << "Material [" << i << "] (" << ToString(mat->Type) << "):\n";
-        
-        std::cout << "  > Common Maps: \n";
-        std::cout << "    NormalMap: " << FormatTexIdx(mat->NormalTexIdx) 
-                  << " | Displacement: " << FormatTexIdx(mat->DisplacementIdx) << "\n";
-
-        if (mat->Type == EMaterialType::PBR || mat->Type == EMaterialType::Lambertian) {
-            std::cout << "  > Surface Attributes:\n";
-            std::cout << "    Albedo:    [" << mat->Albedo.r << ", " << mat->Albedo.g << ", " << mat->Albedo.b << "]\n";
-            
-            if (mat->Type == EMaterialType::PBR) {
-                std::cout << "    Roughness: " << mat->Roughness << " | Metalness: " << mat->Metalness << "\n";
-            }
-            
-            std::cout << "  > Surface Maps:\n";
-            std::cout << "    AlbedoTex:    " << FormatTexIdx(mat->AlbedoTex) << "\n";
-            if (mat->Type == EMaterialType::PBR) {
-                std::cout << "    RoughnessTex: " << FormatTexIdx(mat->RoughnessTex) << "\n";
-                std::cout << "    MetalnessTex: " << FormatTexIdx(mat->MetalnessTex) << "\n";
-            }
-        } else if (mat->Type == EMaterialType::Mirror) {
-            std::cout << "  > Attributes: Perfect specular reflection (Roughness=0, Metal=1)\n";
-        }
-
-        std::cout << "------------------------------------------------------------------\n";
-    }
-}
-
-void UAssignmentOne::PrintTextureSizes() {
-    const std::vector<UTexture*>& Textures_Data = Scene.Textures;
-    for (size_t i = 0; i < Textures_Data.size(); ++i) {
-        const auto& Tex = Textures_Data[i];
-        
-        if (!Tex->MipmapsData.empty() && Tex->MipmapsData[0] != nullptr) {
-            uint32_t width  = Tex->MipmapsData[0]->SizeX;
-            uint32_t height = Tex->MipmapsData[0]->SizeY;
-            
-            std::cout << "Texture [" << i << "] - " 
-                      << "Level 0 Size: " << width << " x " << height 
-                      << (Tex->Type == UTexture::EType::Cube ? " (Cube)" : " (Flat)")
-                      << std::endl;
-        } else {
-            std::cerr << "Texture [" << i << "] - Warning: No Mipmap data found!" << std::endl;
-        }
-    }
-}
-
-void UAssignmentOne::PrintLightProxy()
-{
-	const std::vector<ULightRenderProxy*>& LightProxies = Scene.LightProxyInstances;
-	std::cout << "\n==================== GPU Light Proxies (" << LightProxies.size() << ") ====================\n";
-    std::cout << std::left << std::setw(6) << "Idx" 
-              << std::setw(18) << "Type" 
-              << std::setw(25) << "Color (RGB)" << "\n";
-    std::cout << "----------------------------------------------------------------------\n";
-
-    for (size_t i = 0; i < LightProxies.size(); ++i) {
-        const auto& lp = LightProxies[i];
-
-
-        std::cout << std::left << "[" << i << "] " 
-                  << std::setw(18) << lp->Type
-                  << "[" << lp->Color.r << ", " << lp->Color.g << ", " << lp->Color.b << "]\n";
-
-
-        if (lp->Type == 0) { // Sun
-            std::cout << "      Dir: [" << lp->Direction.x << ", " << lp->Direction.y << ", " << lp->Direction.z << "]\n";
-        } 
-        else if (lp->Type == 1 || lp->Type == 2) {
-            std::cout << "      Pos: [" << lp->Position.x << ", " << lp->Position.y << ", " << lp->Position.z << "]\n";
-            if (lp->Type == 2) {
-                std::cout << "      Dir: [" << lp->Direction.x << ", " << lp->Direction.y << ", " << lp->Direction.z << "]\n";
-            }
-        }
-        std::cout << "----------------------------------------------------------------------\n";
-    }
-}
 
 void UAssignmentOne::UpdateCamera()
 {
@@ -1514,113 +1342,4 @@ void UAssignmentOne::UpdateCamera()
 	{
 		assert(0 && "Only Three Camera Mode!");
 	}
-}
-
-void UAssignmentOne::RenderDebugLine()
-{
-	LinesVertices.clear();
-	if(rtg.configuration.debug)
-	{
-		// for BBox
-		const std::vector<UNode*>& Nodes = Scene.Nodes;
-		for (uint32_t i = 0; i < Nodes.size(); i++)
-		{
-			const UNode* Node = Nodes[i];
-			if(Node->BoundingBox.Max != vec3(-FLT_MAX) && Node->BoundingBox.Min != vec3(FLT_MAX))
-			{
-				GenerateBBoxVertices(Node->BoundingBox);
-			}
-		}
-		// for Camera
-		const std::vector<UCamera*>& Cameras = Scene.Cameras;
-		for (uint8_t i = 0; i < Cameras.size(); i++)
-		{
-			GenerateFrustumVertices(*Cameras[i]);
-		}
-	}
-}
-
-void UAssignmentOne::GenerateBBoxVertices(const UBoundingBox& BBox)
-{
-	float x0 = BBox.Min.x, y0 = BBox.Min.y, z0 = BBox.Min.z;
-    float x1 = BBox.Max.x, y1 = BBox.Max.y, z1 = BBox.Max.z;
-	vec3 v[8] = 
-	{
-        {x0, y0, z0}, {x1, y0, z0}, {x1, y1, z0}, {x0, y1, z0}, // Bottom
-        {x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}, {x0, y1, z1} 	// Top
-    };
-
-	uint32_t indices[] = 
-	{
-        0, 1, 1, 2, 2, 3, 3, 0, // bottom 4 edges
-        4, 5, 5, 6, 6, 7, 7, 4, // top 4 edges
-        0, 4, 1, 5, 2, 6, 3, 7  // vertical 4 edges
-    };
-
-    for (uint32_t i : indices) 
-	{
-        PosColVertex vertex;
-        vertex.Position = { v[i].x, v[i].y, v[i].z };
-        vertex.Color.r = DebugBBoxColor[0];
-		vertex.Color.g = DebugBBoxColor[1];
-		vertex.Color.b = DebugBBoxColor[2];
-		vertex.Color.a = DebugBBoxColor[3];
-        LinesVertices.emplace_back(vertex);
-    }
-}
-
-void UAssignmentOne::GenerateFrustumVertices(const UCamera& Camera)
-{
-	Mat4 Projection = Perspective
-		(
-			Camera.Projection.Vfov,
-			Camera.Projection.Aspect,
-			Camera.Projection.Near,
-			Camera.Projection.Far
-		);
-	mat4 View = glm::inverse(UNode::GetLocal2WorldMatrix(Camera.BindingNode));
-	Mat4 ViewNew;
-	for(int i = 0; i < 4; ++i) 
-	{
-		for(int j = 0; j < 4; ++j) 
-		{
-			ViewNew[i * 4 + j] = View[i][j]; 
-		}	
-	}
-	Mat4 ClipFromWorld = Projection * ViewNew;
-	glm::mat4 gMat = glm::make_mat4(ClipFromWorld.data());
-	mat4 WorldFromClip = glm::inverse(gMat);
-
-	std::vector<glm::vec4> NDCCorners = 
-	{
-		{-1.0f, -1.0f,  0.0f, 1.0f}, { 1.0f, -1.0f,  0.0f, 1.0f},
-		{ 1.0f,  1.0f,  0.0f, 1.0f}, {-1.0f,  1.0f,  0.0f, 1.0f},
-		{-1.0f, -1.0f,  1.0f, 1.0f}, { 1.0f, -1.0f,  1.0f, 1.0f},
-		{ 1.0f,  1.0f,  1.0f, 1.0f}, {-1.0f,  1.0f,  1.0f, 1.0f}
-	};
-
-	std::vector<glm::vec3> worldCorners;
-	for (const auto& pt : NDCCorners) 
-	{
-		glm::vec4 worldPt = WorldFromClip * pt;
-    	worldCorners.push_back(glm::vec3(worldPt) / worldPt.w);
-	}
-
-	uint32_t indices[] = 
-	{
-        0, 1, 1, 2, 2, 3, 3, 0, // bottom 4 edges
-        4, 5, 5, 6, 6, 7, 7, 4, // top 4 edges
-        0, 4, 1, 5, 2, 6, 3, 7  // vertical 4 edges
-    };
-
-	for (uint32_t i : indices) 
-	{
-        PosColVertex vertex;
-        vertex.Position = { worldCorners[i].x, worldCorners[i].y, worldCorners[i].z };
-        vertex.Color.r = DebugCameraLineColor[0];
-		vertex.Color.g = DebugCameraLineColor[1];
-		vertex.Color.b = DebugCameraLineColor[2];
-		vertex.Color.a = DebugCameraLineColor[3];
-        LinesVertices.emplace_back(vertex);
-    }
 }
