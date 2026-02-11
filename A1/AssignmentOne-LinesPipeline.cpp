@@ -1,8 +1,7 @@
 #include "AssignmentOne.hpp"
 
-#include "Helpers.hpp"
-#include "refsol.hpp"
-#include "VK.hpp"
+#include "../Helpers.hpp"
+#include "../VK.hpp"
 
 static uint32_t vert_code[] =
 #include "../spv/A1/lines.vert.inl"
@@ -12,7 +11,7 @@ static uint32_t frag_code[] =
 #include "../spv/A1/lines.frag.inl"
 ;
 
-void UAssignmentOne::LinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
+void UAssignmentOne::FLinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
 
@@ -155,7 +154,8 @@ void UAssignmentOne::LinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, u
     vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 
-void UAssignmentOne::LinesPipeline::Destroy(RTG &rtg) {
+void UAssignmentOne::FLinesPipeline::Destroy(RTG &rtg) 
+{
     if (Set0_Camera != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(rtg.device, Set0_Camera, nullptr);
         Set0_Camera = VK_NULL_HANDLE;

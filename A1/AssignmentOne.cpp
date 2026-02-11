@@ -13,17 +13,18 @@
 #include "../A1/Render/RenderExtractor.hpp"
 #define GLM_ENABLE_EXPERIMENTAL	// TODO: delete this include
 #include "glm/glm/gtx/string_cast.hpp"	// TODO: delete this include
+#include "glm/glm/gtc/type_ptr.hpp"
 
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
 	// load the scene
 	InitializeRenderScene();
-	PrintRenderSceneMesh();
-	PrintRenderProxies();
-	PrintMaterial();
-    PrintTextureSizes();
-	PrintLightProxy();
+	// PrintRenderSceneMesh();
+	// PrintRenderProxies();
+	// PrintMaterial();
+    // PrintTextureSizes();
+	// PrintLightProxy();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -137,6 +138,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	}
 
     BackgroundPipeline.Create(rtg, RenderPass, 0);
+	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
 
     // create descriptor pool:
@@ -321,7 +323,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 
     // make some Textures
 	ReserveTextures();
-	// LoadDefaultComputeTextures();
 
      // make image views for the textures
 	{
@@ -502,6 +503,15 @@ UAssignmentOne::~UAssignmentOne()
 		{
 			vkFreeCommandBuffers(rtg.device, CommandPool, 1, &workspace.command_buffer);
 			workspace.command_buffer = VK_NULL_HANDLE;
+		}
+
+		if(workspace.LinesVerticesSrc.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.LinesVerticesSrc));
+		}
+		if(workspace.LinesVertices.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.LinesVertices));
 		}
 
 		if(workspace.CameraSrc.handle != VK_NULL_HANDLE)
@@ -751,6 +761,63 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 		}
 	}
 	
+	// Line Render Pipeline
+	{
+		// Upload line vertices
+		if(!LinesVertices.empty())
+		{
+			// [re-]allocate lines buffers if needed:
+			size_t NeededBytes = LinesVertices.size() * sizeof(LinesVertices[0]);
+			if(workspace.LinesVerticesSrc.handle == VK_NULL_HANDLE ||
+				workspace.LinesVerticesSrc.size < NeededBytes)
+			{
+				size_t NewBytes = ((NeededBytes + 4096) / 4096) * 4096;
+				if(workspace.LinesVerticesSrc.handle)
+				{
+					rtg.helpers.destroy_buffer(std::move(workspace.LinesVerticesSrc));
+				}
+				if(workspace.LinesVertices.handle)
+				{
+					rtg.helpers.destroy_buffer(std::move(workspace.LinesVertices));
+				}
+
+				workspace.LinesVerticesSrc = rtg.helpers.create_buffer
+				(
+					NewBytes,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 											// going to have GPU copy from this memory
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, // host-visible memory, coherent (no special sync needed)
+					Helpers::Mapped 															// get a pointer to the memory
+				);
+				workspace.LinesVertices = rtg.helpers.create_buffer
+				(
+					NewBytes,
+					VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 	// going to use as vertex buffer, also going to have GPU into this memory
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 									// GPU-local memory
+					Helpers::Unmapped 														// don't get a pointer to the memory
+				);
+
+				std::cout << "Re-allocated lines buffers to " << NewBytes << " bytes." << std::endl;
+			}
+
+			assert(workspace.LinesVerticesSrc.size == workspace.LinesVertices.size);
+			assert(workspace.LinesVerticesSrc.size >= NeededBytes);
+
+			// Host-side copy into LinesVerticesSrc:
+			assert(workspace.LinesVerticesSrc.allocation.mapped);
+			std::memcpy(workspace.LinesVerticesSrc.allocation.data(), LinesVertices.data(), NeededBytes);
+
+			// Device-side copy from LinesVerticesSrc -> LineVertices
+			VkBufferCopy CopyRegion
+			{
+				.srcOffset = 0,
+				.dstOffset = 0,
+				.size = NeededBytes,
+			};
+			vkCmdCopyBuffer(workspace.command_buffer, workspace.LinesVerticesSrc.handle, 
+							workspace.LinesVertices.handle, 1, &CopyRegion);
+		}
+	}
+	
 	// upload camera info:
 	{ 
 		FLambertPipeline::FCamera Camera
@@ -850,6 +917,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 		
 		// configure viewport transform:
 		{
+			//TODO: With Specified scene camera, it would have the aspect
 			VkViewport Viewport
 			{
 				.x = 0.0f,
@@ -862,7 +930,8 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
 		}
 		
-		RenderBackgroundPipeline(workspace);
+		// RenderBackgroundPipeline(workspace);
+		RenderLinesPipeline(workspace);
         RenderLambertPipeline(workspace);
 		
 		vkCmdEndRenderPass(workspace.command_buffer);
@@ -904,6 +973,11 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 	}
 }
 
+void UAssignmentOne::CustomViewPillarBoxing()
+{
+
+}
+
 void UAssignmentOne::RenderBackgroundPipeline(FWorkspace &workspace)
 {
     // draw with the background pipeline:
@@ -920,6 +994,42 @@ void UAssignmentOne::RenderBackgroundPipeline(FWorkspace &workspace)
 								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
 		}
 		vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
+	}
+}
+
+void UAssignmentOne::RenderLinesPipeline(FWorkspace &workspace)
+{
+	// Draw with the lines pipeline:
+	{
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+						LinesPipeline.Handle);
+		{
+			// Use LinesVertices (offset 0) as vertex buffer binding 0:
+			std::array< VkBuffer, 1 > VertexBuffers{ workspace.LinesVertices.handle };
+			std::array< VkDeviceSize, 1 > Offsets{ 0 };
+			vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()),
+									VertexBuffers.data(), Offsets.data());
+		}
+
+		// bind Camera descriptor set:
+		{
+			std::array< VkDescriptorSet, 1 > DescriptorSets
+			{
+				workspace.CameraDescriptors,
+			};
+			vkCmdBindDescriptorSets
+			(
+				workspace.command_buffer, 			// command buffer
+				VK_PIPELINE_BIND_POINT_GRAPHICS, 	// pipeline bind point
+				LinesPipeline.Layout, 				// pipeline layout
+				0, 									// first set
+				uint32_t(DescriptorSets.size()),
+				DescriptorSets.data(), 				// descriptor sets count, ptr
+				0, nullptr 							// dynamic offsets count, ptr
+			);
+		}
+		// Draw Lines vertices
+		vkCmdDraw(workspace.command_buffer, uint32_t(LinesVertices.size()), 1, 0, 0);
 	}
 }
 
@@ -984,58 +1094,9 @@ void UAssignmentOne::update(float dt)
 {
     Time = std::fmod(Time + dt, 60.0f);
 
-	// camera orbiting the origin:
-	if(CameraMode == ECameraMode::Orbit)
-	{
-		// camera rotating around the origin:
-		float Angle = float(M_PI) * 2.0f * 2.0f * (Time / 60.0f);
-		CLIP_FROM_WORLD = Perspective
-		(
-			60.0f * float(M_PI) / 180.0f, // vfov
-			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height), // aspect
-			0.1f, // near
-			10000.0f // far
-		) * Look_at
-		(
-			10.0f * std::cos(Angle), 10.0f * std::sin(Angle), 10.0f, // eye
-			0.0f, 0.0f, 0.5f, // target
-			0.0f, 0.0f, 1.0f // up
-		);
-	}
-    else if(CameraMode == ECameraMode::Scene)
-    {
-        // TODO: read the data from camera list
-        const UCamera& NowCamera = Scene.Cameras[ActiveCameraIdx];
-        CLIP_FROM_WORLD = Perspective
-		(
-			FreeCamera.FOV,
-			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height),	// Aspect
-			FreeCamera.Near,
-			FreeCamera.Far
-		) * orbit
-		(
-			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
-			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
-		);
-    }
-	else if(CameraMode == ECameraMode::Free)
-	{
-		CLIP_FROM_WORLD = Perspective
-		(
-			FreeCamera.FOV,
-			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height),	// Aspect
-			FreeCamera.Near,
-			FreeCamera.Far
-		) * orbit
-		(
-			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
-			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
-		);
-	}
-	else
-	{
-		assert(0 && "Only Two Camera Mode!");
-	}
+	UpdateCamera();
+
+	RenderDebugLine();
 
 	// static sun and sky
 	{
@@ -1071,8 +1132,17 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_TAB)
 	{
 		// Switch Camera Modes
-		CameraMode = ECameraMode((int(CameraMode) + 1) % 2);
+		CameraMode = ECameraMode((int(CameraMode) + 1) % 3);
 		return;
+	}
+	// Switch scene's cameras:
+	if (evt.type == InputEvent::KeyDown && (evt.key.key == GLFW_KEY_EQUAL || evt.key.key == GLFW_KEY_KP_ADD))
+	{
+		if(Scene.Cameras.size() >= 1)
+		{
+			ActiveCameraIdx = (ActiveCameraIdx + 1) % Scene.Cameras.size(); 
+			return;
+		}
 	}
 
 	// Free Camera Controls
@@ -1170,11 +1240,34 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 			return;
 		}
 	}
+
+	// Switch Debug mode
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_SLASH)
+	{
+		rtg.configuration.debug = !rtg.configuration.debug;
+		return;
+	}
 }
 
 void UAssignmentOne::InitializeRenderScene()
 {
 	URenderExtractor::BuildRenderScene(rtg.configuration.FilePath, Scene);
+	// TODO: Make it a function
+	bool hasFound = false;
+	for (uint8_t i = 0; i < Scene.Cameras.size(); i++)
+	{
+		if(Scene.Cameras[i]->Name == rtg.configuration.CameraName)
+		{
+			hasFound = true;
+			ActiveCameraIdx = i;
+			CameraMode = ECameraMode::Scene;
+		}
+	}
+
+	if(!hasFound)
+	{
+		CameraMode = ECameraMode::Scene;
+	}
 }
 
 void UAssignmentOne::ReserveTextures()
@@ -1361,7 +1454,173 @@ void UAssignmentOne::PrintLightProxy()
     }
 }
 
-void UAssignmentOne::CameraUpdate()
+void UAssignmentOne::UpdateCamera()
 {
+	// camera orbiting the origin:
+	if(CameraMode == ECameraMode::Orbit)
+	{
+		// camera rotating around the origin:
+		float Angle = float(M_PI) * 2.0f * 2.0f * (Time / 60.0f);
+		CLIP_FROM_WORLD = Perspective
+		(
+			60.0f * float(M_PI) / 180.0f, // vfov
+			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height), // aspect
+			0.1f, // near
+			10000.0f // far
+		) * Look_at
+		(
+			4.0f * std::cos(Angle), 4.0f * std::sin(Angle), 1.0f, // eye
+			0.0f, 0.0f, 0.5f, // target
+			0.0f, 0.0f, 1.0f // up
+		);
+	}
+    else if(CameraMode == ECameraMode::Scene)
+    {
+        // TODO: Change all the mat4 to Mat4 or replace all Mat4 with mat4!!!!!!!
+        const UCamera& NowCamera = *(Scene.Cameras[ActiveCameraIdx]);
+		Mat4 Projection = Perspective
+		(
+			NowCamera.Projection.Vfov,
+			NowCamera.Projection.Aspect,
+			NowCamera.Projection.Near,
+			NowCamera.Projection.Far
+		);
+		mat4 View = glm::inverse(UNode::GetLocal2WorldMatrix(NowCamera.BindingNode));
+		Mat4 ViewNew;
+		for(int i = 0; i < 4; ++i) 
+		{
+			for(int j = 0; j < 4; ++j) 
+			{
+			ViewNew[i * 4 + j] = View[i][j]; 
+			}	
+		}
+        CLIP_FROM_WORLD = Projection * ViewNew;
+    }
+	else if(CameraMode == ECameraMode::Free)
+	{
+		CLIP_FROM_WORLD = Perspective
+		(
+			FreeCamera.FOV,
+			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height),	// Aspect
+			FreeCamera.Near,
+			FreeCamera.Far
+		) * orbit
+		(
+			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
+			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
+		);
+	}
+	else
+	{
+		assert(0 && "Only Three Camera Mode!");
+	}
+}
 
+void UAssignmentOne::RenderDebugLine()
+{
+	LinesVertices.clear();
+	if(rtg.configuration.debug)
+	{
+		// for BBox
+		const std::vector<UNode*>& Nodes = Scene.Nodes;
+		for (uint32_t i = 0; i < Nodes.size(); i++)
+		{
+			const UNode* Node = Nodes[i];
+			if(Node->BoundingBox.Max != vec3(-FLT_MAX) && Node->BoundingBox.Min != vec3(FLT_MAX))
+			{
+				GenerateBBoxVertices(Node->BoundingBox);
+			}
+		}
+		// for Camera
+		const std::vector<UCamera*>& Cameras = Scene.Cameras;
+		for (uint8_t i = 0; i < Cameras.size(); i++)
+		{
+			GenerateFrustumVertices(*Cameras[i]);
+		}
+	}
+}
+
+void UAssignmentOne::GenerateBBoxVertices(const UBoundingBox& BBox)
+{
+	float x0 = BBox.Min.x, y0 = BBox.Min.y, z0 = BBox.Min.z;
+    float x1 = BBox.Max.x, y1 = BBox.Max.y, z1 = BBox.Max.z;
+	vec3 v[8] = 
+	{
+        {x0, y0, z0}, {x1, y0, z0}, {x1, y1, z0}, {x0, y1, z0}, // Bottom
+        {x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}, {x0, y1, z1} 	// Top
+    };
+
+	uint32_t indices[] = 
+	{
+        0, 1, 1, 2, 2, 3, 3, 0, // bottom 4 edges
+        4, 5, 5, 6, 6, 7, 7, 4, // top 4 edges
+        0, 4, 1, 5, 2, 6, 3, 7  // vertical 4 edges
+    };
+
+    for (uint32_t i : indices) 
+	{
+        PosColVertex vertex;
+        vertex.Position = { v[i].x, v[i].y, v[i].z };
+        vertex.Color.r = DebugBBoxColor[0];
+		vertex.Color.g = DebugBBoxColor[1];
+		vertex.Color.b = DebugBBoxColor[2];
+		vertex.Color.a = DebugBBoxColor[3];
+        LinesVertices.emplace_back(vertex);
+    }
+}
+
+void UAssignmentOne::GenerateFrustumVertices(const UCamera& Camera)
+{
+	Mat4 Projection = Perspective
+		(
+			Camera.Projection.Vfov,
+			Camera.Projection.Aspect,
+			Camera.Projection.Near,
+			Camera.Projection.Far
+		);
+	mat4 View = glm::inverse(UNode::GetLocal2WorldMatrix(Camera.BindingNode));
+	Mat4 ViewNew;
+	for(int i = 0; i < 4; ++i) 
+	{
+		for(int j = 0; j < 4; ++j) 
+		{
+			ViewNew[i * 4 + j] = View[i][j]; 
+		}	
+	}
+	Mat4 ClipFromWorld = Projection * ViewNew;
+	glm::mat4 gMat = glm::make_mat4(ClipFromWorld.data());
+	mat4 WorldFromClip = glm::inverse(gMat);
+
+	std::vector<glm::vec4> NDCCorners = 
+	{
+		{-1.0f, -1.0f,  0.0f, 1.0f}, { 1.0f, -1.0f,  0.0f, 1.0f},
+		{ 1.0f,  1.0f,  0.0f, 1.0f}, {-1.0f,  1.0f,  0.0f, 1.0f},
+		{-1.0f, -1.0f,  1.0f, 1.0f}, { 1.0f, -1.0f,  1.0f, 1.0f},
+		{ 1.0f,  1.0f,  1.0f, 1.0f}, {-1.0f,  1.0f,  1.0f, 1.0f}
+	};
+
+	std::vector<glm::vec3> worldCorners;
+	for (const auto& pt : NDCCorners) 
+	{
+		glm::vec4 worldPt = WorldFromClip * pt;
+    	worldCorners.push_back(glm::vec3(worldPt) / worldPt.w);
+	}
+
+	uint32_t indices[] = 
+	{
+        0, 1, 1, 2, 2, 3, 3, 0, // bottom 4 edges
+        4, 5, 5, 6, 6, 7, 7, 4, // top 4 edges
+        0, 4, 1, 5, 2, 6, 3, 7  // vertical 4 edges
+    };
+
+	for (uint32_t i : indices) 
+	{
+        PosColVertex vertex;
+        vertex.Position = { worldCorners[i].x, worldCorners[i].y, worldCorners[i].z };
+        vertex.Color.r = DebugCameraLineColor[0];
+		vertex.Color.g = DebugCameraLineColor[1];
+		vertex.Color.b = DebugCameraLineColor[2];
+		vertex.Color.a = DebugCameraLineColor[3];
+        LinesVertices.emplace_back(vertex);
+    }
 }

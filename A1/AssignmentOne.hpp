@@ -59,6 +59,8 @@ struct UAssignmentOne : RTG::Application
 		void Destroy(RTG &);
 	}LinesPipeline;
 
+	std::vector< FLinesPipeline::Vertex > LinesVertices;
+
     struct FLambertPipeline
     {
         // Descriptor set Layouts:
@@ -166,9 +168,9 @@ struct UAssignmentOne : RTG::Application
 		enum class ECameraMode
 		{
 			Scene = 0,
-			Orbit = 1,
-			Free = 2,
-		} CameraMode = ECameraMode::Free;
+			Free = 1,
+			Orbit = 2,
+		} CameraMode = ECameraMode::Scene;
 
 		// Used when cameraMode == cameraMode::Free
 		struct FOrbitCamera
@@ -193,6 +195,8 @@ struct UAssignmentOne : RTG::Application
 
 		virtual void render(RTG &, RTG::RenderParams const &) override;
 
+		void CustomViewPillarBoxing();
+
 		// Load Scene
 		URenderScene Scene;
 		uint8_t ActiveCameraIdx = 0;
@@ -206,13 +210,20 @@ struct UAssignmentOne : RTG::Application
 		void PrintMaterial();
 		void PrintTextureSizes();
 		void PrintLightProxy();
+		// Debug
+		uint8_t DebugBBoxColor[4] = {255, 255, 255, 255};		// White
+		uint8_t DebugCameraLineColor[4] = {255, 0 ,0 ,255};	// Red
+		void RenderDebugLine();
+		void GenerateBBoxVertices(const UBoundingBox& BBox);
+		void GenerateFrustumVertices(const UCamera& Camera);
 		
 		void RenderBackgroundPipeline(FWorkspace &workspace);
+		void RenderLinesPipeline(FWorkspace &workspace);
 		void RenderLambertPipeline(FWorkspace &workspace);
 
 		// Texture Loader
 		void ReserveTextures();		// Reserve Texture to gpu
 
 		// Camera Function
-		void CameraUpdate();
+		void UpdateCamera();
 };

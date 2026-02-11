@@ -381,6 +381,7 @@ void URenderExtractor::BuildUTextureData(
 
 UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
 {
+    stbi_set_flip_vertically_on_load(true);
     UTexture* NewTexture = new UTexture();
     NewTexture->Type = InTexture.type == S72::Texture::Type::cube ? UTexture::EType::Cube : UTexture::EType::Flat;
 

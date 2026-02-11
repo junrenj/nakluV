@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include "glm/glm/glm.hpp"
 
 // NOTE: column-major storage order (like in OpenGL / GLSL):
 using Mat4 = std::array< float, 16 >;
@@ -45,6 +46,7 @@ inline Mat4 operator*(Mat4 const &A, Mat4 const &B)
 	}
 	return ret;
 }
+
 
 // perspective projection matrix.
 // - vfov is fov *in radians*

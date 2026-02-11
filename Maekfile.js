@@ -76,6 +76,12 @@ const A1_background_shaders = [
 ];
 main_objs.push( maek.CPP('A1/AssignmentOne-BackgroundPipeline.cpp', undefined, { depends:[...A1_background_shaders] } ) );
 
+const A1_lines_shaders = [
+	maek.GLSLC('A1/lines.vert'),
+	maek.GLSLC('A1/lines.frag'),
+];
+main_objs.push( maek.CPP('A1/AssignmentOne-LinesPipeline.cpp', undefined, { depends:[...A1_lines_shaders] } ) );
+
 const A1_lambert_shaders = [
 	maek.GLSLC('A1/lambert.vert'),
 	maek.GLSLC('A1/lambert.frag'),
