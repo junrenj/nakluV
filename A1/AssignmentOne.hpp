@@ -195,7 +195,6 @@ struct UAssignmentOne : RTG::Application
 
 		// Load Scene
 		URenderScene Scene;
-		uint8_t ActiveCameraIdx = 0;
 		void InitializeRenderScene();
 		
 		// Pipeline Render
@@ -206,8 +205,12 @@ struct UAssignmentOne : RTG::Application
 		// Texture Loader
 		void ReserveTextures();		// Reserve Texture to gpu
 
-		// Camera Function
+		// Viewport
+		const float DefaultAspect = 16.0f / 9.0f;
 		void ViewportPillarBoxing(FWorkspace &workspace);
+
+		// Camera Function
+		uint8_t ActiveCameraIdx = 0;
 		void UpdateCamera();
 
 		// for debug

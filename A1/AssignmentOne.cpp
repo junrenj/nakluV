@@ -1150,7 +1150,7 @@ void UAssignmentOne::ReserveTextures()
 //~BEGIN Viewport and Camera
 void UAssignmentOne::ViewportPillarBoxing(FWorkspace &workspace)
 {
-    float TargetAspect = 16.0f / 9.0f;
+    float TargetAspect = DefaultAspect;
     if (CameraMode == ECameraMode::Scene) 
     {
         TargetAspect = Scene.Cameras[ActiveCameraIdx]->Projection.Aspect;
