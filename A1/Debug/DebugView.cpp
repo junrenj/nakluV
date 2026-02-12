@@ -93,6 +93,13 @@ void UDebugScene::GenerateFrustumVertices(const UCamera& Camera)
     }
 }
 
+void UDebugScene::GetAllVerticesData(std::vector<FDebugColVertex>& LineVertices)
+{
+    LineVertices.reserve(BBoxVertices.size() + FrustumVertices.size());
+    LineVertices.insert(LineVertices.end(), BBoxVertices.begin(), BBoxVertices.end());
+    LineVertices.insert(LineVertices.end(), FrustumVertices.begin(), FrustumVertices.end());
+}
+
 // Debug Message Class
 void UDebugMessage::PrintRenderSceneMesh(const URenderScene& Scene)
 {

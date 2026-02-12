@@ -10,13 +10,13 @@
 #include <iostream>
 #include "../A1/Render/RenderScene.hpp"
 #include "../A1/Render/RenderExtractor.hpp"
-#include "glm/glm/gtc/type_ptr.hpp"
 
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
-	// load the scene
+	// load the scene and debug scene
 	InitializeRenderScene();
+    InitializeDebugRenderScene();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -129,7 +129,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &CommandPool) );
 	}
 
-    BackgroundPipeline.Create(rtg, RenderPass, 0);
+    // BackgroundPipeline.Create(rtg, RenderPass, 0);
 	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
 
@@ -1088,6 +1088,8 @@ void UAssignmentOne::update(float dt)
 
 	UpdateCamera();
 
+    DrawDebugLines();
+
 	// static sun and sky
 	{
 		World.SKY_DIRECTION.x = 0.0f;
@@ -1098,7 +1100,7 @@ void UAssignmentOne::update(float dt)
 		World.SKY_ENERGY.g = 0.1f;
 		World.SKY_ENERGY.b = 0.2f;
 
-		World.SUN_DIRECTION.x = Scene.LightProxyInstances[0]->Direction.x;
+		World.SUN_DIRECTION.x = Scene.LightProxyInstances[0]->Direction.x;  // TODO:REPLACE IT WITH REAL SUN INFORMATION
 		World.SUN_DIRECTION.y = Scene.LightProxyInstances[0]->Direction.y;
 		World.SUN_DIRECTION.z = Scene.LightProxyInstances[0]->Direction.z;
 
@@ -1122,7 +1124,7 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_TAB)
 	{
 		// Switch Camera Modes
-		CameraMode = ECameraMode((int(CameraMode) + 1) % 3);
+		CameraMode = ECameraMode((int(CameraMode) + 1) % 2);
 		return;
 	}
 	// Switch scene's cameras:
@@ -1256,7 +1258,7 @@ void UAssignmentOne::InitializeRenderScene()
 
 	if(!hasFound)
 	{
-		CameraMode = ECameraMode::Scene;
+		CameraMode = ECameraMode::Free;
 	}
 }
 
@@ -1285,24 +1287,7 @@ void UAssignmentOne::ReserveTextures()
 void UAssignmentOne::UpdateCamera()
 {
 	// camera orbiting the origin:
-	if(CameraMode == ECameraMode::Orbit)
-	{
-		// camera rotating around the origin:
-		float Angle = float(M_PI) * 2.0f * 2.0f * (Time / 60.0f);
-		CLIP_FROM_WORLD = Perspective
-		(
-			60.0f * float(M_PI) / 180.0f, // vfov
-			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height), // aspect
-			0.1f, // near
-			10000.0f // far
-		) * Look_at
-		(
-			4.0f * std::cos(Angle), 4.0f * std::sin(Angle), 1.0f, // eye
-			0.0f, 0.0f, 0.5f, // target
-			0.0f, 0.0f, 1.0f // up
-		);
-	}
-    else if(CameraMode == ECameraMode::Scene)
+	if(CameraMode == ECameraMode::Scene)
     {
         // TODO: Change all the mat4 to Mat4 or replace all Mat4 with mat4!!!!!!!
         const UCamera& NowCamera = *(Scene.Cameras[ActiveCameraIdx]);
@@ -1340,6 +1325,37 @@ void UAssignmentOne::UpdateCamera()
 	}
 	else
 	{
-		assert(0 && "Only Three Camera Mode!");
+		assert(0 && "Only Two Camera Mode!");
 	}
+}
+
+void UAssignmentOne::InitializeDebugRenderScene()
+{
+    // Get Vertices of BBox
+    for (const UNode* Node : Scene.Nodes)
+    {
+        const UBoundingBox& BBox = Node->BoundingBox;
+        if(BBox.Max != vec3(-FLT_MAX) && BBox.Min != vec3(FLT_MAX))
+        {
+            DebugScene.GenerateBBoxVertices(BBox);
+        }
+    }
+
+    // Get Vertices of Frustum
+    for (const UCamera* Camera : Scene.Cameras)
+    {
+        DebugScene.GenerateFrustumVertices(*Camera);
+    }
+    
+    
+}
+
+void UAssignmentOne::DrawDebugLines()
+{
+    // For now, we just clear everything and push data into it again and again, maybe could be done as proxy
+    LinesVertices.clear();
+    if(rtg.configuration.debug)
+    {
+        DebugScene.GetAllVerticesData(LinesVertices);
+    }
 }

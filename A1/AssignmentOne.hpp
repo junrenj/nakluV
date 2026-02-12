@@ -2,8 +2,8 @@
 #include "AssignmentOne-Vertex.hpp"
 #include "../RTG.hpp"
 #include "../mat4.hpp"
-#include "../PosColVertex.hpp"
 #include "Render/RenderScene.hpp"
+#include "Debug/DebugView.hpp"
 
 
 struct UAssignmentOne : RTG::Application
@@ -51,15 +51,13 @@ struct UAssignmentOne : RTG::Application
 	
 		VkPipelineLayout Layout = VK_NULL_HANDLE;
 
-		using Vertex = PosColVertex;
-
 		VkPipeline Handle = VK_NULL_HANDLE;
 
 		void Create(RTG &, VkRenderPass RenderPass, uint32_t Subpass);
 		void Destroy(RTG &);
 	}LinesPipeline;
 
-	std::vector< FLinesPipeline::Vertex > LinesVertices;
+	std::vector< FDebugColVertex > LinesVertices;	// for debug
 
     struct FLambertPipeline
     {
@@ -169,7 +167,6 @@ struct UAssignmentOne : RTG::Application
 		{
 			Scene = 0,
 			Free = 1,
-			Orbit = 2,
 		} CameraMode = ECameraMode::Scene;
 
 		// Used when cameraMode == cameraMode::Free
@@ -195,23 +192,26 @@ struct UAssignmentOne : RTG::Application
 
 		virtual void render(RTG &, RTG::RenderParams const &) override;
 
-		void CustomViewPillarBoxing();
 
 		// Load Scene
 		URenderScene Scene;
 		uint8_t ActiveCameraIdx = 0;
 		void InitializeRenderScene();
-		// TODO:delete functions below
-		// Debug
-		void RenderDebugLine();
 		
-		void RenderBackgroundPipeline(FWorkspace &workspace);
-		void RenderLinesPipeline(FWorkspace &workspace);
-		void RenderLambertPipeline(FWorkspace &workspace);
+		// Pipeline Render
+		void RenderBackgroundPipeline(FWorkspace &workspace);	// maybe abandoned, because it is no use now
+		void RenderLinesPipeline(FWorkspace &workspace);		// for debug
+		void RenderLambertPipeline(FWorkspace &workspace);		// the major Pipeline to pass
 
 		// Texture Loader
 		void ReserveTextures();		// Reserve Texture to gpu
 
 		// Camera Function
+		void CustomViewPillarBoxing();
 		void UpdateCamera();
+
+		// for debug
+		UDebugScene DebugScene;
+		void InitializeDebugRenderScene();
+		void DrawDebugLines();
 };
