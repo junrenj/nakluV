@@ -128,6 +128,11 @@ struct UAssignmentOne : RTG::Application
 			Helpers::AllocatedBuffer TransformsSrc;	// host coherent; mapped
 			Helpers::AllocatedBuffer Transforms;	// device-local
 			VkDescriptorSet TransformDescriptors;	// references Transforms
+
+			// Location for ObjectsPipeline::Lights data: (streamed to GPU per-frame)
+			Helpers::AllocatedBuffer LightsSrc;		// host coherent; mapped
+			Helpers::AllocatedBuffer Lights;		// device-local
+			VkDescriptorSet LightsDescriptors;		// references Lights
 		};
 		std::vector< FWorkspace > workspaces;
 
@@ -191,7 +196,6 @@ struct UAssignmentOne : RTG::Application
 		//Rendering function, uses all the resources above to queue work to draw a frame:
 
 		virtual void render(RTG &, RTG::RenderParams const &) override;
-
 
 		// Load Scene
 		URenderScene Scene;
