@@ -896,31 +896,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 		vkCmdBeginRenderPass(workspace.command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		
-		// set scissor rectangle
-		{
-			VkRect2D scissor
-			{
-				.offset = { .x = 0, .y = 0 },
-				.extent = rtg.swapchain_extent,
-			};
-			vkCmdSetScissor(workspace.command_buffer, 0, 1, &scissor);
-		}
-		
-		// configure viewport transform:
-		{
-			//TODO: With Specified scene camera, it would have the aspect
-			VkViewport Viewport
-			{
-				.x = 0.0f,
-				.y = 0.0f,
-				.width = float(rtg.swapchain_extent.width),
-				.height = float(rtg.swapchain_extent.height),
-				.minDepth = 0.0f,
-				.maxDepth = 1.0f,
-			};
-			vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
-		}
+		ViewportPillarBoxing(workspace);
 		
 		// RenderBackgroundPipeline(workspace);
 		RenderLinesPipeline(workspace);
@@ -963,123 +939,6 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 		VK( vkQueueSubmit(rtg.graphics_queue, 1, &SubmitInfo, render_params.workspace_available));
 	}
-}
-
-void UAssignmentOne::CustomViewPillarBoxing()
-{
-
-}
-
-void UAssignmentOne::RenderBackgroundPipeline(FWorkspace &workspace)
-{
-    // draw with the background pipeline:
-	{
-		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.Handle);
-		
-		// Push time here
-		{
-			FBackgroundPipeline::FPush push
-			{
-				.time = Time,
-			};
-			vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.Layout, 
-								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
-		}
-		vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
-	}
-}
-
-void UAssignmentOne::RenderLinesPipeline(FWorkspace &workspace)
-{
-	// Draw with the lines pipeline:
-	{
-		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-						LinesPipeline.Handle);
-		{
-			// Use LinesVertices (offset 0) as vertex buffer binding 0:
-			std::array< VkBuffer, 1 > VertexBuffers{ workspace.LinesVertices.handle };
-			std::array< VkDeviceSize, 1 > Offsets{ 0 };
-			vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()),
-									VertexBuffers.data(), Offsets.data());
-		}
-
-		// bind Camera descriptor set:
-		{
-			std::array< VkDescriptorSet, 1 > DescriptorSets
-			{
-				workspace.CameraDescriptors,
-			};
-			vkCmdBindDescriptorSets
-			(
-				workspace.command_buffer, 			// command buffer
-				VK_PIPELINE_BIND_POINT_GRAPHICS, 	// pipeline bind point
-				LinesPipeline.Layout, 				// pipeline layout
-				0, 									// first set
-				uint32_t(DescriptorSets.size()),
-				DescriptorSets.data(), 				// descriptor sets count, ptr
-				0, nullptr 							// dynamic offsets count, ptr
-			);
-		}
-		// Draw Lines vertices
-		vkCmdDraw(workspace.command_buffer, uint32_t(LinesVertices.size()), 1, 0, 0);
-	}
-}
-
-void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
-{
-    // Draw with the objects pipeline:
-	if (!Scene.MeshProxyInstances.empty()) 
-	{ 
-		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, LambertPipeline.Handle);
-	}
-
-	{
-		// use object_vertices (offset 0) as vertex buffer binding 0:
-		std::array< VkBuffer, 1 > VertexBuffers{ ObjectVertices.handle };
-		std::array< VkDeviceSize, 1 > Offsets{ 0 };
-		vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
-	}
-
-	// Bind World and Transforms descriptor sets:
-	{
-		std::array< VkDescriptorSet, 3 > DescriptorSets
-		{
-            workspace.CameraDescriptors,    // 0：Camera
-			workspace.WorldDescriptors, 	// 1: World
-			workspace.TransformDescriptors, // 2: Transforms
-		};
-		vkCmdBindDescriptorSets
-		(
-			workspace.command_buffer, 			// Command Buffer
-			VK_PIPELINE_BIND_POINT_GRAPHICS, 	// Pipeline bind point
-			LambertPipeline.Layout, 			// Pipeline Layout
-			0, 									// First Set
-			uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
-			0, nullptr // DynamicOffsets Count, ptr
-		);
-	}
-
-	// Camera descriptor set is still bound, but unused(!)
-
-	// Use UMeshRenderProxy as ObjectInstance
-	const std::vector<UMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
-	for (uint32_t i = 0; i < ProxyList.size(); i++)
-	{
-		const UMeshRenderProxy* Inst = ProxyList[i];
-		vkCmdBindDescriptorSets
-		(
-			workspace.command_buffer,			// Command buffer
-			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
-			LambertPipeline.Layout,				// Pipeline Layout
-			3, 	// Third Sets
-			1, &TextureDescriptors[Inst->Texture],	// descriptor sets count, ptr
-			0, nullptr	// Dynamic offsets count, ptr
-		);
-
-		vkCmdDraw(workspace.command_buffer, Inst->VertexNum, 1, Inst->FirstVertexIdx, i);
-	}
-
-
 }
 
 void UAssignmentOne::update(float dt)
@@ -1241,6 +1100,7 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 	}
 }
 
+//~BEGIN Load Scene
 void UAssignmentOne::InitializeRenderScene()
 {
 	URenderExtractor::BuildRenderScene(rtg.configuration.FilePath, Scene);
@@ -1261,7 +1121,9 @@ void UAssignmentOne::InitializeRenderScene()
 		CameraMode = ECameraMode::Free;
 	}
 }
+//~END Load Scene
 
+//~BEGIN Load Texture
 void UAssignmentOne::ReserveTextures()
 {
     const std::vector<UTexture*>& TexturesData = Scene.Textures;
@@ -1282,6 +1144,60 @@ void UAssignmentOne::ReserveTextures()
         rtg.helpers.transfer_to_image(MipmapData.BulkData.data(), sizeof(MipmapData.BulkData[0]) * MipmapData.BulkData.size(), Textures.back());
     }
     
+}
+//~END Load Texture
+
+//~BEGIN Viewport and Camera
+void UAssignmentOne::ViewportPillarBoxing(FWorkspace &workspace)
+{
+    float TargetAspect = 16.0f / 9.0f;
+    if (CameraMode == ECameraMode::Scene) 
+    {
+        TargetAspect = Scene.Cameras[ActiveCameraIdx]->Projection.Aspect;
+    }
+
+    float Width = float(rtg.swapchain_extent.width);
+    float Height = float(rtg.swapchain_extent.height);
+    float CurrentAspect = Width / Height;
+
+    float TargetWidth, TargetHeight;
+    float OffsetX = 0.0f;
+    float OffsetY = 0.0f;
+
+    if (CurrentAspect > TargetAspect) 
+    {
+        TargetHeight = Height;
+        TargetWidth = Height * TargetAspect;
+        OffsetX = (Width - TargetWidth) / 2.0f;
+    } 
+    else 
+    {
+        TargetWidth = Width;
+        TargetHeight = Width / TargetAspect;
+        OffsetY = (Height - TargetHeight) / 2.0f;
+    }
+
+    {
+        VkViewport Viewport 
+        {
+            .x = OffsetX,
+            .y = OffsetY,
+            .width = TargetWidth,
+            .height = TargetHeight,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+        };
+        vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
+    }
+
+    {
+        VkRect2D Scissor 
+        {
+            .offset = { .x = int32_t(OffsetX), .y = int32_t(OffsetY) },
+            .extent = { uint32_t(TargetWidth), uint32_t(TargetHeight) },
+        };
+        vkCmdSetScissor(workspace.command_buffer, 0, 1, &Scissor);
+    }
 }
 
 void UAssignmentOne::UpdateCamera()
@@ -1328,7 +1244,9 @@ void UAssignmentOne::UpdateCamera()
 		assert(0 && "Only Two Camera Mode!");
 	}
 }
+//~END Viewport and Camera
 
+//~BEGIN Debug
 void UAssignmentOne::InitializeDebugRenderScene()
 {
     // Get Vertices of BBox
@@ -1359,3 +1277,118 @@ void UAssignmentOne::DrawDebugLines()
         DebugScene.GetAllVerticesData(LinesVertices);
     }
 }
+// ~END Debug
+
+//~BEGIN Render Pipeline
+void UAssignmentOne::RenderBackgroundPipeline(FWorkspace &workspace)
+{
+    // draw with the background pipeline:
+	{
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, BackgroundPipeline.Handle);
+		
+		// Push time here
+		{
+			FBackgroundPipeline::FPush push
+			{
+				.time = Time,
+			};
+			vkCmdPushConstants(workspace.command_buffer, BackgroundPipeline.Layout, 
+								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+		}
+		vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
+	}
+}
+
+void UAssignmentOne::RenderLinesPipeline(FWorkspace &workspace)
+{
+	// Draw with the lines pipeline:
+	{
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+						LinesPipeline.Handle);
+		{
+			// Use LinesVertices (offset 0) as vertex buffer binding 0:
+			std::array< VkBuffer, 1 > VertexBuffers{ workspace.LinesVertices.handle };
+			std::array< VkDeviceSize, 1 > Offsets{ 0 };
+			vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()),
+									VertexBuffers.data(), Offsets.data());
+		}
+
+		// bind Camera descriptor set:
+		{
+			std::array< VkDescriptorSet, 1 > DescriptorSets
+			{
+				workspace.CameraDescriptors,
+			};
+			vkCmdBindDescriptorSets
+			(
+				workspace.command_buffer, 			// command buffer
+				VK_PIPELINE_BIND_POINT_GRAPHICS, 	// pipeline bind point
+				LinesPipeline.Layout, 				// pipeline layout
+				0, 									// first set
+				uint32_t(DescriptorSets.size()),
+				DescriptorSets.data(), 				// descriptor sets count, ptr
+				0, nullptr 							// dynamic offsets count, ptr
+			);
+		}
+		// Draw Lines vertices
+		vkCmdDraw(workspace.command_buffer, uint32_t(LinesVertices.size()), 1, 0, 0);
+	}
+}
+
+void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
+{
+    // Draw with the objects pipeline:
+	if (!Scene.MeshProxyInstances.empty()) 
+	{ 
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, LambertPipeline.Handle);
+	}
+
+	{
+		// use object_vertices (offset 0) as vertex buffer binding 0:
+		std::array< VkBuffer, 1 > VertexBuffers{ ObjectVertices.handle };
+		std::array< VkDeviceSize, 1 > Offsets{ 0 };
+		vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
+	}
+
+	// Bind World and Transforms descriptor sets:
+	{
+		std::array< VkDescriptorSet, 3 > DescriptorSets
+		{
+            workspace.CameraDescriptors,    // 0：Camera
+			workspace.WorldDescriptors, 	// 1: World
+			workspace.TransformDescriptors, // 2: Transforms
+		};
+		vkCmdBindDescriptorSets
+		(
+			workspace.command_buffer, 			// Command Buffer
+			VK_PIPELINE_BIND_POINT_GRAPHICS, 	// Pipeline bind point
+			LambertPipeline.Layout, 			// Pipeline Layout
+			0, 									// First Set
+			uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
+			0, nullptr // DynamicOffsets Count, ptr
+		);
+	}
+
+	// Camera descriptor set is still bound, but unused(!)
+
+	// Use UMeshRenderProxy as ObjectInstance
+	const std::vector<UMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
+	for (uint32_t i = 0; i < ProxyList.size(); i++)
+	{
+		const UMeshRenderProxy* Inst = ProxyList[i];
+		vkCmdBindDescriptorSets
+		(
+			workspace.command_buffer,			// Command buffer
+			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
+			LambertPipeline.Layout,				// Pipeline Layout
+			3, 	// Third Sets
+			1, &TextureDescriptors[Inst->Texture],	// descriptor sets count, ptr
+			0, nullptr	// Dynamic offsets count, ptr
+		);
+
+		vkCmdDraw(workspace.command_buffer, Inst->VertexNum, 1, Inst->FirstVertexIdx, i);
+	}
+
+
+}
+//~END Render Pipeline

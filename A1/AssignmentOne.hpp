@@ -207,7 +207,7 @@ struct UAssignmentOne : RTG::Application
 		void ReserveTextures();		// Reserve Texture to gpu
 
 		// Camera Function
-		void CustomViewPillarBoxing();
+		void ViewportPillarBoxing(FWorkspace &workspace);
 		void UpdateCamera();
 
 		// for debug

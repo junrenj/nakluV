@@ -6,10 +6,9 @@
 // This is the place to store all Debug Data
 class UDebugScene
 {
-public:
+private:
     std::vector< FDebugColVertex > FrustumVertices;
     std::vector< FDebugColVertex > BBoxVertices;
-private:
     uint8_t DebugFrustumLineColor[4] = {255, 0 ,0 ,255};	// Red
     uint8_t DebugBBoxLineColor[4] = {255, 255, 255, 255};		// White
 
