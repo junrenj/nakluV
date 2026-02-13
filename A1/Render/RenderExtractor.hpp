@@ -4,27 +4,41 @@
 #include "s72Loader/S72.hpp"
 #include "RenderScene.hpp"
 
+class UAnimInstance;
+
 class URenderExtractor
 {
 public:
     static void BuildRenderScene(std::string S72Path, URenderScene& RenderScene);
 
     // New Node Tree
-    static void BuildUNodeTree(URenderScene& RenderScene, std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
-    static UNode* BuildUNodeTreeIterate(const S72::Node& InS72Nodes, URenderScene& RenderScene, UNode* Parent,std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
+    static void BuildUNodeTree(URenderScene& RenderScene, 
+        std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
+        std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, 
+        std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
+    static UNode* BuildUNodeTreeIterate(const S72::Node& InS72Nodes, URenderScene& RenderScene, UNode* Parent,
+        std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
+        std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, 
+        std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
     // Bounding Box
     static void BuildUNodesBBoxIterate(UNode* InNode);
     static void UpdateBBoxWithTransform(UBoundingBox& OutBox, const UBoundingBox& LocalBox, const glm::mat4& Transform);
     // New Material Structure
-    static void BuildUMaterialData(std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex , URenderScene& Scene);
-    static UMaterial* CloneUMaterialFromS72Material(const S72::Material& InS72Mat, std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, const URenderScene& Scene);
+    static void BuildUMaterialData(std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, 
+        std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex , URenderScene& Scene);
+    static UMaterial* CloneUMaterialFromS72Material(const S72::Material& InS72Mat, 
+        std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, const URenderScene& Scene);
     // New Texture Structure
     static void BuildUTextureData(std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, URenderScene& Scene);
     static UTexture* ReadBulkDataFromImage(const S72::Texture& InTexture);
 
     // New RenderMesh Structure
-    static void CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URenderMesh& OutMesh, std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
+    static void CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URenderMesh& OutMesh, 
+        std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat);
 
+    // New Animation Structure
+    static void BuildAnimData(std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
+    static void CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInstance& AnimInstance);
 private:
     static std::vector<uint8_t> ReadBinaryFile(const std::string& path);
 private:

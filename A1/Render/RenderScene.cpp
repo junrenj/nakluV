@@ -24,7 +24,7 @@ void URenderScene::GenerateMeshProxy()
     const uint32_t BytePerVertex = static_cast<uint32_t>(sizeof(URenderMesh::FVertex));
     for (auto& Mesh : AllMeshes)
     {
-        UMeshRenderProxy* ProxyInstance = new UMeshRenderProxy();
+        FMeshRenderProxy* ProxyInstance = new FMeshRenderProxy();
         const UNode* BindingNode = RenderMeshes2Nodes.find(Mesh)->second;
         const uint32_t MeshBytesCount = static_cast<uint32_t>(Mesh->VertexData.size());
         // Data Collect

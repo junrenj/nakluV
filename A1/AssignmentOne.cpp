@@ -756,8 +756,8 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			// Copy Transform into TransformSrc
 			{
 				assert(workspace.TransformsSrc.allocation.mapped);
-				UMeshRenderProxy::FTransform *Out = reinterpret_cast< UMeshRenderProxy::FTransform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
-				for (UMeshRenderProxy* Inst : Scene.MeshProxyInstances)
+				FMeshRenderProxy::FTransform *Out = reinterpret_cast< FMeshRenderProxy::FTransform * >(workspace.TransformsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				for (FMeshRenderProxy* Inst : Scene.MeshProxyInstances)
 				{
 					*Out = Inst->Transform;
 					++Out;
@@ -1485,10 +1485,10 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 	// Camera descriptor set is still bound, but unused(!)
 
 	// Use UMeshRenderProxy as ObjectInstance
-	const std::vector<UMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
+	const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
 	for (uint32_t i = 0; i < ProxyList.size(); i++)
 	{
-		const UMeshRenderProxy* Inst = ProxyList[i];
+		const FMeshRenderProxy* Inst = ProxyList[i];
 		vkCmdBindDescriptorSets
 		(
 			workspace.command_buffer,			// Command buffer

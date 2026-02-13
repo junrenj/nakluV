@@ -34,7 +34,6 @@ public:
 
 class UNode
 {
-
 public:
     struct FTransform
     {
@@ -54,7 +53,7 @@ public:
     static glm::mat4 GetLocal2WorldMatrix(const UNode* InNode);
 };
 
-class UMeshRenderProxy
+struct FMeshRenderProxy
 {
 public: 
     uint32_t FirstVertexIdx = 0;
@@ -98,7 +97,7 @@ public:
     std::vector<uint8_t> AllVertexData;
 
     // ProxyData
-    std::vector<UMeshRenderProxy*> MeshProxyInstances;
+    std::vector<FMeshRenderProxy*> MeshProxyInstances;
     std::vector<FLightRenderProxy*> LightProxyInstances;
 
     void GenerateWholeVertexBuffer();
@@ -137,7 +136,7 @@ public:
     UMaterial* Material;
 
     std::vector<uint8_t> VertexData;    // Include data of POSITION,NORMAL,TANGENT,UV
-    UMeshRenderProxy* RenderProxy;
+    FMeshRenderProxy* RenderProxy;
 };
 
 class UCamera

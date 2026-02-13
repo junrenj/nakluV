@@ -1,5 +1,6 @@
 #include "RenderExtractor.hpp"
 #include "glm/glm/glm.hpp"
+#include "../Animation/AnimationPlayer.hpp"
 #include <iostream>
 #include <fstream>
 #define STB_IMAGE_IMPLEMENTATION
@@ -11,6 +12,7 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
 
     std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
     std::unordered_map< const S72::Material* , UMaterial* > S72Mat2UMat;
+    std::unordered_map< const S72::Node* , UNode* > S72Node2UNode;
 
     // 0. Get Dependency ready
     // get Texture Resources Ready
@@ -19,19 +21,22 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     BuildUMaterialData(S72Mat2UMat, S72Tex2UTex, RenderScene);
 
     // 1. Build UNode Tree
-    BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat);
+    BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat, S72Node2UNode);
     // 2. Build UNode BBox
     BuildUNodesBBoxIterate(RenderScene.RootNode);
     // 3. Generate RenderProxy
     RenderScene.GenerateMeshProxy();
     RenderScene.GenerateLightProxy();
     RenderScene.GenerateWholeVertexBuffer();
+    // 4. Get Animation Sequence
+    BuildAnimData(S72Node2UNode);
 }
 
 //BEGIN: UNode Data Extract
 void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene,
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
-    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat)
+    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat,
+    std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode)
 {
     // Build a single unique root node for all nodes data
     UNode* Root = new UNode();
@@ -42,7 +47,7 @@ void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene,
         if(CurrentS72.scene.roots[i])
         {
             const S72::Node& InS72Node = *(CurrentS72.scene.roots[i]);
-            Root->Children.push_back(BuildUNodeTreeIterate(InS72Node, RenderScene, Root, S72Tex2UTex, S72Mat2UMat));
+            Root->Children.push_back(BuildUNodeTreeIterate(InS72Node, RenderScene, Root, S72Tex2UTex, S72Mat2UMat, S72Node2UNode));
         }
     }
 }
@@ -51,10 +56,12 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
     URenderScene& RenderScene, 
     UNode* Parent,
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
-    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat)
+    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat,
+    std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode)
 {
     UNode* NewNode = new UNode();
     NewNode->Parent = Parent;
+    S72Node2UNode[&InS72Node] = NewNode;
 
     // 1. Transform
     NewNode->Transform.Translation = glm::vec3(InS72Node.translation.x, InS72Node.translation.y, InS72Node.translation.z);
@@ -179,7 +186,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
         for (size_t i = 0; i < InS72Node.children.size(); i++)
         {
             const S72::Node& Child = *InS72Node.children[i];
-            NewNode->Children.push_back(BuildUNodeTreeIterate(Child, RenderScene, NewNode,S72Tex2UTex, S72Mat2UMat));
+            NewNode->Children.push_back(BuildUNodeTreeIterate(Child, RenderScene, NewNode, S72Tex2UTex, S72Mat2UMat, S72Node2UNode));
         }
     }
     RenderScene.Nodes.push_back(NewNode);
@@ -385,17 +392,15 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
     UTexture* NewTexture = new UTexture();
     NewTexture->Type = InTexture.type == S72::Texture::Type::cube ? UTexture::EType::Cube : UTexture::EType::Flat;
 
-    if(InTexture.format == S72::Texture::Format::srgb)
+    switch (InTexture.format)
     {
-        NewTexture->Format = UTexture::EFormat::SRGB;
-    }
-    else if(InTexture.format == S72::Texture::Format::rgbe)
-    {
-        NewTexture->Format = UTexture::EFormat::Linear;
-    }
-    else
-    {
-        NewTexture->Format = UTexture::EFormat::Linear;
+        case S72::Texture::Format::srgb:
+            NewTexture->Format = UTexture::EFormat::SRGB;
+            break;
+        case S72::Texture::Format::rgbe:
+            default:
+            NewTexture->Format = UTexture::EFormat::Linear;
+            break;
     }
 
     int Width, Height, Channels;
@@ -504,7 +509,8 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
         const uint8_t* SrcPtr =
             LoadedBinary.at(DataFile.path).data() + Attribute.offset;
 
-        for (uint32_t i = 0; i < OutMesh.VertexCount; ++i) {
+        for (uint32_t i = 0; i < OutMesh.VertexCount; ++i) 
+        {
             std::memcpy(
                 OutMesh.VertexData.data() + i * OutMesh.VertexStride + OutMesh.NormalOffset,
                 SrcPtr + i * Attribute.stride,
@@ -522,7 +528,8 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
         const uint8_t* SrcPtr =
             LoadedBinary.at(DataFile.path).data() + Attribute.offset;
 
-        for (uint32_t i = 0; i < OutMesh.VertexCount; ++i) {
+        for (uint32_t i = 0; i < OutMesh.VertexCount; ++i) 
+        {
             std::memcpy(
                 OutMesh.VertexData.data() + i * OutMesh.VertexStride + OutMesh.TangentOffset,
                 SrcPtr + i * Attribute.stride,
@@ -557,3 +564,55 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
     }
 }
 //END: URenerMesh Data Extract
+
+//BEGIN: Animation
+void URenderExtractor::BuildAnimData(std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode)
+{
+    for (const S72::Driver& Driver : CurrentS72.drivers)
+    {
+        UAnimInstance* AnimInstance = new UAnimInstance();
+        auto it = S72Node2UNode.find(&Driver.node);
+        if (it != S72Node2UNode.end())
+        {
+            AnimInstance->Node = it->second;
+            CloneAnimFromS72Anim(Driver, *AnimInstance);
+        }
+        UAnimPlayer::AnimInstances.push_back(AnimInstance);
+    }
+}
+
+void URenderExtractor::CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInstance& AnimInstance)
+{
+    switch (Driver.channel)
+    {
+        case S72::Driver::Channel::translation:
+            AnimInstance.Channel = UAnimInstance::EChannel::Translation;
+            break;
+        case S72::Driver::Channel::scale:
+            AnimInstance.Channel = UAnimInstance::EChannel::Scale;
+            break;
+        case S72::Driver::Channel::rotation:
+            AnimInstance.Channel = UAnimInstance::EChannel::Rotation;
+            break;
+    }
+
+    switch (Driver.interpolation)
+    {
+        case S72::Driver::Interpolation::STEP:
+            AnimInstance.Interpolation = UAnimInstance::EInterpolation::STEP;
+            break;
+        case S72::Driver::Interpolation::LINEAR:
+            AnimInstance.Interpolation = UAnimInstance::EInterpolation::LINEAR;
+            break;
+        case S72::Driver::Interpolation::SLERP:
+            AnimInstance.Interpolation = UAnimInstance::EInterpolation::SLERP;
+            break;
+    }
+
+    AnimInstance.Times.reserve(Driver.times.size());
+    AnimInstance.Times.insert(AnimInstance.Times.end(), Driver.times.begin(), Driver.times.end());
+
+    AnimInstance.Values.reserve(Driver.values.size());
+    AnimInstance.Values.insert(AnimInstance.Times.end(), Driver.values.begin(), Driver.values.end());
+}
+//END: Animation
