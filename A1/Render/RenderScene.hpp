@@ -99,7 +99,7 @@ public:
 
     // ProxyData
     std::vector<UMeshRenderProxy*> MeshProxyInstances;
-    std::vector<ULightRenderProxy*> LightProxyInstances;
+    std::vector<FLightRenderProxy*> LightProxyInstances;
 
     void GenerateWholeVertexBuffer();
     void GenerateMeshProxy();

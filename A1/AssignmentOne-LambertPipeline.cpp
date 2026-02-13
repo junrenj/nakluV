@@ -91,12 +91,32 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
         VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set3_TEXTURE));
     }
 
+    { //the Set4_Lights layout holds an array of Transform structures in a storage buffer used in the vertex shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings {
+            VkDescriptorSetLayoutBinding {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            },
+        };
+
+        VkDescriptorSetLayoutCreateInfo create_info {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set4_Lights));
+    }
+
     { //create pipeline layout:
-        std::array<VkDescriptorSetLayout, 4> layouts {
+        std::array<VkDescriptorSetLayout, 5> layouts {
             Set0_Camera,
             Set1_World,
             Set2_Transforms,
             Set3_TEXTURE,
+            Set4_Lights,
         };
 
         VkPipelineLayoutCreateInfo create_info {
@@ -235,6 +255,12 @@ void UAssignmentOne::FLambertPipeline::Destroy(RTG &rtg)
     if (Set3_TEXTURE != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(rtg.device, Set3_TEXTURE, nullptr);
         Set3_TEXTURE = VK_NULL_HANDLE;
+    }
+
+    if(Set4_Lights != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(rtg.device, Set4_Lights, nullptr);
+        Set4_Lights = VK_NULL_HANDLE;
     }
     
     if (Layout != VK_NULL_HANDLE) {

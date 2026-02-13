@@ -248,7 +248,7 @@ void UDebugMessage::PrintTextureSizes(const URenderScene& Scene)
 
 void UDebugMessage::PrintLightProxy(const URenderScene& Scene)
 {
-    const std::vector<ULightRenderProxy*>& LightProxies = Scene.LightProxyInstances;
+    const std::vector<FLightRenderProxy*>& LightProxies = Scene.LightProxyInstances;
 	std::cout << "\n==================== GPU Light Proxies (" << LightProxies.size() << ") ====================\n";
     std::cout << std::left << std::setw(6) << "Idx" 
               << std::setw(18) << "Type" 

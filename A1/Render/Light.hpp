@@ -46,7 +46,7 @@ public:
     float Blend;
 };
 
-class ULightRenderProxy
+struct FLightRenderProxy
 {
 public:
     uint32_t Type;  // 0-Sun 1-Sphere 2-Spot

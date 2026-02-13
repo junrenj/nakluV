@@ -66,6 +66,7 @@ struct UAssignmentOne : RTG::Application
 		VkDescriptorSetLayout Set1_World = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set2_Transforms = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set3_TEXTURE = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set4_Lights = VK_NULL_HANDLE;
 
         // types for descriptors:
 		struct FWorld

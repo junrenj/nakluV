@@ -66,7 +66,7 @@ void URenderScene::GenerateLightProxy()
     //TODO: Finish other kind of light
     for (auto const& [Light, Node] : Lights)
     {
-        ULightRenderProxy* LightProxy = new ULightRenderProxy();
+        FLightRenderProxy* LightProxy = new FLightRenderProxy();
         switch (Light->LightType)
         {
             case ELightType::Sun:

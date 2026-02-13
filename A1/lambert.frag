@@ -1,11 +1,24 @@
 #version 450
 
+struct Light
+{
+	uint TYPE;
+	vec4 POSITION;
+	vec4 DIRECTION;
+	vec4 COLOR;
+};
+
 layout(set=1,binding=0,std140) uniform World 
 {
 	vec3 SKY_DIRECTION;
 	vec3 SKY_ENERGY; 	// energy supplied by sky to a surface patch with normal = SKY_DIRECTION
 	vec3 SUN_DIRECTION;
 	vec3 SUN_ENERGY; 	// energy supplied by sun to a surface patch with normal = SUN_DIRECTION
+};
+
+layout(set=5,binding=0,std140) readonly buffer Lights
+{
+	Light[] LIGHTS;
 };
 
 layout(set=3,binding=0) uniform sampler2D TEXTURE;

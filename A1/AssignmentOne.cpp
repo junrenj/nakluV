@@ -155,7 +155,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0, // because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-			.maxSets = 3 * PerWorkspace, // three set per workspace
+			.maxSets = 4 * PerWorkspace, // three set per workspace
 			.poolSizeCount = uint32_t(PoolSizes.size()),
 			.pPoolSizes = PoolSizes.data(),
 		};
@@ -250,6 +250,19 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.TransformDescriptors));
 			// NOTE: will fill in this descriptor set in render when buffers are [re-]allocated
+		}
+		
+		// allocate descriptor set for Light descriptor
+		{
+			VkDescriptorSetAllocateInfo AllocInfo
+			{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+				.descriptorPool = DescriptorPool,
+				.descriptorSetCount = 1,
+				.pSetLayouts = &LambertPipeline.Set4_Lights,
+			};
+			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.LightsDescriptors));
+
 		}
 
 		 // point descriptor to Camera buffer:
@@ -534,6 +547,16 @@ UAssignmentOne::~UAssignmentOne()
 			rtg.helpers.destroy_buffer(std::move(workspace.Transforms));
 		}
 		// Transforms_descriptors freed when pool is destroyed.
+
+		if(workspace.LightsSrc.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.LightsSrc));
+		}
+		if(workspace.Lights.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_buffer(std::move(workspace.Lights));
+		}
+		// Lights_Descriptors freed when pool is destroyed.
 	}
 	workspaces.clear();
 
@@ -753,6 +776,95 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 		}
 	}
 	
+
+	if(!Scene.LightProxyInstances.empty())
+	{
+		// upload object transforms:
+		size_t NeededBytes = Scene.LightProxyInstances.size() * sizeof(FLightRenderProxy);
+		if(workspace.LightsSrc.handle == VK_NULL_HANDLE ||
+			workspace.LightsSrc.size < NeededBytes)
+		{
+			size_t NewBytes = ((NeededBytes + 4096) / 4096) * 4096;
+			if(workspace.LightsSrc.handle)
+			{
+				rtg.helpers.destroy_buffer(std::move(workspace.LightsSrc));
+			}
+			if(workspace.Lights.handle)
+			{
+				rtg.helpers.destroy_buffer(std::move(workspace.Lights));
+			}
+			workspace.LightsSrc = rtg.helpers.create_buffer
+			(
+				NewBytes,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, // going to have GPU copy from this memory
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, // host-visible memory, coherent (no special sync needed)
+				Helpers::Mapped // get a pointer to the memory
+			);
+			workspace.Lights = rtg.helpers.create_buffer(
+				NewBytes,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, // going to use as storage buffer, also going to have GPU into this memory
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // GPU-local memory
+				Helpers::Unmapped // don't get a pointer to the memory
+			);
+
+			// update the descriptor set:
+			VkDescriptorBufferInfo LightsInfo
+			{
+				.buffer = workspace.Lights.handle,
+				.offset = 0,
+				.range = workspace.Lights.size,
+			};
+
+			std::array< VkWriteDescriptorSet, 1 > Writes
+			{
+				VkWriteDescriptorSet
+				{
+					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.dstSet = workspace.LightsDescriptors,
+					.dstBinding = 0,
+					.dstArrayElement = 0,
+					.descriptorCount = 1,
+					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+					.pBufferInfo = &LightsInfo,
+				},
+			};
+
+			vkUpdateDescriptorSets
+			(
+				rtg.device,
+				uint32_t(Writes.size()), Writes.data(), // descriptorWrites count, data
+				0, nullptr // descriptorCopies count, data
+			);
+
+			std::cout << "Re-allocated light proxy buffers to " << NewBytes << " bytes." << std::endl;
+
+			assert(workspace.LightsSrc.size == workspace.Lights.size);
+			assert(workspace.LightsSrc.size >= NeededBytes);
+
+			// Copy Transform into TransformSrc
+			{
+				assert(workspace.LightsSrc.allocation.mapped);
+				FLightRenderProxy* Out = reinterpret_cast< FLightRenderProxy * >(workspace.LightsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				for (FLightRenderProxy* Inst : Scene.LightProxyInstances)
+				{
+					Out = Inst;
+					++Out;
+				}
+			}
+
+			// device-side copy from Transforms_src -> Transforms:
+			VkBufferCopy CopyRegion
+			{
+				.srcOffset = 0,
+				.dstOffset = 0,
+				.size = NeededBytes,
+			};
+
+			(workspace.command_buffer, workspace.LightsSrc.handle, workspace.Lights.handle, 1, &CopyRegion);
+	
+		}
+	}
+
 	// Line Render Pipeline
 	{
 		// Upload line vertices
@@ -1352,11 +1464,12 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 
 	// Bind World and Transforms descriptor sets:
 	{
-		std::array< VkDescriptorSet, 3 > DescriptorSets
+		std::array< VkDescriptorSet, 4 > DescriptorSets
 		{
             workspace.CameraDescriptors,    // 0：Camera
 			workspace.WorldDescriptors, 	// 1: World
 			workspace.TransformDescriptors, // 2: Transforms
+			workspace.LightsDescriptors,	// 3: Lights
 		};
 		vkCmdBindDescriptorSets
 		(
