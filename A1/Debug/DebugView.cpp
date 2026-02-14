@@ -7,7 +7,7 @@
 #include "glm/glm/gtc/type_ptr.hpp"
 
 // Debug Scene Class
-void UDebugScene::GenerateBBoxVertices(const UBoundingBox& BBox)
+void UDebugScene::GenerateBBoxVertices(const FAABB& BBox)
 {
     float x0 = BBox.Min.x, y0 = BBox.Min.y, z0 = BBox.Min.z;
     float x1 = BBox.Max.x, y1 = BBox.Max.y, z1 = BBox.Max.z;

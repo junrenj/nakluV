@@ -16,7 +16,7 @@ layout(set=1,binding=0,std140) uniform World
 	vec3 SUN_ENERGY; 	// energy supplied by sun to a surface patch with normal = SUN_DIRECTION
 };
 
-layout(set=5,binding=0,std140) readonly buffer Lights
+layout(set=4,binding=0,std140) readonly buffer Lights
 {
 	Light[] LIGHTS;
 };

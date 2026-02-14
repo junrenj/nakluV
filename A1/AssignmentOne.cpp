@@ -1364,7 +1364,7 @@ void UAssignmentOne::InitializeDebugRenderScene()
     // Get Vertices of BBox
     for (const UNode* Node : Scene.Nodes)
     {
-        const UBoundingBox& BBox = Node->BoundingBox;
+        const FAABB& BBox = Node->BoundingBox;
         if(BBox.Max != vec3(-FLT_MAX) && BBox.Min != vec3(FLT_MAX))
         {
             DebugScene.GenerateBBoxVertices(BBox);

@@ -100,7 +100,7 @@ void URenderScene::GenerateLightProxy()
 
 void URenderScene::UpdateVisibleMesh()
 {
-
+    // TODO Implement BVH Structure
 }
 
 uint32_t URenderScene::GetTextureIdx(UTexture* Texture) const

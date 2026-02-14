@@ -10,6 +10,7 @@
 #include "Texture.hpp"
 #include "Material.hpp"
 #include "Light.hpp"
+#include "BBox.hpp"
 
 
 // forward declarations so we can write the scene's objects in the same order as in the spec:
@@ -19,18 +20,10 @@ class ULight;
 class UCamera;
 class UNode;
 
-using vec3 = glm::vec3;
 using quat = glm::quat;
 using mat4 = glm::mat4;
 using vec4 = glm::vec4;
 using vec2 = glm::vec2;
-
-class UBoundingBox
-{
-public:
-    vec3 Min;
-    vec3 Max;
-};
 
 class UNode
 {
@@ -48,7 +41,7 @@ public:
 	UEnvironment* environment = nullptr;
 	ULight* light = nullptr;
 
-    UBoundingBox BoundingBox;
+    FAABB BoundingBox;
 
     static glm::mat4 GetLocal2WorldMatrix(const UNode* InNode);
 };
@@ -123,7 +116,7 @@ public:
     uint32_t TangentOffset  = UINT32_MAX;
     uint32_t UVOffset       = UINT32_MAX;
 
-    UBoundingBox BoundingBox;
+    FAABB BoundingBox;
 
     struct FVertex
     {

@@ -33,6 +33,7 @@ const main_objs = [
 	maek.CPP('A1/Render/RenderScene.cpp'),
 	maek.CPP('A1/Render/RenderExtractor.cpp'),
 	maek.CPP('A1/Render/Texture.cpp'),
+	maek.CPP('A1/Render/CullingUtils.cpp'),
 	maek.CPP('A1/Debug/DebugView.cpp'),
 	maek.CPP('A1/Debug/DebugColVertex.cpp'),
 	maek.CPP('A1/Animation/AnimationPlayer.cpp'),

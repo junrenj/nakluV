@@ -195,14 +195,14 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
 
 void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
 {
-    UBoundingBox BBox_World;
+    FAABB BBox_World;
     BBox_World.Min = glm::vec3(FLT_MAX);
     BBox_World.Max = glm::vec3(-FLT_MAX);
     // if has mesh first use mesh's bounding box
     if(InNode->Mesh)
     {
         glm::mat4 Local2World = UNode::GetLocal2WorldMatrix(InNode);
-        UBoundingBox BBox_Local = InNode->Mesh->BoundingBox;
+        FAABB BBox_Local = InNode->Mesh->BoundingBox;
         UpdateBBoxWithTransform(BBox_World, BBox_Local, Local2World);
     }
 
@@ -217,7 +217,7 @@ void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
     InNode->BoundingBox = BBox_World;
 }
 
-void URenderExtractor::UpdateBBoxWithTransform(UBoundingBox& OutBox, const UBoundingBox& LocalBox, const glm::mat4& Transform)
+void URenderExtractor::UpdateBBoxWithTransform(FAABB& OutBox, const FAABB& LocalBox, const glm::mat4& Transform)
 {
     glm::vec3 Corners[8] = {
         LocalBox.Min,

@@ -13,7 +13,7 @@ private:
     uint8_t DebugBBoxLineColor[4] = {255, 255, 255, 255};		// White
 
 public:
-    void GenerateBBoxVertices(const UBoundingBox& BBox);
+    void GenerateBBoxVertices(const FAABB& BBox);
     void GenerateFrustumVertices(const UCamera& Camera);
     void GetAllVerticesData(std::vector<FDebugColVertex>& LineVertices);
 };
