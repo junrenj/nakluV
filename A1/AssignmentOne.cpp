@@ -10,6 +10,8 @@
 #include <iostream>
 #include "../A1/Render/RenderScene.hpp"
 #include "../A1/Render/RenderExtractor.hpp"
+#include "../A1/Animation/AnimationPlayer.hpp"
+#include "glm/glm/gtc/type_ptr.hpp"
 
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
@@ -129,7 +131,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &CommandPool) );
 	}
 
-    // BackgroundPipeline.Create(rtg, RenderPass, 0);
 	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
 
@@ -752,6 +753,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 			assert(workspace.TransformsSrc.size == workspace.Transforms.size);
 			assert(workspace.TransformsSrc.size >= NeededBytes);
+		}
 
 			// Copy Transform into TransformSrc
 			{
@@ -773,7 +775,6 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			};
 
 			vkCmdCopyBuffer(workspace.command_buffer, workspace.TransformsSrc.handle, workspace.Transforms.handle, 1, &CopyRegion);
-		}
 	}
 	
 
@@ -1010,7 +1011,6 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 		ViewportPillarBoxing(workspace);
 		
-		// RenderBackgroundPipeline(workspace);
 		RenderLinesPipeline(workspace);
         RenderLambertPipeline(workspace);
 		
@@ -1056,9 +1056,11 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 void UAssignmentOne::update(float dt)
 {
     Time = std::fmod(Time + dt, 60.0f);
+	UAnimPlayer::UpdateAnimations(Time);
 
+	DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes);
+	Scene.Update(ActiveCameraIdx);
 	UpdateCamera();
-
     DrawDebugLines();
 
 	// static sun and sky
@@ -1362,22 +1364,10 @@ void UAssignmentOne::UpdateCamera()
 void UAssignmentOne::InitializeDebugRenderScene()
 {
     // Get Vertices of BBox
-    for (const UNode* Node : Scene.Nodes)
-    {
-        const FAABB& BBox = Node->BoundingBox;
-        if(BBox.Max != vec3(-FLT_MAX) && BBox.Min != vec3(FLT_MAX))
-        {
-            DebugScene.GenerateBBoxVertices(BBox);
-        }
-    }
+    DebugScene.UpdateBBoxVertices(Scene.Nodes);
 
     // Get Vertices of Frustum
-    for (const UCamera* Camera : Scene.Cameras)
-    {
-        DebugScene.GenerateFrustumVertices(*Camera);
-    }
-    
-    
+	DebugScene.UpdateFrustumVertices(Scene.Cameras, ActiveCameraIdx);
 }
 
 void UAssignmentOne::DrawDebugLines()
@@ -1488,20 +1478,21 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 	const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
 	for (uint32_t i = 0; i < ProxyList.size(); i++)
 	{
-		const FMeshRenderProxy* Inst = ProxyList[i];
+		const FMeshRenderProxy* Proxy = ProxyList[i];
+		if(!Proxy->bCanSee)
+		{
+			continue;
+		}
 		vkCmdBindDescriptorSets
 		(
 			workspace.command_buffer,			// Command buffer
 			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
 			LambertPipeline.Layout,				// Pipeline Layout
 			3, 	// Third Sets
-			1, &TextureDescriptors[Inst->Texture],	// descriptor sets count, ptr
+			1, &TextureDescriptors[Proxy->Texture],	// descriptor sets count, ptr
 			0, nullptr	// Dynamic offsets count, ptr
 		);
-
-		vkCmdDraw(workspace.command_buffer, Inst->VertexNum, 1, Inst->FirstVertexIdx, i);
+		vkCmdDraw(workspace.command_buffer, Proxy->VertexNum, 1, Proxy->FirstVertexIdx, i);
 	}
-
-
 }
 //~END Render Pipeline

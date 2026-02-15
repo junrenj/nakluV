@@ -366,29 +366,6 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 			VK( vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &Count, PresentModes.data()) );
 		}
 
-		
-		// std::cout << "Supproted Surface Formats (" << Formats.size() << "):\n";
-
-		// for (size_t i = 0; i < Formats.size(); ++i)
-		// {
-		// 	const auto& f = Formats[i];
-		// 	std::cout
-		// 		<< "  [" << i << "] "
-		// 		<< "format = " << string_VkFormat(f.format)
-		// 		<< ", colorSpace = " << string_VkColorSpaceKHR(f.colorSpace)
-		// 		<< '\n';
-		// }
-
-		// std::cout << "Supproted Present Modes (" << PresentModes.size() << "):\n";
-
-		// for (size_t i = 0; i < PresentModes.size(); ++i)
-		// {
-		// 	std::cout
-		// 		<< "  [" << i << "] "
-		// 		<< string_VkPresentModeKHR(PresentModes[i])
-		// 		<< '\n';
-		// }
-
 		// find first available surface format matching config:
 		surface_format = [&]()
 		{
@@ -872,7 +849,6 @@ void RTG::recreate_swapchain()
 		std::cout << "Swapchain is now " << swapchain_images.size() << " images of size " << swapchain_extent.width << "x" << swapchain_extent.height << "." << std::endl;
 	}
 }
-
 
 void RTG::destroy_swapchain() 
 {

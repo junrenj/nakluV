@@ -28,6 +28,7 @@ using vec2 = glm::vec2;
 class UNode
 {
 public:
+
     struct FTransform
     {
         vec3 Translation = vec3(0.0f, 0.0f, 0.0f);
@@ -41,14 +42,20 @@ public:
 	UEnvironment* environment = nullptr;
 	ULight* light = nullptr;
 
-    FAABB BoundingBox;
+    FAABB BoundingBox;      // Always Object-Coordinate
+
 
     static glm::mat4 GetLocal2WorldMatrix(const UNode* InNode);
+    
+    // Animation
+    bool bIsDirty = false;
+    void SetDirty();
 };
 
 struct FMeshRenderProxy
 {
 public: 
+    bool bCanSee = true;
     uint32_t FirstVertexIdx = 0;
     uint32_t VertexNum = 0;
     struct FTransform
@@ -76,7 +83,6 @@ public:
 
     // Mesh Data
     std::vector<URenderMesh*> AllMeshes;
-    std::unordered_map<UNode*, URenderMesh*> VisibleRenderMeshes;
 
     // Other Data
     std::vector<UTexture*> Textures;
@@ -93,13 +99,15 @@ public:
     std::vector<FMeshRenderProxy*> MeshProxyInstances;
     std::vector<FLightRenderProxy*> LightProxyInstances;
 
+    void Update(uint8_t ActiveIdx);
+
     void GenerateWholeVertexBuffer();
     void GenerateMeshProxy();
     void GenerateLightProxy();
-    void UpdateVisibleMesh();
+    void UpdateTransform();
+    void UpdateVisibleMesh(uint8_t ActiveIdx);
 
     uint32_t GetTextureIdx(UTexture* Texture) const;
-
 };
 
 class URenderMesh
@@ -116,7 +124,7 @@ public:
     uint32_t TangentOffset  = UINT32_MAX;
     uint32_t UVOffset       = UINT32_MAX;
 
-    FAABB BoundingBox;
+    FAABB BoundingBox;      // Object-coordinate
 
     struct FVertex
     {

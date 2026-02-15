@@ -22,7 +22,6 @@ public:
         std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
     // Bounding Box
     static void BuildUNodesBBoxIterate(UNode* InNode);
-    static void UpdateBBoxWithTransform(FAABB& OutBox, const FAABB& LocalBox, const glm::mat4& Transform);
     // New Material Structure
     static void BuildUMaterialData(std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, 
         std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex , URenderScene& Scene);

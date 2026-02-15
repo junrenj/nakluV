@@ -7,14 +7,20 @@
 #include "glm/glm/gtc/type_ptr.hpp"
 
 // Debug Scene Class
-void UDebugScene::GenerateBBoxVertices(const FAABB& BBox)
+void UDebugScene::Update(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx, const std::vector< UNode * >& Nodes)
+{
+    UpdateBBoxVertices(Nodes);
+    UpdateFrustumVertices(Cameras, ActiveIdx);
+}
+
+void UDebugScene::GenerateBBoxVertices(const FAABB& BBox, const glm::mat4& Transform, const bool bCanSee)
 {
     float x0 = BBox.Min.x, y0 = BBox.Min.y, z0 = BBox.Min.z;
     float x1 = BBox.Max.x, y1 = BBox.Max.y, z1 = BBox.Max.z;
-    vec3 v[8] = 
+    vec4 v[8] = 
     {
-        {x0, y0, z0}, {x1, y0, z0}, {x1, y1, z0}, {x0, y1, z0}, // Bottom
-        {x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}, {x0, y1, z1} 	// Top
+        {x0, y0, z0, 1}, {x1, y0, z0, 1}, {x1, y1, z0, 1}, {x0, y1, z0, 1}, // Bottom
+        {x0, y0, z1, 1}, {x1, y0, z1, 1}, {x1, y1, z1, 1}, {x0, y1, z1, 1} 	// Top
     };
 
     uint32_t Indices[] = 
@@ -24,19 +30,21 @@ void UDebugScene::GenerateBBoxVertices(const FAABB& BBox)
         0, 4, 1, 5, 2, 6, 3, 7  // vertical 4 edges
     };
 
-    for (uint32_t I : Indices) 
+    for (uint32_t Idx : Indices) 
     {
         FDebugColVertex Vertex;
-        Vertex.Position = { v[I].x, v[I].y, v[I].z };
-        Vertex.Color.r = DebugBBoxLineColor[0];
-        Vertex.Color.g = DebugBBoxLineColor[1];
-        Vertex.Color.b = DebugBBoxLineColor[2];
-        Vertex.Color.a = DebugBBoxLineColor[3];
+        vec4 WorldPos = Transform * v[Idx];
+        Vertex.Position = { WorldPos.x, WorldPos.y, WorldPos.z };
+        const uint8_t (&Color)[4] = bCanSee ? BBoxColorVisible : BBoxColorCull;
+        Vertex.Color.r = Color[0];
+        Vertex.Color.g = Color[1];
+        Vertex.Color.b = Color[2];
+        Vertex.Color.a = Color[3];
         BBoxVertices.emplace_back(Vertex);
     }
 }
 
-void UDebugScene::GenerateFrustumVertices(const UCamera& Camera)
+void UDebugScene::GenerateFrustumVertices(const UCamera& Camera, bool bIsActive)
 {
     // TODO: replace all Mat4 with mat4
     Mat4 Projection = Perspective
@@ -85,11 +93,36 @@ void UDebugScene::GenerateFrustumVertices(const UCamera& Camera)
 	{
         FDebugColVertex vertex;
         vertex.Position = { WorldCorners[i].x, WorldCorners[i].y, WorldCorners[i].z };
-        vertex.Color.r = DebugFrustumLineColor[0];
-		vertex.Color.g = DebugFrustumLineColor[1];
-		vertex.Color.b = DebugFrustumLineColor[2];
-		vertex.Color.a = DebugFrustumLineColor[3];
+        const uint8_t (&Color)[4] = bIsActive ? FrustumColorActive : FrustumColorInActive;
+        vertex.Color.r = Color[0];
+		vertex.Color.g = Color[1];
+		vertex.Color.b = Color[2];
+		vertex.Color.a = Color[3];
         FrustumVertices.emplace_back(vertex);
+    }
+}
+
+void UDebugScene::UpdateBBoxVertices(const std::vector< UNode * >& Nodes)
+{
+    BBoxVertices.clear();
+    for (const UNode* Node : Nodes)
+    {
+        const FAABB& BBox = Node->BoundingBox;
+        if(Node->Mesh && BBox.Max != vec3(-FLT_MAX) && BBox.Min != vec3(FLT_MAX))
+        {
+            const FMeshRenderProxy* Proxy = Node->Mesh->RenderProxy;
+			const glm::mat4 Transform = UNode::GetLocal2WorldMatrix(Node);
+            GenerateBBoxVertices(BBox, Transform, Proxy->bCanSee);
+        }
+    }
+}
+
+void UDebugScene::UpdateFrustumVertices(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx)
+{
+    FrustumVertices.clear();
+    for (uint8_t i = 0; i < Cameras.size(); i++)
+    {
+        GenerateFrustumVertices(*Cameras[i], ActiveIdx == i);
     }
 }
 

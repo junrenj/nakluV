@@ -1,4 +1,5 @@
 #include "RenderScene.hpp"
+#include "CullingUtils.hpp"
 #include "glm/glm/gtc/matrix_transform.hpp"
 
 void URenderScene::GenerateWholeVertexBuffer()
@@ -98,9 +99,30 @@ void URenderScene::GenerateLightProxy()
     }
 }
 
-void URenderScene::UpdateVisibleMesh()
+void URenderScene::UpdateVisibleMesh(uint8_t ActiveIdx)
 {
-    // TODO Implement BVH Structure
+    const UCamera& ActiveCamera = *Cameras[ActiveIdx];
+	const mat4 VIEW_FROM_WORLD = glm::inverse(UNode::GetLocal2WorldMatrix(ActiveCamera.BindingNode));
+    float TanFov = tan(0.5f * ActiveCamera.Projection.Vfov);
+    FCullingFrustum Frustum = 
+    {
+        .NearRight = ActiveCamera.Projection.Aspect * ActiveCamera.Projection.Near * TanFov,
+        .NearTop = ActiveCamera.Projection.Near * TanFov,
+        .NearPlane = -ActiveCamera.Projection.Near,
+        .FarPlane = -ActiveCamera.Projection.Far,
+    };
+
+    for (uint32_t i = 0; i < AllMeshes.size(); i++)
+    {
+        URenderMesh* Mesh = AllMeshes[i];
+        const FAABB& AABB = Mesh->BoundingBox;
+        const UNode* Node = RenderMeshes2Nodes[Mesh];
+        const mat4 Transform = VIEW_FROM_WORLD * UNode::GetLocal2WorldMatrix(Node);
+        
+        FMeshRenderProxy* RenderProxy = Mesh->RenderProxy;
+        const bool bCanSee = UCullingUtils::SATVisibilityTest(Frustum, Transform, AABB);
+        RenderProxy->bCanSee = bCanSee;
+    }
 }
 
 uint32_t URenderScene::GetTextureIdx(UTexture* Texture) const
@@ -119,6 +141,35 @@ uint32_t URenderScene::GetTextureIdx(UTexture* Texture) const
     else
     {
         return INVALID_TEXTURE;
+    }
+}
+
+void URenderScene::Update(uint8_t ActiveIdx)
+{
+    UpdateTransform();
+    UpdateVisibleMesh(ActiveIdx);
+}
+
+void URenderScene::UpdateTransform()
+{
+    for (UNode* Node : Nodes)
+    {
+        if(Node->bIsDirty)
+        {
+            if(Node->Mesh)
+            {
+                Node->Mesh->RenderProxy->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
+            }
+        }
+    }
+}
+
+void UNode::SetDirty()
+{
+    bIsDirty = true;
+    for (UNode* Child : Children)
+    {
+        Child->SetDirty();
     }
 }
 

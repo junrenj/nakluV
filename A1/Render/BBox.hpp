@@ -15,6 +15,8 @@ struct FAABB
 {
     vec3 Max;
     vec3 Min;
+
+    static void UpdateBBoxWithTransform(FAABB& OutBox, const FAABB& LocalBox, const glm::mat4& Transform);
 };
 
 struct FOBB

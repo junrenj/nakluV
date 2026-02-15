@@ -201,41 +201,20 @@ void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
     // if has mesh first use mesh's bounding box
     if(InNode->Mesh)
     {
-        glm::mat4 Local2World = UNode::GetLocal2WorldMatrix(InNode);
-        FAABB BBox_Local = InNode->Mesh->BoundingBox;
-        UpdateBBoxWithTransform(BBox_World, BBox_Local, Local2World);
+        // glm::mat4 Local2World = UNode::GetLocal2WorldMatrix(InNode);
+        BBox_World = InNode->Mesh->BoundingBox;
+        // FAABB::UpdateBBoxWithTransform(BBox_World, BBox_Local, Local2World);
     }
 
     // Iterate Child
     for (UNode* Child : InNode->Children)
     {
         BuildUNodesBBoxIterate(Child);
-        BBox_World.Min = glm::min(BBox_World.Min, Child->BoundingBox.Min);
-        BBox_World.Max = glm::max(BBox_World.Max, Child->BoundingBox.Max);
+        // BBox_World.Min = glm::min(BBox_World.Min, Child->BoundingBox.Min);
+        // BBox_World.Max = glm::max(BBox_World.Max, Child->BoundingBox.Max);
     }
 
     InNode->BoundingBox = BBox_World;
-}
-
-void URenderExtractor::UpdateBBoxWithTransform(FAABB& OutBox, const FAABB& LocalBox, const glm::mat4& Transform)
-{
-    glm::vec3 Corners[8] = {
-        LocalBox.Min,
-        glm::vec3(LocalBox.Min.x, LocalBox.Min.y, LocalBox.Max.z),
-        glm::vec3(LocalBox.Min.x, LocalBox.Max.y, LocalBox.Min.z),
-        glm::vec3(LocalBox.Min.x, LocalBox.Max.y, LocalBox.Max.z),
-        glm::vec3(LocalBox.Max.x, LocalBox.Min.y, LocalBox.Min.z),
-        glm::vec3(LocalBox.Max.x, LocalBox.Min.y, LocalBox.Max.z),
-        glm::vec3(LocalBox.Max.x, LocalBox.Max.y, LocalBox.Min.z),
-        LocalBox.Max
-    };
-
-    for (int i = 0; i < 8; i++)
-    {
-        glm::vec4 Position = Transform * glm::vec4(Corners[i], 1.0f);
-        OutBox.Min = glm::min(OutBox.Min, glm::vec3(Position));
-        OutBox.Max = glm::max(OutBox.Max, glm::vec3(Position));
-    }
 }
 //END:  UNode Data Extract
 
@@ -613,6 +592,6 @@ void URenderExtractor::CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInst
     AnimInstance.Times.insert(AnimInstance.Times.end(), Driver.times.begin(), Driver.times.end());
 
     AnimInstance.Values.reserve(Driver.values.size());
-    AnimInstance.Values.insert(AnimInstance.Times.end(), Driver.values.begin(), Driver.values.end());
+    AnimInstance.Values.insert(AnimInstance.Values.end(), Driver.values.begin(), Driver.values.end());
 }
 //END: Animation

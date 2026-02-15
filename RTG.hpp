@@ -69,7 +69,7 @@ struct RTG {
 
 		//requested size of the output surface:
 		// `--drawing-size <w> <h>` command-line flag
-		VkExtent2D surface_extent{ .width = 540, .height=540 };
+		VkExtent2D surface_extent{ .width = 1080, .height=960 };
 
 		//how many "workspaces" (frames that can currently be being worked on by the CPU or GPU) to use:
 		uint32_t workspaces = 2;
@@ -78,7 +78,7 @@ struct RTG {
 		bool headless = false;
 
 		// file path to open
-		std::string FilePath = "external/s72/examples/sg-Containment.s72";
+		std::string FilePath = "external/s72/examples/sg-Articulation.s72";
 
 		// Camera to use, if user inputs a specific name for a camera
 		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
