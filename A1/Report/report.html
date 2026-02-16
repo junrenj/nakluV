@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>15-472-s24: A1 - Scene Graph</title>
+<style>
+/* feel free to style your report in a fancier way! */
+
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;700&Anonymous+Pro&display=swap');
+
+html {
+	background:#505055;
+}
+
+body {
+	font-family: 'Quicksand', sans-serif;
+	color:#000;
+	background:#eeeee8;
+	font-size:15px;
+	margin: 1em auto 50vh auto;
+	padding: 1em 2em 1em 2em;
+	max-width:45em;
+	border-radius:4px;
+	box-shadow:0 0 10px #0008;
+}
+
+h1 { font-size: 20px; font-weight: 700; }
+h2 { font-size: 16px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 400; }
+h4 { font-size: 14px; font-weight: 400; }
+
+h1, h2, h3, h4 {
+	margin: 15px 0 0 -10px;
+}
+
+p {
+	margin: 5px 0 0 0;
+}
+
+figure {
+	margin: 10px -2em;
+	padding: 10px 2em;
+	width:100%;
+	background:#e8e8e8;
+}
+
+figcaption {
+	font-size:14px;
+	font-style:italic;
+}
+
+.subtitle {
+	display:block;
+	font-size:16px;
+	font-weight:400;
+}
+
+.placeholder {
+	color:#800;
+	font-style:italic;
+}
+
+kbd {
+	display:inline-block;
+	background:#ccc;
+	color:#444;
+	font-style:normal;
+	font-weight:700;
+	border-radius:8px;
+	padding:1px 6px;
+	margin:1px;
+	border:1.5px solid #aaa;
+}
+
+code {
+	font-family: 'Anonymous Pro', monospace;
+	background: #222;
+	color:#fff;
+	border-radius:4px;
+	padding:2px 4px;
+	margin:1px;
+}
+
+code var {
+	color:#ef5;
+	font-style:italic;
+}
+
+.atag {
+	font-family: 'Calistoga', serif;
+	font-size:90%;
+	color:#000;
+	background:#e17dcd;
+
+	display:inline-block;
+	padding:1px 4px;
+	border-radius: 4px;
+	line-height:120%;
+}
+.atag:before {
+	content:'»';
+}
+.atag.extra {
+	background:#c6aff8;
+}
+.atag.creative {
+	background:linear-gradient(0.35turn, #fcacff, #f9ab93, #76a1e4, #20953d);
+}
+
+</style>
+<!-- Load Chart.js for creating charts (documentation https://www.chartjs.org/docs/latest/ ) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>A1: Scene Viewer
+<span class="subtitle">by <span class="placeholder">Jimmy Jian (junrenj)</span></span>
+</h1>
+
+<!-- of course, delete these class="placeholder" notes in your report: -->
+
+<p class="placeholder">
+I did not directly adopt the S72 data structure; instead, I implemented a custom URenderScene. In the Scene Graph, UNode is organized as a doubly linked structure, and each URenderScene contains exactly one root node. I replaced name-based indexing with pointer-based indexing, and most containers use std::vector instead of std::unordered_map to improve memory contiguity and cache efficiency. Animation data is separated from the scene structure and managed independently by UAnimPlayer. Based on this data-oriented design, the system supports more flexible render proxies while keeping the core data lightweight.
+<br>
+The advantage of this design is that it gives me greater flexibility in handling data, and data scripts can be organized more easily. What I have not fully completed, however, is a complete separation between data and logic.
+</p>
+<img src="Image/StructureCode.png" alt="Difference of two structure" style="max-width: 100%; height: auto;">
+
+<h2>My Animation <span class="atag creative">A1-create</span></h2>
+
+<p class="placeholder">
+Pirate Ship
+</p>
+
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/A1Show.mp4" type="video/mp4">
+</video>
+<!--
+  you can use the 'video' element to show your code running
+  Learn more at:
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
+
+  Example: put the video file in a path near this .html
+  <source src="path/to/video" type="video/mp4" />
+-->
+</video>
+
+<p class="placeholder">
+For the ocean, I created the illusion of flowing water by moving the entire surface. The pirate ship is given a basic rotational motion to simulate the impact of waves.The trees sway slightly to suggest sea wind passing through. The pirate ship also fires cannonballs, which are implemented using keyframe-based position (K-position) animation.
+</p>
+
+<h2>Using the Scene Viewer</h2>
+
+<p class="placeholder">Provide a short overview of how to use your viewer.</p>
+
+<h3>Command-line Arguments</h3>
+
+<p class="placeholder">
+Document the command-line arguments that can be used to control your viewer.
+Include both the command-line arguments required by the assignment statement and any additional arguments you decided to add.
+</p>
+
+<ul>
+<li class="placeholder"><code>--debug, --no-debug</code>  -- required -- Turn on/off debug and validation layers.</code></li>
+<li class="placeholder"><code>--physical-device <var>name</var></code> -- required -- Run on the named physical device</li>
+<li class="placeholder"><code>--drawing-size <var>w h</var></code> -- required -- Set the size of the windows of <code><var>w h</var></code></li>
+<li class="placeholder"><code>--scene <var>scene.s72</var></code> -- required -- load scene from <code><var>scene.s72</var></code></li>
+<li class="placeholder"><code>--camera <var>camera001</var></code> -- required -- active camera is <code><var>camera001</var></code></li>
+<li class="placeholder"><code>--headless </code> -- required -- start exe with headless mode </li>
+<li class="placeholder"><code>--cull <var>CULLMODE</var></code> -- required -- choose your cull mode, now only has <code><var>NONE | NORMAL<var></code></li>
+
+</ul>
+
+<h3>Controls</h3>
+
+<p class="placeholder">
+Document the keyboard and mouse controls used to control your viewer when run interactively.
+Note that the controls below are placeholders not requirements.
+</p>
+
+<ul>
+<li class="placeholder"><kbd>/</kbd> Enable or disable debug mode</li>
+<li class="placeholder"><kbd>Tab</kbd> Switch camera's mode</li>
+<li class="placeholder"><kbd>+ or =</kbd> Switch next cameras.</li>
+<li class="placeholder"><kbd>C</kbd> Enable or diable culling.</li>
+<li class="placeholder"><kbd>SPACE</kbd> Play or pause animation.</li>
+<li class="placeholder"><kbd>P</kbd> Replay animation from beginning.</li>
+<li class="placeholder"><kbd>Mouse Left Button</kbd> Rotate camera in FREE_CAMERA_MODE.</li>
+<li class="placeholder"><kbd>Mouse wheel</kbd> Zoom in or out in FREE_CAMERA_MODE.</li>
+<li class="placeholder">...</li>
+</ul>
+
+
+<h2>Evidence</h2>
+
+<p class="placeholder">
+The purpose of this section is to get you to think critically about your code by providing evidence sufficient to demonstrate to course staff that it works.
+These thoughts may also help you improve the code as you work on it in A2 and beyond.
+</p>
+
+
+<h3>Scene Loading <span class="atag">A1-load</span></h3>
+
+<p class="placeholder">
+As the first image I put on the top.
+<br>
+Critical file: RenderExtractor.hpp, RenderScene.hpp, AnimationPlayer.hpp
+</p>
+
+<h3>Scene Display <span class="atag">A1-show</span></h3>
+<p class="placeholder">
+I use URenderExtractor to convert the S72 data into my URenderScene structure.
+URenderScene gathers all vertex data and stores it in a dedicated std::vector. In the UAssignmentOne constructor, this vector's data is uploaded to the GPU vertex buffer.
+
+When URenderScene is created, each URenderMesh generates an FMeshRenderProxy. In UAssignmentOne::render, the transform matrix of each FMeshRenderProxy is synchronized and the draw calls are issued.
+
+Frustum culling is performed in UAssignmentOne::update, which updates the visibility flag of each FMeshRenderProxy.
+</p>
+
+<p class="placeholder">
+If you want to check the scene, please just input bin\main on the console.
+</p>
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/A1Show.mp4" type="video/mp4">
+</video>
+<p class="placeholder">
+</p>
+
+<h3>Scene Display &mdash; Interaction <span class="atag">A1-show</span></h3>
+
+<p class="placeholder">
+AssignmentOne::on_input listens for keyboard input. It updates CameraMode, ActiveCameraIdx, rtg.configuration.debug, and CullingMode. These values are then read in update, where they are converted into the final camera data used to build the projection matrix and also affect the logic used to populate LineVertices.
+</p>
+
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/A1Show_Interactive.mp4" type="video/mp4">
+</video>
+
+<p class="placeholder">
+</p>
+
+<h3>Frustum culling <span class="atag">A1-cull</span></h3>
+
+<p class="placeholder">
+The core logic of the culling test is implemented in CullingUtils.cpp.
+It is called by URenderScene::UpdateVisibleMesh and is used to update the visibility parameters of each FMeshRenderProxy.
+<br>
+My approach : Separating Axis Theorem(SAT). The method checks for an axis where the projections of two shapes don't overlap; if found, they don't intersect.
+To test an OBB against a frustum, it checks: frustum face normals, OBB axes, and cross products of their edges.
+This allows early exit if a separating axis is found, but the edge cross-product checks are costly.
+</p>
+
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/A1Cull.mp4" type="video/mp4">
+</video>
+
+<p class="placeholder">
+Also include evidence that your culling works on any particularly difficult cases you may have thought up (include .s72 / .b72 files as appropriate).
+</p>
+
+<p class="placeholder">
+Please refer to Scenes/A1Cull.s72. It contains two cameras: one that can render all meshes in the scene, and another that only renders a subset of the meshes.
+Clearly, culling has little to no effect for the former, while it provides a noticeable performance improvement for the latter.
+</p>
+<img src="Image/Culling_HasUse.png" alt="GPUTime for two scenes" style="max-width: 100%; height: auto;">
+
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A1-cull-ex" style="display:block; width:100%; max-width:600px; margin:0 auto; background:#fff;"></canvas>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	//in a real workload these arrays would be a lot longer:
+	const frameNumbers    = [0, 10, 20, 30, 40];
+	const noCullingTimes  = [700, 720, 689, 640, 630];
+	const boxFrustumTimes = [790, 810, 740, 760, 720];
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	// NOTE: make sure to keep things labelled clearly.
+	// NOTE2: if you want to compare numbers use bar charts, not pie charts (people are bad at comparing angles and good at comparing lengths).
+	// NOTE3: scatter and line charts will probably be the most interesting the sorts of data you are visualizing.
+	//     Histograms also useful but you will need to pre-process your data into bins and use the bar chart type.
+	new Chart("A1-cull-ex", {
+		type: "line",
+		data: {
+			labels: frameNumbers,
+			datasets: [
+				{ label: "no culling", data: noCullingTimes },
+				{ label: "box/frustum", data: boxFrustumTimes },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "Scene that culling useless" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"frame time (us)" },
+				},
+				x:{
+					title: { display:true, text:"frame number" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
+</figure>
+
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A1-cull" style="display:block; width:100%; max-width:600px; margin:0 auto; background:#fff;"></canvas>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	//in a real workload these arrays would be a lot longer:
+	const frameNumbers    = [0, 10, 20, 30, 40];
+	const noCullingTimes  = [710, 720, 520, 540, 510];
+	const boxFrustumTimes = [49, 39, 41, 46, 50];
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	// NOTE: make sure to keep things labelled clearly.
+	// NOTE2: if you want to compare numbers use bar charts, not pie charts (people are bad at comparing angles and good at comparing lengths).
+	// NOTE3: scatter and line charts will probably be the most interesting the sorts of data you are visualizing.
+	//     Histograms also useful but you will need to pre-process your data into bins and use the bar chart type.
+	new Chart("A1-cull", {
+		type: "line",
+		data: {
+			labels: frameNumbers,
+			datasets: [
+				{ label: "no culling", data: noCullingTimes },
+				{ label: "box/frustum", data: boxFrustumTimes },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "Scene that culling useful" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"frame time (us)" },
+				},
+				x:{
+					title: { display:true, text:"frame number" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
+</figure>
+
+
+
+<h3>Animating the scene <span class="atag">A1-move</span></h3>
+
+<p class="placeholder">
+UAnimInstance stores the keyframe data, while UAnimPlayer evaluates the data from UAnimInstance, applies it to UNode, and marks the node as dirty.
+UScene contains an Update function that updates the transform data of the render proxies under each UNode based on the dirty flag.
+</p>
+
+<p class="placeholder">
+Note: The animation loops automatically by default.
+Press P to immediately replay it.
+</p>
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/A1Move.mp4" type="video/mp4">
+</video>
+
+
+<h3>Bottleneck Hunting <span class="atag">A1-test</span></h3>
+<h4> <span class="atag extra">CPU Bottle Neck</span></h4>
+<p class="placeholder">
+I created the CPU performance bottleneck mainly by increasing the depth of the parent-child node hierarchy.
+The more hierarchical levels there are, the greater the CPU cost of computing the transforms.
+</p>
+
+<p class="placeholder">
+I created a chain made of cubes, where each chain has a 24-level hierarchy.
+Then, in Blender, I duplicated the scene and removed all parent-child relationships while preserving each cube's transform. As a result, the only difference between the two scenes is that one has hierarchical relationships and the other does not.
+</p>
+
+<img src="Image/CPUBottleNeckScene.png" alt="Difference of two structure" style="max-width: 100%; height: auto;">
+
+<p class="placeholder">
+On the CPU side, I use the TRACE_SIMPLE_CLOCK macro to measure the execution time of a scope (see Profile.hpp for the detailed implementation).
+For GPU timing, I use a RenderDoc frame capture to approximate the GPU cost.
+<br>
+HardwareInfo: NVIDIA GeForce RTX 4060 Laptop GPU and CPU:Intel(R) Core(TM) i7-14700HX (2.10 GHz)
+</p>
+<p class="placeholder">
+As shown in the two videos, the scene with parent-child relationships has a noticeably longer CPU update time than the scene without parents.
+Based on the GPU time approximated from the RenderDoc capture, there is almost no difference between the two.
+</p>
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/CPUBottleNeck_WithParent.mp4" type="video/mp4">
+</video>
+<video autoplay muted loop playsinline style="width: 100%; height: auto;">
+<source src="Video/CPUBottleNeck_WithoutParent.mp4" type="video/mp4">
+</video>
+<img src="Image/CPUBottleNeck_GPUTime.png" alt="GPUTime for two scenes" style="max-width: 100%; height: auto;">
+
+<h4> <span class="atag extra">GPU Bottle Neck</span></h4>
+<p class="placeholder">
+I didn't apply any changes to the scene itself. I only added the repeated texture sampling logic shown in the figure to the fragment shader. (check lambert.frag)
+</p>
+<p class="placeholder">
+On the CPU side, I use the TRACE_SIMPLE_CLOCK macro to measure the execution time of a scope (see Profile.hpp for the detailed implementation).
+For GPU timing, I use a RenderDoc frame capture to approximate the GPU cost.
+</p>
+<p class="placeholder">
+As shown in the console screenshot below, the CPU time increases slightly. However, the GPU time measured in RenderDoc increases by nearly 600 times.
+</p>
+<img src="Image/GPUBottleNeck_Console.png" alt="CPUTime for two scenes" style="max-width: 100%; height: auto;">
+<img src="Image/GPUBottleNeck_RD.png" alt="GPUTime for two scenes" style="max-width: 100%; height: auto;">
+
+<h3>Performance improvements <span class="atag extra">A1x-fast</span></h3>
+<p class="placeholder">
+</p>
+
+<p class="placeholder">
+In each subsection, include a description of what you tried (including references to your code) and evidence of where (and if) the optimization actually did improve performance.
+Report -- at a minimum -- frame times for the same scene collected in headless mode with the optimization on and off.
+Ideally, develop a scene for which the optimization does improve performance and another scene for which it does not.
+</p>
+
+<h2>Feedback</h2>
+<p class="placeholder">
+It would be much more convenient if we could submit a GitHub link for online compilation, similar to how Gradescope works. Also, having a standalone checklist or a table for the final submission requirements would be a lot clearer than the current assignment website.
+</p>
+
+</body>
+</html>
