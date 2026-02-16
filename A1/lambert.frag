@@ -34,6 +34,15 @@ void main()
 	vec3 n = normalize(normal);
 	vec3 albedo = texture(TEXTURE, texcoord).rgb;
 
+	// For GPU Bottle neck
+	// vec3 albedo = vec3(0.0);
+	// int numSamples = 100000;
+	// for(int i=0;i < numSamples;i++)
+	// {
+    // 	albedo += texture(TEXTURE, texcoord).rgb;
+	// }
+	// albedo /= numSamples;
+
 	// hemisphere sky + directional sun:
 	vec3 e = SKY_ENERGY * (dot(n, SKY_DIRECTION) * 0.5 + 0.5)
         	+ SUN_ENERGY * max(dot(n, SUN_DIRECTION), 0.0);

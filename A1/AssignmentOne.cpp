@@ -12,6 +12,7 @@
 #include "../A1/Render/RenderExtractor.hpp"
 #include "../A1/Animation/AnimationPlayer.hpp"
 #include "glm/glm/gtc/type_ptr.hpp"
+#include "Debug/Profile.hpp"
 
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
@@ -19,6 +20,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	// load the scene and debug scene
 	InitializeRenderScene();
     InitializeDebugRenderScene();
+	InitializeCommandLineSettings();
 
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
@@ -669,6 +671,7 @@ void UAssignmentOne::DestroyFramebuffers()
 
 void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 {
+	TRACE_SIMPLE_CLOCK("Render");
     //assert that parameters are valid:
 	assert(&rtg == &rtg_);
 	assert(render_params.workspace_index < workspaces.size());
@@ -1054,12 +1057,22 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 }
 
 void UAssignmentOne::update(float dt)
-{
+{	
+	TRACE_SIMPLE_CLOCK("Update");
     Time = std::fmod(Time + dt, 60.0f);
-	UAnimPlayer::UpdateAnimations(Time);
 
-	DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes);
-	Scene.Update(ActiveCameraIdx);
+	if(bIsPlay)
+	{
+		UAnimPlayer::UpdateAnimations(dt);
+	}
+
+	if(rtg.configuration.debug)
+	{
+		DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes);
+	}
+	{
+		Scene.Update(ActiveCameraIdx, CullingMode == ECullingMode::Normal);
+	}
 	UpdateCamera();
     DrawDebugLines();
 
@@ -1212,28 +1225,27 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 		rtg.configuration.debug = !rtg.configuration.debug;
 		return;
 	}
+
+	// Animation Play
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_SPACE)
+	{
+		bIsPlay = !bIsPlay;
+	}
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_P)
+	{
+		UAnimPlayer::ResetAnimationsTime();
+	}
+
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_C)
+	{
+		CullingMode = ECullingMode((int(CullingMode) + 1) % 2);
+	}
 }
 
 //~BEGIN Load Scene
 void UAssignmentOne::InitializeRenderScene()
 {
 	URenderExtractor::BuildRenderScene(rtg.configuration.FilePath, Scene);
-	// TODO: Make it a function
-	bool hasFound = false;
-	for (uint8_t i = 0; i < Scene.Cameras.size(); i++)
-	{
-		if(Scene.Cameras[i]->Name == rtg.configuration.CameraName)
-		{
-			hasFound = true;
-			ActiveCameraIdx = i;
-			CameraMode = ECameraMode::Scene;
-		}
-	}
-
-	if(!hasFound)
-	{
-		CameraMode = ECameraMode::Free;
-	}
 }
 //~END Load Scene
 
@@ -1344,7 +1356,7 @@ void UAssignmentOne::UpdateCamera()
 		CLIP_FROM_WORLD = Perspective
 		(
 			FreeCamera.FOV,
-			rtg.swapchain_extent.width / float(rtg.swapchain_extent.height),	// Aspect
+			DefaultAspect,	// Aspect
 			FreeCamera.Near,
 			FreeCamera.Far
 		) * orbit
@@ -1496,3 +1508,36 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 	}
 }
 //~END Render Pipeline
+
+//~BEGIN CommandLine Settings
+void UAssignmentOne::InitializeCommandLineSettings()
+{
+	// Culling mode
+	const std::string& CullMode = rtg.configuration.CullMode;
+	if(CullMode == "NONE")
+	{
+		CullingMode = ECullingMode::None;
+	}
+	else if(CullMode == "NORMAL")
+	{
+		CullingMode = ECullingMode::Normal;
+	}
+
+	// Active Camera
+	const std::vector<UCamera*>& Cameras = Scene.Cameras;
+	bool hasFound = false;
+	for (uint8_t i = 0; i < Cameras.size(); i++)
+	{
+		if(Cameras[i] && Cameras[i]->Name == rtg.configuration.CameraName)
+		{
+			hasFound = true;
+			ActiveCameraIdx = i;
+			CameraMode = ECameraMode::Scene;
+		}
+	}
+	if(!hasFound)
+	{
+		CameraMode = ECameraMode::Free;
+	}
+	
+}

@@ -4,7 +4,8 @@
 #include <vector>
 #include <unordered_map>
 #include <optional>
-#include "s72Loader/S72.hpp"
+#include <string>
+#include <vulkan/vulkan.h>
 #include "glm/glm/glm.hpp"
 #include "glm/glm/gtc/quaternion.hpp"
 #include "Texture.hpp"
@@ -99,13 +100,13 @@ public:
     std::vector<FMeshRenderProxy*> MeshProxyInstances;
     std::vector<FLightRenderProxy*> LightProxyInstances;
 
-    void Update(uint8_t ActiveIdx);
+    void Update(uint8_t ActiveIdx, bool bEnableCull = true);
 
     void GenerateWholeVertexBuffer();
     void GenerateMeshProxy();
     void GenerateLightProxy();
     void UpdateTransform();
-    void UpdateVisibleMesh(uint8_t ActiveIdx);
+    void UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling = true);
 
     uint32_t GetTextureIdx(UTexture* Texture) const;
 };

@@ -198,6 +198,9 @@ struct UAssignmentOne : RTG::Application
 
 		virtual void render(RTG &, RTG::RenderParams const &) override;
 
+		// Initial command line 
+		void InitializeCommandLineSettings();
+
 		// Load Scene
 		URenderScene Scene;
 		void InitializeRenderScene();
@@ -217,6 +220,16 @@ struct UAssignmentOne : RTG::Application
 		// Camera Function
 		uint8_t ActiveCameraIdx = 0;
 		void UpdateCamera();
+
+		// Culling
+		enum class ECullingMode
+		{
+			None = 0,
+			Normal = 1,
+		}CullingMode;
+
+		// Animation
+		bool bIsPlay = true;
 
 		// for debug
 		UDebugScene DebugScene;

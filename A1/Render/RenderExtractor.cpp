@@ -102,6 +102,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
         }, S72Camera.projection);
 
         NewCamera->BindingNode = NewNode;
+        NewCamera->Name = S72Camera.name;
         RenderScene.Cameras.push_back(NewCamera);
     }
 

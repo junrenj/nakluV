@@ -7,15 +7,21 @@
 using quat = glm::quat;
 using vec3  = glm::vec3;
 
-void UAnimPlayer::UpdateAnimations(const float CurrentTime)
+void UAnimPlayer::UpdateAnimations(const float DeltaTime)
 {
+    AnimationTime += DeltaTime;
     if(AnimInstances.size() > 0)
     {
         for (const UAnimInstance* AnimInstance : AnimInstances)
         {
-            UpdateAnimation(*AnimInstance, CurrentTime);
+            UpdateAnimation(*AnimInstance, AnimationTime);
         }
     }
+}
+
+void UAnimPlayer::ResetAnimationsTime()
+{
+    AnimationTime = 0.0f;
 }
 
 void UAnimPlayer::UpdateAnimation(const UAnimInstance& AnimInstance, const float CurrentTime)
