@@ -87,7 +87,7 @@ public:
 
     // Other Data
     std::vector<UTexture*> Textures;
-    std::vector<UMaterial*> Materials;
+    std::vector<FMaterial*> Materials;
     std::vector<UCamera*> Cameras;
     std::unordered_map<ULight*, UNode*> Lights;
     std::unordered_map<UNode*, UEnvironment*> Environments;
@@ -135,7 +135,7 @@ public:
         vec2 UV;
     };
 
-    UMaterial* Material;
+    FMaterial* Material;
 
     std::vector<uint8_t> VertexData;    // Include data of POSITION,NORMAL,TANGENT,UV
     FMeshRenderProxy* RenderProxy;

@@ -1268,9 +1268,6 @@ void Tutorial::on_input(InputEvent const &evt)
 					);
 
 					//move the desired distance:
-					// FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0][0] - Dy * CameraFromWorld[1][0];
-					// FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[0][1] - Dy * CameraFromWorld[1][1];
-					// FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[0][2] - Dy * CameraFromWorld[1][2];
 					glm::vec3 InitTarget = glm::vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
 					glm::vec3 Right = glm::vec3(CameraFromWorld[0]);
 					glm::vec3 Up = glm::vec3(CameraFromWorld[1]);

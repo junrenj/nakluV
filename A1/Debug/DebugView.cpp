@@ -213,12 +213,12 @@ std::string UDebugMessage::MaterialToString(EMaterialType Type)
 
 void UDebugMessage::PrintMaterial(const URenderScene& Scene)
 {
-    const std::vector<UMaterial*>& Materials = Scene.Materials;
+    const std::vector<FMaterial*>& Materials = Scene.Materials;
     std::cout << "\n========== Render Scene Materials (Count: " << Materials.size() << ") ==========\n";
     
     for (size_t i = 0; i < Materials.size(); ++i) 
     {
-        const UMaterial* Mat = Materials[i];
+        const FMaterial* Mat = Materials[i];
         if (!Mat) continue;
 
         std::cout << "Material [" << i << "] (" << MaterialToString(Mat->Type) << "):\n";

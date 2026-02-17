@@ -14,9 +14,8 @@ enum class EMaterialType
 };
 
 
-class UMaterial
+struct FMaterial
 {
-public:
     EMaterialType Type;
 
     // for all kind of materials
@@ -32,4 +31,17 @@ public:
     uint32_t AlbedoTex = INVALID_TEXTURE;
     uint32_t RoughnessTex = INVALID_TEXTURE;
     uint32_t MetalnessTex = INVALID_TEXTURE;
+};
+
+inline static const FMaterial Fallback = 
+{
+    EMaterialType::PBR,
+    INVALID_TEXTURE,
+    INVALID_TEXTURE,
+    glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+    1.0f,
+    0.0f,
+    INVALID_TEXTURE,
+    INVALID_TEXTURE,
+    INVALID_TEXTURE
 };

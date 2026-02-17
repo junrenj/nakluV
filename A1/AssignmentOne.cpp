@@ -1169,14 +1169,11 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 						InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
 					);
 
-					//move the desired distance:
-					// FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0] - Dy * CameraFromWorld[1];
-					// FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[4] - Dy * CameraFromWorld[5];
-					// FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[8] - Dy * CameraFromWorld[9];
-                    glm::vec3 InitTarget = glm::vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
-					glm::vec3 Right = glm::vec3(CameraFromWorld[0]);
-					glm::vec3 Up = glm::vec3(CameraFromWorld[1]);
-					glm::vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
+					// move the desired distance:
+					vec3 InitTarget = vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
+					vec3 Right = vec3(CameraFromWorld[0]);
+					vec3 Up = vec3(CameraFromWorld[1]);
+					vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
 
 					FreeCamera.TargetX = NewTarget.x;
 					FreeCamera.TargetY = NewTarget.y;
@@ -1339,7 +1336,6 @@ void UAssignmentOne::UpdateCamera()
 	// camera orbiting the origin:
 	if(CameraMode == ECameraMode::Scene)
     {
-        // TODO: Change all the mat4 to Mat4 or replace all Mat4 with mat4!!!!!!!
         const UCamera& NowCamera = *(Scene.Cameras[ActiveCameraIdx]);
 		mat4 Projection = Perspective
 		(

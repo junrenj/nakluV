@@ -11,7 +11,7 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     CurrentS72 = S72::load(S72Path);
 
     std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
-    std::unordered_map< const S72::Material* , UMaterial* > S72Mat2UMat;
+    std::unordered_map< const S72::Material* , FMaterial* > S72Mat2UMat;
     std::unordered_map< const S72::Node* , UNode* > S72Node2UNode;
 
     // 0. Get Dependency ready
@@ -35,7 +35,7 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
 //BEGIN: UNode Data Extract
 void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene,
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
-    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat,
+    std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat,
     std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode)
 {
     // Build a single unique root node for all nodes data
@@ -56,7 +56,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
     URenderScene& RenderScene, 
     UNode* Parent,
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
-    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat,
+    std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat,
     std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode)
 {
     UNode* NewNode = new UNode();
@@ -202,17 +202,13 @@ void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
     // if has mesh first use mesh's bounding box
     if(InNode->Mesh)
     {
-        // glm::mat4 Local2World = UNode::GetLocal2WorldMatrix(InNode);
         BBox_World = InNode->Mesh->BoundingBox;
-        // FAABB::UpdateBBoxWithTransform(BBox_World, BBox_Local, Local2World);
     }
 
     // Iterate Child
     for (UNode* Child : InNode->Children)
     {
         BuildUNodesBBoxIterate(Child);
-        // BBox_World.Min = glm::min(BBox_World.Min, Child->BoundingBox.Min);
-        // BBox_World.Max = glm::max(BBox_World.Max, Child->BoundingBox.Max);
     }
 
     InNode->BoundingBox = BBox_World;
@@ -221,24 +217,24 @@ void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
 
 //BEGIN: Material Data Extract
 void URenderExtractor::BuildUMaterialData(
-    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat, 
+    std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat, 
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
     URenderScene& Scene)
 {
     for (const auto& [Name, Mat] : CurrentS72.materials)
     {
-        UMaterial* NewMaterial = CloneUMaterialFromS72Material(Mat, S72Tex2UTex, Scene);
+        FMaterial* NewMaterial = CloneUMaterialFromS72Material(Mat, S72Tex2UTex, Scene);
         S72Mat2UMat[&Mat] = NewMaterial;
         Scene.Materials.push_back(NewMaterial);
     }
 }
 
-UMaterial* URenderExtractor::CloneUMaterialFromS72Material(
+FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
     const S72::Material& InS72Mat, 
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
     const URenderScene& Scene)
 {
-    UMaterial* NewMat = new UMaterial();
+    FMaterial* NewMat = new FMaterial();
 
     // 1. Get general Tex Idx
     if(InS72Mat.normal_map)
@@ -429,7 +425,7 @@ std::vector<uint8_t> URenderExtractor::ReadBinaryFile(const std::string& path)
 void URenderExtractor::CloneRenderMeshFromS72Mesh(
     const S72::Mesh& S72Mesh, 
     URenderMesh& OutMesh,
-    std::unordered_map< const S72::Material* , UMaterial* >& S72Mat2UMat)
+    std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat)
 {
     // 1. type of mesh(can be changed if debug mode on)
     OutMesh.topology = S72Mesh.topology;
@@ -541,6 +537,11 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
     if (it != S72Mat2UMat.end())
     {
         OutMesh.Material = it->second;
+    }
+    else
+    {
+        // give fallback
+        OutMesh.Material = &FMaterial::Fallback;
     }
 }
 //END: URenerMesh Data Extract
