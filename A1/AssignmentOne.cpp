@@ -1163,16 +1163,24 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 					float Dy =-(evt.motion.y - InitY) / rtg.swapchain_extent.height * Height; //note: negated because glfw uses y-down coordinate system
 
 					//compute camera transform to extract right (first row) and up (second row):
-					Mat4 CameraFromWorld = orbit
+					mat4 CameraFromWorld = orbit
 					(
 						InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ,
 						InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
 					);
 
 					//move the desired distance:
-					FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0] - Dy * CameraFromWorld[1];
-					FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[4] - Dy * CameraFromWorld[5];
-					FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[8] - Dy * CameraFromWorld[9];
+					// FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0] - Dy * CameraFromWorld[1];
+					// FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[4] - Dy * CameraFromWorld[5];
+					// FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[8] - Dy * CameraFromWorld[9];
+                    glm::vec3 InitTarget = glm::vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
+					glm::vec3 Right = glm::vec3(CameraFromWorld[0]);
+					glm::vec3 Up = glm::vec3(CameraFromWorld[1]);
+					glm::vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
+
+					FreeCamera.TargetX = NewTarget.x;
+					FreeCamera.TargetY = NewTarget.y;
+					FreeCamera.TargetZ = NewTarget.z;
 
 					return;
 				}
@@ -1333,7 +1341,7 @@ void UAssignmentOne::UpdateCamera()
     {
         // TODO: Change all the mat4 to Mat4 or replace all Mat4 with mat4!!!!!!!
         const UCamera& NowCamera = *(Scene.Cameras[ActiveCameraIdx]);
-		Mat4 Projection = Perspective
+		mat4 Projection = Perspective
 		(
 			NowCamera.Projection.Vfov,
 			NowCamera.Projection.Aspect,
@@ -1341,15 +1349,7 @@ void UAssignmentOne::UpdateCamera()
 			NowCamera.Projection.Far
 		);
 		mat4 View = glm::inverse(UNode::GetLocal2WorldMatrix(NowCamera.BindingNode));
-		Mat4 ViewNew;
-		for(int i = 0; i < 4; ++i) 
-		{
-			for(int j = 0; j < 4; ++j) 
-			{
-			ViewNew[i * 4 + j] = View[i][j]; 
-			}	
-		}
-        CLIP_FROM_WORLD = Projection * ViewNew;
+        CLIP_FROM_WORLD = Projection * View;
     }
 	else if(CameraMode == ECameraMode::Free)
 	{

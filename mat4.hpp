@@ -2,57 +2,15 @@
 
 // A *small* matrix math library for 4x4 matrices only.
 
-#include <array>
-#include <cmath>
-#include <cstdint>
 #include "glm/glm/glm.hpp"
 
-// NOTE: column-major storage order (like in OpenGL / GLSL):
-using Mat4 = std::array< float, 16 >;
-static_assert(sizeof(Mat4) == 16*4, "Mat4 is exactly 16 32-bit floats.");
-
-using Vec4 = std::array< float, 4 >;
-static_assert(sizeof(Vec4) == 4*4, "Vec4 is exactly 4 32-bit floats.");
-
-inline Vec4 operator*(Mat4 const &A, Vec4 const &b) 
-{
-	Vec4 ret;
-	// compute ret = A * b:
-	for (uint32_t r = 0; r < 4; ++r) 
-    {
-		ret[r] = A[0 * 4 + r] * b[0];
-		for (uint32_t k = 1; k < 4; ++k) 
-        {
-			ret[r] += A[k * 4 + r] * b[k];
-		}
-	}
-	return ret;
-}
-
-inline Mat4 operator*(Mat4 const &A, Mat4 const &B) 
-{
-	Mat4 ret;
-	// compute ret = A * B:
-	for (uint32_t c = 0; c < 4; ++c) 
-    {
-		for (uint32_t r = 0; r < 4; ++r) 
-        {
-			ret[c * 4 + r] = A[0 * 4 + r] * B[c * 4 + 0];
-			for (uint32_t k = 1; k < 4; ++k) 
-            {
-				ret[c * 4 + r] += A[k * 4 + r] * B[c * 4 + k];
-			}
-		}
-	}
-	return ret;
-}
-
+using mat4 = glm::mat4;
 
 // perspective projection matrix.
 // - vfov is fov *in radians*
 // - near maps to 0, far maps to 1
 // looks down -z with +y up and +x right
-inline Mat4 Perspective(float vfov, float aspect, float near, float far) 
+inline mat4 Perspective(float vfov, float aspect, float near, float far) 
 {
 	// as per https://www.terathon.com/gdc07_lengyel.pdf
 	// (with modifications for Vulkan-style coordinate system)
@@ -62,7 +20,7 @@ inline Mat4 Perspective(float vfov, float aspect, float near, float far)
 	const float a = aspect;
 	const float n = near;
 	const float f = far;
-	return Mat4
+	return mat4
     {   //note: column-major storage order!
 		e/a,  0.0f,                      0.0f, 0.0f,
 		0.0f,   -e,                      0.0f, 0.0f,
@@ -78,11 +36,11 @@ inline Mat4 Perspective(float vfov, float aspect, float near, float far)
 //  - eye_xyz to the origin
 //  - the unit length vector from eye_xyz to target_xyz to -z
 //  - an as-close-as-possible unit-length vector to up to +y
-inline Mat4 Look_at
-(
+inline mat4 Look_at(
 	float eye_x, float eye_y, float eye_z,
 	float target_x, float target_y, float target_z,
-	float up_x, float up_y, float up_z ) {
+	float up_x, float up_y, float up_z ) 
+	{
 
 	// NOTE: this would be a lot cleaner with a vec3 type and some overloads!
 
@@ -120,7 +78,7 @@ inline Mat4 Look_at
 	float in_dot_eye = in_x*eye_x + in_y*eye_y + in_z*eye_z;
 
 	//final matrix: (computes (right . (v - eye), up . (v - eye), -in . (v-eye), v.w )
-	return Mat4
+	return mat4
     {   //note: column-major storage order
 		right_x, up_x, -in_x, 0.0f,
 		right_y, up_y, -in_y, 0.0f,
@@ -135,7 +93,7 @@ inline Mat4 Look_at
 // azimuth is counterclockwise angle in the xy plane from the x axis
 // elevation is angle up from the xy plane
 // both are in radians
-inline Mat4 orbit(
+inline mat4 orbit(
 		float target_x, float target_y, float target_z,
 		float azimuth, float elevation, float radius
 	) {
@@ -173,7 +131,7 @@ inline Mat4 orbit(
 	float OutDotEye = Out_X * Eye_X + Out_Y * Eye_Y + Out_Z * Eye_Z;
 
 	// the final local-from-world transformation (column-major):
-	return Mat4
+	return mat4
 	{
 		Right_X, Up_X, Out_X, 0.0f,
 		Right_Y, Up_Y, Out_Y, 0.0f,

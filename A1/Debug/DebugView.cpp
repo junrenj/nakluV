@@ -47,7 +47,7 @@ void UDebugScene::GenerateBBoxVertices(const FAABB& BBox, const glm::mat4& Trans
 void UDebugScene::GenerateFrustumVertices(const UCamera& Camera, bool bIsActive)
 {
     // TODO: replace all Mat4 with mat4
-    Mat4 Projection = Perspective
+    mat4 Projection = Perspective
 		(
 			Camera.Projection.Vfov,
 			Camera.Projection.Aspect,
@@ -55,17 +55,8 @@ void UDebugScene::GenerateFrustumVertices(const UCamera& Camera, bool bIsActive)
 			Camera.Projection.Far
 		);
 	mat4 View = glm::inverse(UNode::GetLocal2WorldMatrix(Camera.BindingNode));
-	Mat4 ViewNew;
-	for(int i = 0; i < 4; ++i) 
-	{
-		for(int j = 0; j < 4; ++j) 
-		{
-			ViewNew[i * 4 + j] = View[i][j]; 
-		}	
-	}
-	Mat4 ClipFromWorld = Projection * ViewNew;
-	glm::mat4 gMat = glm::make_mat4(ClipFromWorld.data());
-	mat4 WorldFromClip = glm::inverse(gMat);
+	mat4 ClipFromWorld = Projection * View;
+	mat4 WorldFromClip = glm::inverse(ClipFromWorld);
 
 	std::vector<glm::vec4> NDCCorners = 
 	{

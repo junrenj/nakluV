@@ -45,7 +45,7 @@ struct UAssignmentOne : RTG::Application
 		VkDescriptorSetLayout Set0_Camera = VK_NULL_HANDLE;
 		struct Camera
 		{
-			Mat4 CLIP_FROM_WORLD;
+			mat4 CLIP_FROM_WORLD;
 		};
 		static_assert(sizeof(Camera) == 16*4, "camera buffer structure is packed");
 	
@@ -80,15 +80,15 @@ struct UAssignmentOne : RTG::Application
 
 		struct FCamera
 		{
-			Mat4 CLIP_FROM_WORLD;
+			mat4 CLIP_FROM_WORLD;
 		};
 		static_assert(sizeof(FCamera) == 16*4, "camera buffer structure is packed");
 
 		struct FTransform
 		{
-			Mat4 CLIP_FROM_LOCAL;
-			Mat4 WORLD_FROM_LOCAL;
-			Mat4 WORLD_FROM_LOCAL_NORMAL;
+			mat4 CLIP_FROM_LOCAL;
+			mat4 WORLD_FROM_LOCAL;
+			mat4 WORLD_FROM_LOCAL_NORMAL;
 		};
         static_assert(sizeof(FTransform) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
 		
@@ -189,7 +189,7 @@ struct UAssignmentOne : RTG::Application
 		} FreeCamera;
 
 		// Computed from the current camera (as set by camera_mode) during update():
-		Mat4 CLIP_FROM_WORLD;
+		mat4 CLIP_FROM_WORLD;
 
 		FLambertPipeline::FWorld World;
 

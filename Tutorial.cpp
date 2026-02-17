@@ -1155,7 +1155,7 @@ void Tutorial::update(float dt)
 		ObjectInstances.clear();
 		{
 			// Plane translated + x by one unit:
-			Mat4 WORLD_FROM_LOCAL
+			mat4 WORLD_FROM_LOCAL
 			{
 				1.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,
@@ -1181,7 +1181,7 @@ void Tutorial::update(float dt)
 			float Angle = time / 60.0f * 2.0f * float(M_PI) * 10.0f;
 			float Ca = std::cos(Angle);
 			float Sa = std::sin(Angle);
-			Mat4 WORLD_FROM_LOCAL
+			mat4 WORLD_FROM_LOCAL
 			{
 				Ca, 0.0f, -Sa, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,
@@ -1261,16 +1261,24 @@ void Tutorial::on_input(InputEvent const &evt)
 					float Dy =-(evt.motion.y - InitY) / rtg.swapchain_extent.height * Height; //note: negated because glfw uses y-down coordinate system
 
 					//compute camera transform to extract right (first row) and up (second row):
-					Mat4 CameraFromWorld = orbit
+					mat4 CameraFromWorld = orbit
 					(
 						InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ,
 						InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
 					);
 
 					//move the desired distance:
-					FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0] - Dy * CameraFromWorld[1];
-					FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[4] - Dy * CameraFromWorld[5];
-					FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[8] - Dy * CameraFromWorld[9];
+					// FreeCamera.TargetX = InitCamera.TargetX - Dx * CameraFromWorld[0][0] - Dy * CameraFromWorld[1][0];
+					// FreeCamera.TargetY = InitCamera.TargetY - Dx * CameraFromWorld[0][1] - Dy * CameraFromWorld[1][1];
+					// FreeCamera.TargetZ = InitCamera.TargetZ - Dx * CameraFromWorld[0][2] - Dy * CameraFromWorld[1][2];
+					glm::vec3 InitTarget = glm::vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
+					glm::vec3 Right = glm::vec3(CameraFromWorld[0]);
+					glm::vec3 Up = glm::vec3(CameraFromWorld[1]);
+					glm::vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
+
+					FreeCamera.TargetX = NewTarget.x;
+					FreeCamera.TargetY = NewTarget.y;
+					FreeCamera.TargetZ = NewTarget.z;
 
 					return;
 				}

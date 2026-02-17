@@ -52,7 +52,7 @@ struct Tutorial : RTG::Application {
 
 		struct Camera
 		{
-			Mat4 CLIP_FROM_WORLD;
+			mat4 CLIP_FROM_WORLD;
 		};
 		static_assert(sizeof(Camera) == 16*4, "camera buffer structure is packed");
 		
@@ -110,9 +110,9 @@ struct Tutorial : RTG::Application {
 
 		struct Transform
 		{
-			Mat4 CLIP_FROM_LOCAL;
-			Mat4 WORLD_FROM_LOCAL;
-			Mat4 WORLD_FROM_LOCAL_NORMAL;
+			mat4 CLIP_FROM_LOCAL;
+			mat4 WORLD_FROM_LOCAL;
+			mat4 WORLD_FROM_LOCAL_NORMAL;
 		};
 		static_assert(sizeof(Transform) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
 
@@ -226,7 +226,7 @@ struct Tutorial : RTG::Application {
 	} FreeCamera;
 
 	// Computed from the current camera (as set by camera_mode) during update():
-	Mat4 CLIP_FROM_WORLD;
+	mat4 CLIP_FROM_WORLD;
 
 	std::vector< LinesPipeline::Vertex > LinesVertices;
 
