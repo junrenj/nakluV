@@ -27,6 +27,7 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     // 3. Generate RenderProxy
     RenderScene.GenerateMeshProxy();
     RenderScene.GenerateLightProxy();
+    std::cout << "TotalBytes:" << RenderScene.TotalBytes << std::endl;
     RenderScene.GenerateWholeVertexBuffer();
     // 4. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
@@ -541,7 +542,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
     else
     {
         // give fallback
-        OutMesh.Material = &FMaterial::Fallback;
+        OutMesh.Material = &Fallback;
     }
 }
 //END: URenerMesh Data Extract

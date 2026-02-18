@@ -135,7 +135,7 @@ public:
         vec2 UV;
     };
 
-    FMaterial* Material;
+    const FMaterial* Material;
 
     std::vector<uint8_t> VertexData;    // Include data of POSITION,NORMAL,TANGENT,UV
     FMeshRenderProxy* RenderProxy;
