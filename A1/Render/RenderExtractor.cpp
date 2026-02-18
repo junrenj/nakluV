@@ -13,21 +13,23 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
     std::unordered_map< const S72::Material* , FMaterial* > S72Mat2UMat;
     std::unordered_map< const S72::Node* , UNode* > S72Node2UNode;
+    std::unordered_map< const S72::Mesh* , URenderMesh* > S72Mesh2UMesh;
 
     // 0. Get Dependency ready
     // get Texture Resources Ready
     BuildUTextureData(S72Tex2UTex, RenderScene);
     // get Material Resources Ready
     BuildUMaterialData(S72Mat2UMat, S72Tex2UTex, RenderScene);
+    // get Mesh Resources Ready
+    BuildUMeshData(RenderScene, S72Mesh2UMesh, S72Mat2UMat);
 
     // 1. Build UNode Tree
-    BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat, S72Node2UNode);
+    BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat, S72Node2UNode, S72Mesh2UMesh);
     // 2. Build UNode BBox
     BuildUNodesBBoxIterate(RenderScene.RootNode);
     // 3. Generate RenderProxy
     RenderScene.GenerateMeshProxy();
     RenderScene.GenerateLightProxy();
-    std::cout << "TotalBytes:" << RenderScene.TotalBytes << std::endl;
     RenderScene.GenerateWholeVertexBuffer();
     // 4. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
@@ -37,7 +39,8 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
 void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene,
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
     std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat,
-    std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode)
+    std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode,
+    std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh)
 {
     // Build a single unique root node for all nodes data
     UNode* Root = new UNode();
@@ -48,7 +51,7 @@ void URenderExtractor::BuildUNodeTree(URenderScene& RenderScene,
         if(CurrentS72.scene.roots[i])
         {
             const S72::Node& InS72Node = *(CurrentS72.scene.roots[i]);
-            Root->Children.push_back(BuildUNodeTreeIterate(InS72Node, RenderScene, Root, S72Tex2UTex, S72Mat2UMat, S72Node2UNode));
+            Root->Children.push_back(BuildUNodeTreeIterate(InS72Node, RenderScene, Root, S72Tex2UTex, S72Mat2UMat, S72Node2UNode, S72Mesh2UMesh));
         }
     }
 }
@@ -58,7 +61,8 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
     UNode* Parent,
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex,
     std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat,
-    std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode)
+    std::unordered_map< const S72::Node*, UNode* >& S72Node2UNode,
+    std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh)
 {
     UNode* NewNode = new UNode();
     NewNode->Parent = Parent;
@@ -72,13 +76,14 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
     // 2. Other Data
     if(InS72Node.mesh)
     {
-        const S72::Mesh& S72Mesh = *InS72Node.mesh;
-        URenderMesh* NewMesh = new URenderMesh();
-        CloneRenderMeshFromS72Mesh(S72Mesh, *NewMesh, S72Mat2UMat);
-        NewNode->Mesh = NewMesh;
-        RenderScene.Nodes2RenderMeshes[NewNode] = NewMesh;
-        RenderScene.RenderMeshes2Nodes[NewMesh] = NewNode;
-        RenderScene.AllMeshes.push_back(NewMesh);
+        const S72::Mesh* S72Mesh = InS72Node.mesh;
+        auto it = S72Mesh2UMesh.find(S72Mesh);
+        if (it != S72Mesh2UMesh.end())
+        {
+            URenderMesh* NewMesh = it->second;
+            RenderScene.Nodes2RenderMeshes[NewNode] = NewMesh;
+            RenderScene.RenderMeshes2Nodes[NewMesh] = NewNode;
+        }
     }
 
     if(InS72Node.camera)
@@ -188,7 +193,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
         for (size_t i = 0; i < InS72Node.children.size(); i++)
         {
             const S72::Node& Child = *InS72Node.children[i];
-            NewNode->Children.push_back(BuildUNodeTreeIterate(Child, RenderScene, NewNode, S72Tex2UTex, S72Mat2UMat, S72Node2UNode));
+            NewNode->Children.push_back(BuildUNodeTreeIterate(Child, RenderScene, NewNode, S72Tex2UTex, S72Mat2UMat, S72Node2UNode, S72Mesh2UMesh));
         }
     }
     RenderScene.Nodes.push_back(NewNode);
@@ -201,9 +206,9 @@ void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
     BBox_World.Min = glm::vec3(FLT_MAX);
     BBox_World.Max = glm::vec3(-FLT_MAX);
     // if has mesh first use mesh's bounding box
-    if(InNode->Mesh)
+    if(InNode->RenderProxy)
     {
-        BBox_World = InNode->Mesh->BoundingBox;
+        BBox_World = InNode->BoundingBox;
     }
 
     // Iterate Child
@@ -423,6 +428,20 @@ std::vector<uint8_t> URenderExtractor::ReadBinaryFile(const std::string& path)
     return data;
 }
 
+void URenderExtractor::BuildUMeshData(
+    URenderScene& Scene,
+    std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh, 
+    std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat)
+{
+    for (auto& [name, S72Mesh] : CurrentS72.meshes) 
+    {
+        URenderMesh* RenderMesh = new URenderMesh();
+        CloneRenderMeshFromS72Mesh(S72Mesh, *RenderMesh, S72Mat2UMat);
+        S72Mesh2UMesh[&S72Mesh] = RenderMesh; 
+        Scene.AllMeshes.push_back(RenderMesh);
+    }
+}
+
 void URenderExtractor::CloneRenderMeshFromS72Mesh(
     const S72::Mesh& S72Mesh, 
     URenderMesh& OutMesh,
@@ -440,7 +459,6 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
 
     // 3. Vertex Count
     OutMesh.VertexCount = S72Mesh.count;
-    OutMesh.IndexCount = 0;
 
     OutMesh.VertexData.resize(OutMesh.VertexCount * OutMesh.VertexStride);
 

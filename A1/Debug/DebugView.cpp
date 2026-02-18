@@ -99,9 +99,9 @@ void UDebugScene::UpdateBBoxVertices(const std::vector< UNode * >& Nodes)
     for (const UNode* Node : Nodes)
     {
         const FAABB& BBox = Node->BoundingBox;
-        if(Node->Mesh && BBox.Max != vec3(-FLT_MAX) && BBox.Min != vec3(FLT_MAX))
+        if(Node->RenderProxy && BBox.Max != vec3(-FLT_MAX) && BBox.Min != vec3(FLT_MAX))
         {
-            const FMeshRenderProxy* Proxy = Node->Mesh->RenderProxy;
+            const FMeshRenderProxy* Proxy = Node->RenderProxy;
 			const glm::mat4 Transform = UNode::GetLocal2WorldMatrix(Node);
             GenerateBBoxVertices(BBox, Transform, Proxy->bCanSee);
         }

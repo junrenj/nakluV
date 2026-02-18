@@ -33,7 +33,7 @@ struct FMaterial
     uint32_t MetalnessTex = INVALID_TEXTURE;
 };
 
-inline static const FMaterial Fallback = 
+inline static FMaterial Fallback = 
 {
     EMaterialType::PBR,
     INVALID_TEXTURE,

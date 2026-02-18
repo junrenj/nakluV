@@ -20,6 +20,7 @@ class UEnvironment;
 class ULight;
 class UCamera;
 class UNode;
+struct FMeshRenderProxy;
 
 using quat = glm::quat;
 using mat4 = glm::mat4;
@@ -39,10 +40,10 @@ public:
 
     UNode* Parent = nullptr;    // If a node no Parent, which means it is root
     std::vector< UNode * > Children;
-    URenderMesh* Mesh = nullptr;
 	UEnvironment* environment = nullptr;
 	ULight* light = nullptr;
-
+    FMeshRenderProxy* RenderProxy = nullptr;
+    
     FAABB BoundingBox;      // Always Object-Coordinate
 
 
@@ -116,8 +117,9 @@ class URenderMesh
 public:
     VkPrimitiveTopology topology;
 
+    uint32_t FirstVertexIdx = 0;
+
     uint32_t VertexCount = 0;
-    uint32_t IndexCount = 0;
     uint32_t VertexStride = 0;
 
     uint32_t PositionOffset = UINT32_MAX;
@@ -135,7 +137,7 @@ public:
         vec2 UV;
     };
 
-    const FMaterial* Material;
+    FMaterial* Material;
 
     std::vector<uint8_t> VertexData;    // Include data of POSITION,NORMAL,TANGENT,UV
     FMeshRenderProxy* RenderProxy;

@@ -15,11 +15,13 @@ public:
     static void BuildUNodeTree(URenderScene& RenderScene, 
         std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
         std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat, 
-        std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
+        std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode,
+        std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh);
     static UNode* BuildUNodeTreeIterate(const S72::Node& InS72Nodes, URenderScene& RenderScene, UNode* Parent,
         std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
         std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat, 
-        std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
+        std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode,
+        std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh);
     // Bounding Box
     static void BuildUNodesBBoxIterate(UNode* InNode);
     // New Material Structure
@@ -32,6 +34,9 @@ public:
     static UTexture* ReadBulkDataFromImage(const S72::Texture& InTexture);
 
     // New RenderMesh Structure
+    static void BuildUMeshData(URenderScene& Scene,
+                                std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh, 
+                                std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat);
     static void CloneRenderMeshFromS72Mesh(const S72::Mesh& InMesh, URenderMesh& OutMesh, 
         std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat);
 

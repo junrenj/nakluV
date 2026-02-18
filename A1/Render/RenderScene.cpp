@@ -23,43 +23,83 @@ void URenderScene::GenerateMeshProxy()
     TotalBytes = 0;
     uint32_t Index = 0;
     const uint32_t BytePerVertex = static_cast<uint32_t>(sizeof(URenderMesh::FVertex));
-    for (auto& Mesh : AllMeshes)
+
+    for (URenderMesh* Mesh : AllMeshes)
+    {
+        const uint32_t MeshBytesCount = static_cast<uint32_t>(Mesh->VertexData.size());
+        
+        if(Mesh->Material->Type != EMaterialType::Environment && Mesh->Material->AlbedoTex == INVALID_TEXTURE)
+        {
+            // for god sake, just make a 1x1 pixel texture stand for albedo
+            UTexture* NewTexture = new UTexture();
+            NewTexture->Get1x1PixelTexture(Mesh->Material->Albedo.r, Mesh->Material->Albedo.g, Mesh->Material->Albedo.b);
+            Textures.push_back(NewTexture);
+            Mesh->Material->AlbedoTex = static_cast<uint32_t>(Textures.size() - 1);
+        }
+
+        TotalBytes += MeshBytesCount;
+        Mesh->FirstVertexIdx = Index;
+        Index += MeshBytesCount / BytePerVertex;
+    }
+
+    for (auto& Node : Nodes)
     {
         FMeshRenderProxy* ProxyInstance = new FMeshRenderProxy();
-        const UNode* BindingNode = RenderMeshes2Nodes.find(Mesh)->second;
-        const uint32_t MeshBytesCount = static_cast<uint32_t>(Mesh->VertexData.size());
-        // Data Collect
-        ProxyInstance->FirstVertexIdx = Index;
-        ProxyInstance->VertexNum = MeshBytesCount / BytePerVertex;
-        ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(BindingNode);
-        ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = UNode::GetLocal2WorldMatrix(BindingNode);
-        // TODO: Add more Textures and also separate logic
-        if(Mesh->Material->Type == EMaterialType::Environment)
+        const URenderMesh* RenderMesh = Nodes2RenderMeshes.find(Node)->second;
+        ProxyInstance->FirstVertexIdx = RenderMesh->FirstVertexIdx;
+        ProxyInstance->VertexNum = static_cast<uint32_t>(RenderMesh->VertexData.size()) / BytePerVertex;
+        ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
+        ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = UNode::GetLocal2WorldMatrix(Node);
+        if(RenderMesh->Material->Type == EMaterialType::Environment)
         {
-            ProxyInstance->Texture = 0; //TODO: Solve Env
+            ProxyInstance->Texture = 0;
         }
         else
         {
-            if(Mesh->Material->AlbedoTex == INVALID_TEXTURE)
-            {
-                // for god sake, just make a 1x1 pixel texture stand for albedo
-                UTexture* NewTexture = new UTexture();
-                NewTexture->Get1x1PixelTexture(Mesh->Material->Albedo.r, Mesh->Material->Albedo.g, Mesh->Material->Albedo.b);
-                Textures.push_back(NewTexture);
-                ProxyInstance->Texture = static_cast<uint32_t>(Textures.size() - 1);
-            }
-            else
-            {
-                ProxyInstance->Texture = Mesh->Material->AlbedoTex;
-            }
+            ProxyInstance->Texture = RenderMesh->Material->AlbedoTex;
         }
 
-        Mesh->RenderProxy = ProxyInstance;
+        Node->RenderProxy = ProxyInstance;
         MeshProxyInstances.push_back(ProxyInstance);
-
-        TotalBytes += MeshBytesCount;
-        Index += MeshBytesCount / BytePerVertex;
     }
+    
+    // for (auto& Mesh : AllMeshes)
+    // {
+    //     FMeshRenderProxy* ProxyInstance = new FMeshRenderProxy();
+    //     const UNode* BindingNode = RenderMeshes2Nodes.find(Mesh)->second;
+    //     const uint32_t MeshBytesCount = static_cast<uint32_t>(Mesh->VertexData.size());
+    //     // Data Collect
+    //     ProxyInstance->FirstVertexIdx = Index;
+    //     ProxyInstance->VertexNum = MeshBytesCount / BytePerVertex;
+    //     ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(BindingNode);
+    //     ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = UNode::GetLocal2WorldMatrix(BindingNode);
+    //     // TODO: Add more Textures and also separate logic
+    //     if(Mesh->Material->Type == EMaterialType::Environment)
+    //     {
+    //         ProxyInstance->Texture = 0; //TODO: Solve Env
+    //     }
+    //     else
+    //     {
+    //         if(Mesh->Material->AlbedoTex == INVALID_TEXTURE)
+    //         {
+    //             // for god sake, just make a 1x1 pixel texture stand for albedo
+    //             UTexture* NewTexture = new UTexture();
+    //             NewTexture->Get1x1PixelTexture(Mesh->Material->Albedo.r, Mesh->Material->Albedo.g, Mesh->Material->Albedo.b);
+    //             Textures.push_back(NewTexture);
+    //             ProxyInstance->Texture = static_cast<uint32_t>(Textures.size() - 1);
+    //         }
+    //         else
+    //         {
+    //             ProxyInstance->Texture = Mesh->Material->AlbedoTex;
+    //         }
+    //     }
+
+    //     Mesh->RenderProxy = ProxyInstance;
+    //     MeshProxyInstances.push_back(ProxyInstance);
+
+    //     TotalBytes += MeshBytesCount;
+    //     Index += MeshBytesCount / BytePerVertex;
+    // }
 }
 
 void URenderScene::GenerateLightProxy()
@@ -114,24 +154,24 @@ void URenderScene::UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling)
             .FarPlane = -ActiveCamera.Projection.Far,
         };
 
-        for (uint32_t i = 0; i < AllMeshes.size(); i++)
+        for (uint32_t i = 0; i < Nodes.size(); i++)
         {
-            URenderMesh* Mesh = AllMeshes[i];
+            UNode* Node = Nodes[i];
+            const URenderMesh* Mesh = Nodes2RenderMeshes[Node];
             const FAABB& AABB = Mesh->BoundingBox;
-            const UNode* Node = RenderMeshes2Nodes[Mesh];
             const mat4 Transform = VIEW_FROM_WORLD * UNode::GetLocal2WorldMatrix(Node);
             
-            FMeshRenderProxy* RenderProxy = Mesh->RenderProxy;
+            FMeshRenderProxy* RenderProxy = Node->RenderProxy;
             const bool bCanSee = UCullingUtils::SATVisibilityTest(Frustum, Transform, AABB);
             RenderProxy->bCanSee = bCanSee;
         }
     }
     else
     {
-        for (uint32_t i = 0; i < AllMeshes.size(); i++)
+        for (uint32_t i = 0; i < Nodes.size(); i++)
         {
-            URenderMesh* Mesh = AllMeshes[i];
-            FMeshRenderProxy* RenderProxy = Mesh->RenderProxy;
+            UNode* Node = Nodes[i];
+            FMeshRenderProxy* RenderProxy = Node->RenderProxy;
             RenderProxy->bCanSee = true;
         }
     }
@@ -169,9 +209,9 @@ void URenderScene::UpdateTransform()
     {
         if(Node->bIsDirty)
         {
-            if(Node->Mesh)
+            if(Node->RenderProxy)
             {
-                Node->Mesh->RenderProxy->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
+                Node->RenderProxy->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
             }
         }
     }
