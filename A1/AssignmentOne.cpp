@@ -315,7 +315,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				nullptr 					// pDescriptorCopies
 			);
 		}
-        
 		// Create Object Vertices
 		{
 			ObjectVertices = rtg.helpers.create_buffer
@@ -325,6 +324,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				Helpers::Unmapped
 			);
+			assert(Scene.AllVertexData.size() == Scene.TotalBytes);
 			rtg.helpers.transfer_to_buffer(Scene.AllVertexData.data(), Scene.TotalBytes, ObjectVertices);
 		}
 	}
@@ -456,7 +456,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				.pImageInfo = &Infos[Index],
 			};
 		}
-
 		vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
 	}
 }
@@ -1057,7 +1056,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 }
 
 void UAssignmentOne::update(float dt)
-{	
+{
 	TRACE_SIMPLE_CLOCK("Update");
     Time = std::fmod(Time + dt, 60.0f);
 
@@ -1065,7 +1064,6 @@ void UAssignmentOne::update(float dt)
 	{
 		UAnimPlayer::UpdateAnimations(dt);
 	}
-
 	if(rtg.configuration.debug)
 	{
 		DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes);
@@ -1076,6 +1074,7 @@ void UAssignmentOne::update(float dt)
 	UpdateCamera();
     DrawDebugLines();
 
+	assert(Scene.SunProxy);
 	// static sun and sky
 	{
 		World.SKY_DIRECTION.x = 0.0f;
@@ -1086,14 +1085,14 @@ void UAssignmentOne::update(float dt)
 		World.SKY_ENERGY.g = 0.1f;
 		World.SKY_ENERGY.b = 0.2f;
 
-		World.SUN_DIRECTION.x = Scene.LightProxyInstances[0]->Direction.x;  // TODO:REPLACE IT WITH REAL SUN INFORMATION
-		World.SUN_DIRECTION.y = Scene.LightProxyInstances[0]->Direction.y;
-		World.SUN_DIRECTION.z = Scene.LightProxyInstances[0]->Direction.z;
+		World.SUN_DIRECTION.x = Scene.SunProxy->Direction.x;  // TODO:REPLACE IT WITH REAL SUN INFORMATION
+		World.SUN_DIRECTION.y = Scene.SunProxy->Direction.y;
+		World.SUN_DIRECTION.z = Scene.SunProxy->Direction.z;
 
 
-		World.SUN_ENERGY.r = Scene.LightProxyInstances[0]->Color.x;
-		World.SUN_ENERGY.g = Scene.LightProxyInstances[0]->Color.y;
-		World.SUN_ENERGY.b = Scene.LightProxyInstances[0]->Color.z;		
+		World.SUN_ENERGY.r = Scene.SunProxy->Color.x;
+		World.SUN_ENERGY.g = Scene.SunProxy->Color.y;
+		World.SUN_ENERGY.b = Scene.SunProxy->Color.z;		
 	}
 }
 

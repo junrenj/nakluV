@@ -81,7 +81,6 @@ public:
 
     // Mutual Dictionary for Node and Mesh
     std::unordered_map<UNode*, URenderMesh*> Nodes2RenderMeshes;
-    std::unordered_map<URenderMesh*, UNode*> RenderMeshes2Nodes;
 
     // Mesh Data
     std::vector<URenderMesh*> AllMeshes;
@@ -90,7 +89,10 @@ public:
     std::vector<UTexture*> Textures;
     std::vector<FMaterial*> Materials;
     std::vector<UCamera*> Cameras;
+
+    // Light Data
     std::unordered_map<ULight*, UNode*> Lights;
+    FLightRenderProxy* SunProxy = nullptr;
     std::unordered_map<UNode*, UEnvironment*> Environments;
 
     // VertexBuffer

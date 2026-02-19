@@ -23,7 +23,8 @@ public:
         std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode,
         std::unordered_map< const S72::Mesh* , URenderMesh* >& S72Mesh2UMesh);
     // Bounding Box
-    static void BuildUNodesBBoxIterate(UNode* InNode);
+    static void BuildUNodesBBoxIterate(UNode* InNode, 
+        const std::unordered_map<UNode*, URenderMesh*>& Nodes2RenderMeshes);
     // New Material Structure
     static void BuildUMaterialData(std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat, 
         std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex , URenderScene& Scene);

@@ -130,7 +130,7 @@ void UDebugMessage::PrintRenderSceneMesh(const URenderScene& Scene)
     std::cout << "======= Render Scene Mesh Debug Info =======" << std::endl;
     
     int MeshIndex = 0;
-    for (const auto& [NodePtr, Mesh] : Scene.Nodes2RenderMeshes) 
+    for (const auto& Mesh : Scene.AllMeshes) 
     {
         std::cout << "\n[Mesh #" << MeshIndex++ << "]" << std::endl;
         

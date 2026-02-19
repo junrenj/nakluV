@@ -1190,7 +1190,6 @@ void RTG::run(Application &application)
 			}
 			application.update(dt);
 		}
-
 		
 		// acquire a workspace
 		uint32_t WorkspaceIndex;
@@ -1268,7 +1267,6 @@ retry:
 				throw std::runtime_error("Failed to acquire swapchain image (" + std::string(string_VkResult(Result)) + ")!");
 			}
 		}
-
 
 		// call render function:
 		application.render(*this, RenderParams

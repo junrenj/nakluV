@@ -9,7 +9,6 @@
 void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& RenderScene)
 {
     CurrentS72 = S72::load(S72Path);
-
     std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
     std::unordered_map< const S72::Material* , FMaterial* > S72Mat2UMat;
     std::unordered_map< const S72::Node* , UNode* > S72Node2UNode;
@@ -26,7 +25,7 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     // 1. Build UNode Tree
     BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat, S72Node2UNode, S72Mesh2UMesh);
     // 2. Build UNode BBox
-    BuildUNodesBBoxIterate(RenderScene.RootNode);
+    BuildUNodesBBoxIterate(RenderScene.RootNode, RenderScene.Nodes2RenderMeshes);
     // 3. Generate RenderProxy
     RenderScene.GenerateMeshProxy();
     RenderScene.GenerateLightProxy();
@@ -82,7 +81,6 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
         {
             URenderMesh* NewMesh = it->second;
             RenderScene.Nodes2RenderMeshes[NewNode] = NewMesh;
-            RenderScene.RenderMeshes2Nodes[NewMesh] = NewNode;
         }
     }
 
@@ -200,24 +198,26 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
     return NewNode;
 }
 
-void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode)
+void URenderExtractor::BuildUNodesBBoxIterate(UNode* InNode, const std::unordered_map<UNode*, URenderMesh*>& Nodes2RenderMeshes)
 {
     FAABB BBox_World;
     BBox_World.Min = glm::vec3(FLT_MAX);
     BBox_World.Max = glm::vec3(-FLT_MAX);
-    // if has mesh first use mesh's bounding box
-    if(InNode->RenderProxy)
+
+    auto it = Nodes2RenderMeshes.find(InNode);
+    if (it != Nodes2RenderMeshes.end())
     {
-        BBox_World = InNode->BoundingBox;
+        // if has mesh first use mesh's bounding box
+        URenderMesh* Mesh = it->second;
+        BBox_World = Mesh->BoundingBox;
+        InNode->BoundingBox = BBox_World;
     }
 
     // Iterate Child
     for (UNode* Child : InNode->Children)
     {
-        BuildUNodesBBoxIterate(Child);
+        BuildUNodesBBoxIterate(Child, Nodes2RenderMeshes);
     }
-
-    InNode->BoundingBox = BBox_World;
 }
 //END:  UNode Data Extract
 
