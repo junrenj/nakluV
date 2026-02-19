@@ -119,7 +119,7 @@ void Helpers::destroy_buffer(AllocatedBuffer &&buffer)
 	this->Free(std::move(buffer.allocation));
 }
 
-Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map) {
+Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map, uint8_t layers, VkImageCreateFlags flag) {
 	AllocatedImage image;
 	
 	image.extent = extent;
@@ -128,6 +128,7 @@ Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat
 	VkImageCreateInfo CreateInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.flags = flag,
 		.imageType = VK_IMAGE_TYPE_2D,
 		.format = format,
 		.extent
@@ -137,7 +138,7 @@ Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat
 			.depth = 1
 		},
 		.mipLevels = 1,
-		.arrayLayers = 1,
+		.arrayLayers = layers,
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.tiling = tiling,
 		.usage = usage,

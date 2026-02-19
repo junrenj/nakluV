@@ -342,7 +342,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.flags = 0,
 				.image = Image.handle,
-				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				// .viewType = Image.layers == VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
 				.format = Image.format,
 				// .components sets swizzling and is fine when zero-initialized
 				.subresourceRange
@@ -1261,15 +1261,33 @@ void UAssignmentOne::ReserveTextures()
     // TODO: if we have mipmap, it would pull more on it. for now mipmap level0 is enough
     for (uint32_t i = 0; i < TexturesData.size(); i++)
     {
-        const UTexture::FTextureMipMap& MipmapData = *(TexturesData[i]->MipmapsData[0]);
-        Textures.emplace_back(rtg.helpers.create_image(
-			VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
-			VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
-			Helpers::Unmapped
-		));
+		const UTexture* Texture = TexturesData[i];
+        const UTexture::FTextureMipMap& MipmapData = *(Texture->MipmapsData[0]);
+		switch (Texture->Type)
+		{
+			case UTexture::EType::Flat:
+			Textures.emplace_back(rtg.helpers.create_image(
+				VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
+				VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+				Helpers::Unmapped
+			));
+				break;
+			case UTexture::EType::Cube:
+			Textures.emplace_back(rtg.helpers.create_image(
+				VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
+				VK_FORMAT_R32G32B32A32_SFLOAT, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
+				Helpers::Unmapped,
+				6,
+				VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
+			));
+				break;
+		}
         // transfer data
         rtg.helpers.transfer_to_image(MipmapData.BulkData.data(), sizeof(MipmapData.BulkData[0]) * MipmapData.BulkData.size(), Textures.back());
     }

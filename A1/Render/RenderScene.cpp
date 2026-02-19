@@ -71,7 +71,6 @@ void URenderScene::GenerateMeshProxy()
 
 void URenderScene::GenerateLightProxy()
 {
-    //TODO: Finish other kind of light
     for (auto const& [Light, Node] : Lights)
     {
         FLightRenderProxy* LightProxy = new FLightRenderProxy();
@@ -161,7 +160,6 @@ void URenderScene::UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling)
             }
         }
     }
-    
 }
 
 uint32_t URenderScene::GetTextureIdx(UTexture* Texture) const
