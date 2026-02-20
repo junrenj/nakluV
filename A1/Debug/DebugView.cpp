@@ -225,7 +225,7 @@ void UDebugMessage::PrintMaterial(const URenderScene& Scene)
         
         std::cout << "  > Common Maps: \n";
         std::cout << "    NormalMap: " << FormatTexIdx(Mat->NormalTexIdx) 
-                  << " | Displacement: " << FormatTexIdx(Mat->DisplacementIdx) << "\n";
+                  << " | Displacement: " << FormatTexIdx(Mat->DisplacementTexIdx) << "\n";
 
         if (Mat->Type == EMaterialType::PBR || Mat->Type == EMaterialType::Lambertian) {
             std::cout << "  > Surface Attributes:\n";

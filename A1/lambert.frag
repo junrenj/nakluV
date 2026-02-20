@@ -21,7 +21,18 @@ layout(set=4,binding=0,std140) readonly buffer Lights
 	Light[] LIGHTS;
 };
 
-layout(set=3,binding=0) uniform sampler2D TEXTURE;
+layout(set=1,binding=1,std140) uniform Camera
+{
+	vec3 EYE;
+};
+
+layout(set=3,binding=0) uniform sampler2D ALBEDO_TEX;
+layout(set=3,binding=1) uniform sampler2D ROUGHNESS_TEX;
+layout(set=3,binding=2) uniform sampler2D METALNESS_TEX;
+layout(set=3,binding=3) uniform sampler2D NORMAL_TEX;
+layout(set=3,binding=4) uniform sampler2D DISPLACEMENT_TEX;
+layout(set=3,binding=5) uniform sampler2D ENV_TEX;
+
 layout(location=0) in vec3 position;
 layout(location=1) in vec3 normal;
 layout(location=2) in vec2 texcoord;
@@ -31,17 +42,16 @@ layout(location=0) out vec4 outColor;
 
 void main() 
 {
-	vec3 n = normalize(normal);
-	vec3 albedo = texture(TEXTURE, texcoord).rgb;
+	// Basic Info
+	vec3 albedo = texture(ALBEDO_TEX, texcoord).rgb;
+	vec3 normal = texture(NORMAL_TEX,texcoord).rgb;
+	vec3 env = texture(ENV_TEX, texcoord).rgb;
+	float metal = texture(METALNESS_TEX, texcoord).r;
+	float rough = texture(ROUGHNESS_TEX, texcoord).r;
 
-	// For GPU Bottle neck
-	// vec3 albedo = vec3(0.0);
-	// int numSamples = 100000;
-	// for(int i=0;i < numSamples;i++)
-	// {
-    // 	albedo += texture(TEXTURE, texcoord).rgb;
-	// }
-	// albedo /= numSamples;
+	// Dir
+	vec3 n = normalize(normal);
+	vec3 v = normalize(position - EYE);
 
 	// hemisphere sky + directional sun:
 	vec3 e = SKY_ENERGY * (dot(n, SKY_DIRECTION) * 0.5 + 0.5)

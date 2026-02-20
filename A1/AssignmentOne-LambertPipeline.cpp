@@ -35,13 +35,19 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
 		VK( vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set0_Camera) );
 	}
     { //the set1_World layout holds world info in a uniform buffer used in the fragment shader:
-		std::array< VkDescriptorSetLayoutBinding, 1 > bindings{
+		std::array< VkDescriptorSetLayoutBinding, 2 > bindings{
 			VkDescriptorSetLayoutBinding{
 				.binding = 0,
 				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 				.descriptorCount = 1,
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
 			},
+            VkDescriptorSetLayoutBinding{
+				.binding = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorCount = 1,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+			}
 		};
 		
 		VkDescriptorSetLayoutCreateInfo create_info{
@@ -73,9 +79,38 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
     }
 
     { //the set3_TEXTURE layout has a single descriptor for a sampler2D used in the fragment shader:
-        std::array<VkDescriptorSetLayoutBinding, 1> bindings{
-            VkDescriptorSetLayoutBinding{
+        std::array<VkDescriptorSetLayoutBinding, 5> bindings{
+            VkDescriptorSetLayoutBinding
+            {
                 .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 2,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 3,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 4,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,

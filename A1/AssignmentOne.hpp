@@ -192,6 +192,8 @@ struct UAssignmentOne : RTG::Application
 		mat4 CLIP_FROM_WORLD;
 
 		FLambertPipeline::FWorld World;
+		
+		struct { float x, y, z, padding_; } EYE;
 
 		//--------------------------------------------------------------------
 		//Rendering function, uses all the resources above to queue work to draw a frame:

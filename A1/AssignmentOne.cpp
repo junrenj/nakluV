@@ -429,11 +429,13 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		for (VkDescriptorSet &DescriptorSet : TextureDescriptors)
 		{
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &DescriptorSet));
+			// write descriptors for textures
+			std::vector< VkDescriptorImageInfo > Infos(Textures.size());
+			std::vector< VkWriteDescriptorSet > Writes(Textures.size());
+
 		}
 		
-		// write descriptors for textures
-		std::vector< VkDescriptorImageInfo > Infos(Textures.size());
-		std::vector< VkWriteDescriptorSet > Writes(Textures.size());
+		
 
 		for (Helpers::AllocatedImage const &Image : Textures)
 		{

@@ -255,7 +255,7 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
     {
         const S72::Texture& S72Tex = *InS72Mat.displacement_map;
         UTexture* Tex = S72Tex2UTex[&S72Tex];
-        NewMat->DisplacementIdx = Scene.GetTextureIdx(Tex);
+        NewMat->DisplacementTexIdx = Scene.GetTextureIdx(Tex);
     }
 
     // 2. deal with variant

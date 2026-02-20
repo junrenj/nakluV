@@ -20,7 +20,7 @@ struct FMaterial
 
     // for all kind of materials
     uint32_t NormalTexIdx = INVALID_TEXTURE;
-    uint32_t DisplacementIdx = INVALID_TEXTURE;
+    uint32_t DisplacementTexIdx = INVALID_TEXTURE;
 
     // PBR and Lambertian Only
     glm::vec4 Albedo;   // for better alignment
