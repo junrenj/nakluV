@@ -1278,7 +1278,7 @@ void UAssignmentOne::ReserveTextures()
 			case UTexture::EType::Cube:
 			Textures.emplace_back(rtg.helpers.create_image(
 				VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
-				VK_FORMAT_R32G32B32A32_SFLOAT, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				VK_FORMAT_R32G32B32A32_SFLOAT, //how to interpret image data (in this case, 32 FRGBA)
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
@@ -1291,7 +1291,6 @@ void UAssignmentOne::ReserveTextures()
         // transfer data
         rtg.helpers.transfer_to_image(MipmapData.BulkData.data(), sizeof(MipmapData.BulkData[0]) * MipmapData.BulkData.size(), Textures.back());
     }
-    
 }
 //~END Load Texture
 

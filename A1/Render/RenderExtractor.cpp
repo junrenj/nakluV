@@ -1,6 +1,7 @@
 #include "RenderExtractor.hpp"
 #include "glm/glm/glm.hpp"
 #include "../Animation/AnimationPlayer.hpp"
+#include "Color.hpp"
 #include <iostream>
 #include <fstream>
 #define STB_IMAGE_IMPLEMENTATION
@@ -398,9 +399,37 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
     Mip0->SizeX = static_cast<uint32_t>(Width);
     Mip0->SizeY = static_cast<uint32_t>(Height);
     
-    size_t ImageSize = Width * Height * 4; // 4 
-    Mip0->BulkData.resize(ImageSize);
-    std::memcpy(Mip0->BulkData.data(), Pixels, ImageSize);
+    if(InTexture.format == S72::Texture::Format::rgbe)
+    {
+        size_t NumPixels = Width * Height;
+        size_t TotalBtyes = NumPixels * 4 * sizeof(float); // R32G32B32A32_SFLOAT
+        Mip0->BulkData.resize(TotalBtyes);
+
+        float* FloatData = reinterpret_cast<float*>(Mip0->BulkData.data());
+        for (size_t i = 0; i < NumPixels; i++)
+        {
+            glm::u8vec4 RGBE(
+                Pixels[i * 4 + 0],
+                Pixels[i * 4 + 1],
+                Pixels[i * 4 + 2],
+                Pixels[i * 4 + 3]
+            );
+
+            glm::vec3 RGBF = RGBE2Float(RGBE);
+
+            FloatData[i * 4 + 0] = RGBF.r;
+            FloatData[i * 4 + 1] = RGBF.g;
+            FloatData[i * 4 + 2] = RGBF.b;
+            FloatData[i * 4 + 3] = 1.0f;
+        }
+    }
+    else
+    {
+        size_t ImageSize = Width * Height * 4; // 4 
+        Mip0->BulkData.resize(ImageSize);
+        std::memcpy(Mip0->BulkData.data(), Pixels, ImageSize);
+    }
+
 
     NewTexture->MipmapsData.push_back(std::move(Mip0));
 
