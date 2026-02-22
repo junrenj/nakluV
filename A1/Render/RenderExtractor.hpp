@@ -29,7 +29,7 @@ public:
     static void BuildUMaterialData(std::unordered_map< const S72::Material* , FMaterial* >& S72Mat2UMat, 
         std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex , URenderScene& Scene);
     static FMaterial* CloneUMaterialFromS72Material(const S72::Material& InS72Mat, 
-        std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, const URenderScene& Scene);
+        std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, URenderScene& Scene);
     // New Texture Structure
     static void BuildUTextureData(std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, URenderScene& Scene);
     static UTexture* ReadBulkDataFromImage(const S72::Texture& InTexture);

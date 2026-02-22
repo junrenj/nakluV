@@ -67,6 +67,7 @@ struct UAssignmentOne : RTG::Application
 		VkDescriptorSetLayout Set2_Transforms = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set3_TEXTURE = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set4_Lights = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set5_EnvTex = VK_NULL_HANDLE;
 
         // types for descriptors:
 		struct FWorld
@@ -145,7 +146,9 @@ struct UAssignmentOne : RTG::Application
 		std::vector< VkImageView > TextureViews;
 		VkSampler TextureSampler = VK_NULL_HANDLE;
 		VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
-		std::vector< VkDescriptorSet > TextureDescriptors;
+		std::vector< VkDescriptorSet > MaterialDescriptors;
+		VkDescriptorPool EnvTexDescriptorPool = VK_NULL_HANDLE;
+		std::vector< VkDescriptorSet > EnvTexDescriptors;
 
 		//--------------------------------------------------------------------
 		//Resources that change when the swapchain is resized:

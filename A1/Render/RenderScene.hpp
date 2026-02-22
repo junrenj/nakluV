@@ -40,8 +40,8 @@ public:
 
     UNode* Parent = nullptr;    // If a node no Parent, which means it is root
     std::vector< UNode * > Children;
-	UEnvironment* environment = nullptr;
-	ULight* light = nullptr;
+	UEnvironment* Environment = nullptr;
+	ULight* Light = nullptr;
     FMeshRenderProxy* RenderProxy = nullptr;
     
     FAABB BoundingBox;      // Always Object-Coordinate
@@ -68,7 +68,7 @@ public:
     }Transform;
     static_assert(sizeof(FTransform) == 16*4 + 16*4 + 16*4, "Transform is the expected size.");
    
-    uint32_t Texture = 0;
+    uint32_t MaterialIdx = 0;
 };
 
 class URenderScene
@@ -88,6 +88,7 @@ public:
     // Other Data
     std::vector<UTexture*> Textures;
     std::vector<FMaterial*> Materials;
+    FMaterial* EnvMaterial;     // unique env in the scene
     std::vector<UCamera*> Cameras;
 
     // Light Data
@@ -111,7 +112,30 @@ public:
     void UpdateTransform();
     void UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling = true);
 
+    uint32_t GetMaterialIdx(const FMaterial* InMaterial) const;
+
     uint32_t GetTextureIdx(UTexture* Texture) const;
+    uint32_t GetDefaultWhiteTexIdx()const {return 0;}   // white -> 0
+    uint32_t GetDefaultBlackTexIdx()const {return 1;}   // black -> 1
+    uint32_t GetDefaultNormalTexIdx()const {return 2;}  // normal ->2
+    uint32_t GetDefaultMatColTexIdx()const {return 3;}  // Magenta ->3
+
+    URenderScene()
+    {
+        // Default Textures
+        UTexture* DefaultWhiteTex = UTexture::GetDefaultWhiteTex();
+        Textures.push_back(DefaultWhiteTex);            // white -> 0
+        UTexture* DefaultBlackTex = UTexture::GetDefaultBlackTex();
+        Textures.push_back(DefaultBlackTex);            // black -> 1
+        UTexture* DefaultNormalTex = UTexture::GetDefaultNormalTex();
+        Textures.push_back(DefaultNormalTex);           // normal ->2
+        UTexture* DefaultMagentaTex = UTexture::GetDefualtFallbackColorTex();
+        Textures.push_back(DefaultMagentaTex);           // Magenta ->3
+
+        // Default Material
+        Materials.push_back(FMaterial::GetDefaultMaterial());
+    }
+private:
 };
 
 class URenderMesh

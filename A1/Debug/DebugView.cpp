@@ -169,7 +169,7 @@ void UDebugMessage::PrintRenderProxies(const URenderScene& Scene)
         const auto& p = Scene.MeshProxyInstances[i];
         std::cout << "Proxy [" << i << "]:" << std::endl;
         std::cout << "  - Vertex: StartIdx=" << p->FirstVertexIdx << ", Count=" << p->VertexNum << std::endl;
-        std::cout << "  - Texture ID: " << p->Texture << std::endl;
+        std::cout << "  - Texture ID: " << p->MaterialIdx << std::endl;
         
         PrintMatrix("WORLD_FROM_LOCAL", p->Transform.WORLD_FROM_LOCAL);
         std::cout << "-----------------------------------------------" << std::endl;
@@ -229,17 +229,17 @@ void UDebugMessage::PrintMaterial(const URenderScene& Scene)
 
         if (Mat->Type == EMaterialType::PBR || Mat->Type == EMaterialType::Lambertian) {
             std::cout << "  > Surface Attributes:\n";
-            std::cout << "    Albedo:    [" << Mat->Albedo.r << ", " << Mat->Albedo.g << ", " << Mat->Albedo.b << "]\n";
+            std::cout << "    Albedo:    [" << Mat->AlbedoTexIdx << "]\n";
             
             if (Mat->Type == EMaterialType::PBR) {
-                std::cout << "    Roughness: " << Mat->Roughness << " | Metalness: " << Mat->Metalness << "\n";
+                std::cout << "    Roughness: " << Mat->RoughnessTexIdx << " | Metalness: " << Mat->MetalnessTexIdx << "\n";
             }
             
             std::cout << "  > Surface Maps:\n";
-            std::cout << "    AlbedoTex:    " << FormatTexIdx(Mat->AlbedoTex) << "\n";
+            std::cout << "    AlbedoTex:    " << FormatTexIdx(Mat->AlbedoTexIdx) << "\n";
             if (Mat->Type == EMaterialType::PBR) {
-                std::cout << "    RoughnessTex: " << FormatTexIdx(Mat->RoughnessTex) << "\n";
-                std::cout << "    MetalnessTex: " << FormatTexIdx(Mat->MetalnessTex) << "\n";
+                std::cout << "    RoughnessTex: " << FormatTexIdx(Mat->RoughnessTexIdx) << "\n";
+                std::cout << "    MetalnessTex: " << FormatTexIdx(Mat->MetalnessTexIdx) << "\n";
             }
         } else if (Mat->Type == EMaterialType::Mirror) {
             std::cout << "  > Attributes: Perfect specular reflection (Roughness=0, Metal=1)\n";

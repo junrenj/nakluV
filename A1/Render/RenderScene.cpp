@@ -28,15 +28,6 @@ void URenderScene::GenerateMeshProxy()
     for (URenderMesh* Mesh : AllMeshes)
     {
         const uint32_t MeshBytesCount = static_cast<uint32_t>(Mesh->VertexData.size());
-        
-        if(Mesh->Material->Type != EMaterialType::Environment && Mesh->Material->AlbedoTex == INVALID_TEXTURE)
-        {
-            // for god sake, just make a 1x1 pixel texture stand for albedo
-            UTexture* NewTexture = new UTexture();
-            NewTexture->Get1x1PixelTexture(Mesh->Material->Albedo.r, Mesh->Material->Albedo.g, Mesh->Material->Albedo.b);
-            Textures.push_back(NewTexture);
-            Mesh->Material->AlbedoTex = static_cast<uint32_t>(Textures.size() - 1);
-        }
 
         TotalBytes += MeshBytesCount;
         Mesh->FirstVertexIdx = Index;
@@ -50,18 +41,14 @@ void URenderScene::GenerateMeshProxy()
         {
             URenderMesh* RenderMesh = it->second;
             FMeshRenderProxy* ProxyInstance = new FMeshRenderProxy();
+            // Vertices
             ProxyInstance->FirstVertexIdx = RenderMesh->FirstVertexIdx;
             ProxyInstance->VertexNum = static_cast<uint32_t>(RenderMesh->VertexData.size()) / BytePerVertex;
+            // Transform
             ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
             ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = UNode::GetLocal2WorldMatrix(Node);
-            if(RenderMesh->Material->Type == EMaterialType::Environment)
-            {
-                ProxyInstance->Texture = 0;     // TODO: fix it!
-            }
-            else
-            {
-                ProxyInstance->Texture = RenderMesh->Material->AlbedoTex;
-            }
+            // Material
+            ProxyInstance->MaterialIdx = GetMaterialIdx(RenderMesh->Material);
 
             Node->RenderProxy = ProxyInstance;
             MeshProxyInstances.push_back(ProxyInstance);
@@ -159,6 +146,20 @@ void URenderScene::UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling)
                 RenderProxy->bCanSee = true;
             }
         }
+    }
+}
+
+uint32_t URenderScene::GetMaterialIdx(const FMaterial* InMaterial) const
+{
+    auto It = std::find(Materials.begin(), Materials.end(), InMaterial);
+
+    if (It != Materials.end()) 
+    {
+        return static_cast<uint32_t>(std::distance(Materials.begin(), It));
+    } 
+    else 
+    {
+        return 0;
     }
 }
 

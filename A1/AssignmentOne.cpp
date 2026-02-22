@@ -342,7 +342,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.flags = 0,
 				.image = Image.handle,
-				// .viewType = Image.layers == VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
 				.format = Image.format,
 				// .components sets swizzling and is fine when zero-initialized
 				.subresourceRange
@@ -390,14 +390,15 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 
 	// create the texture descriptor pool	
 	{
-		uint32_t PerTexture = uint32_t(Textures.size());
+		const std::vector<FMaterial*>& Materials = Scene.Materials;
+		const uint32_t MaterialCount = uint32_t(Materials.size());
 
 		std::array< VkDescriptorPoolSize, 1 > PoolSizes
 		{
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1 * 1 * PerTexture,	 // one descriptor per set, one set per texture
+				.descriptorCount = 5 * MaterialCount,	 // one descriptor per set, one set 5 texture
 			}
 		};
 
@@ -405,7 +406,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0, 	// because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-			.maxSets = 1 * PerTexture, 	// one set per texture
+			.maxSets = MaterialCount, 	// one set per texture
 			.poolSizeCount = uint32_t(PoolSizes.size()),
 			.pPoolSizes = PoolSizes.data(),
 		};
@@ -413,52 +414,133 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &TextureDescriptorPool));
 	}
 
-	 // allocate and write the texture descriptor sets
+	// create env texture descriptor pool
 	{
-		// allocate the descriptors (using the same alloc_info):
-		VkDescriptorSetAllocateInfo AllocInfo
+		const std::unordered_map<UNode*, UEnvironment*>& Environments = Scene.Environments;
+		const uint32_t EnvCount = uint32_t(Environments.size());
+
+		std::array< VkDescriptorPoolSize, 1 > PoolSizes
 		{
-			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-			.descriptorPool = TextureDescriptorPool,
-			.descriptorSetCount = 1,
-			.pSetLayouts = &LambertPipeline.Set3_TEXTURE,
+			VkDescriptorPoolSize
+			{
+				.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1 * EnvCount,	 // one descriptor per set, one set 5 texture
+			}
 		};
 
-		TextureDescriptors.assign(Textures.size(), VK_NULL_HANDLE);
-
-		for (VkDescriptorSet &DescriptorSet : TextureDescriptors)
+		VkDescriptorPoolCreateInfo CreateInfo
 		{
-			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &DescriptorSet));
-			// write descriptors for textures
-			std::vector< VkDescriptorImageInfo > Infos(Textures.size());
-			std::vector< VkWriteDescriptorSet > Writes(Textures.size());
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.flags = 0, 	// because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
+			.maxSets = EnvCount, 	// one set per texture
+			.poolSizeCount = uint32_t(PoolSizes.size()),
+			.pPoolSizes = PoolSizes.data(),
+		};
 
-		}
-		
-		
+		VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &EnvTexDescriptorPool));
+	}
 
-		for (Helpers::AllocatedImage const &Image : Textures)
+	 // allocate and write the texture descriptor sets
+	{
+		const uint32_t TexCountPerMat = 5;
+		const std::vector<FMaterial*>& Materials = Scene.Materials;
+		const size_t MaterialCount = Materials.size();
+
+		MaterialDescriptors.assign(MaterialCount, VK_NULL_HANDLE);
+
+		for (uint32_t i = 0; i < MaterialCount; i++)
 		{
-			size_t Index = &Image - &Textures[0];
-
-			Infos[Index] = VkDescriptorImageInfo
+			VkDescriptorSetAllocateInfo AllocInfo
 			{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+				.descriptorPool = TextureDescriptorPool,
+				.descriptorSetCount = 1,
+				.pSetLayouts = &LambertPipeline.Set3_TEXTURE,
+			};
+			VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &MaterialDescriptors[i]));
+
+			std::vector<VkDescriptorImageInfo> Infos(TexCountPerMat);
+			std::vector<VkWriteDescriptorSet> Writes(TexCountPerMat);
+			const FMaterial* Material = Materials[i];
+			std::array<uint32_t, TexCountPerMat> Indices = 
+			{
+				Material->AlbedoTexIdx, 
+				Material->RoughnessTexIdx, 
+				Material->MetalnessTexIdx,
+				Material->NormalTexIdx, 
+				Material->DisplacementTexIdx
+			};
+
+			for (uint32_t k = 0; k < TexCountPerMat; k++)
+			{
+				const uint32_t Index = Indices[k];
+				Infos[k] = VkDescriptorImageInfo
+				{
+					.sampler = TextureSampler,
+					.imageView = TextureViews[Index],
+					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				};
+				Writes[k] = VkWriteDescriptorSet 
+				{
+					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.dstSet = MaterialDescriptors[i],
+					.dstBinding = k,
+					.descriptorCount = 1,
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.pImageInfo = &Infos[k],
+				};
+			}
+
+			vkUpdateDescriptorSets(rtg.device, TexCountPerMat, Writes.data(), 0, nullptr);
+		}
+	}
+	
+	// env Texture push
+	{
+		const std::unordered_map<UNode*, UEnvironment*>& Environments = Scene.Environments;
+		EnvTexDescriptors.assign(Environments.size(), VK_NULL_HANDLE);
+		
+		std::vector<VkWriteDescriptorSet> Writes;
+		Writes.reserve(Environments.size());
+
+		for (auto& [Node, Env] : Environments)
+		{
+			if (!Env) continue;
+
+			EnvTexDescriptors.push_back(VK_NULL_HANDLE);
+
+			VkDescriptorSetAllocateInfo AllocInfo{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+				.descriptorPool = EnvTexDescriptorPool,
+				.descriptorSetCount = 1,
+				.pSetLayouts = &LambertPipeline.Set5_EnvTex,
+			};
+
+			VK(vkAllocateDescriptorSets(
+				rtg.device,
+				&AllocInfo,
+				&EnvTexDescriptors.back()
+			));
+
+			VkDescriptorImageInfo info{
 				.sampler = TextureSampler,
-				.imageView = TextureViews[Index],
+				.imageView = TextureViews[Env->EnvTexture],
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
-			Writes[Index] = VkWriteDescriptorSet
-			{
+
+			VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = TextureDescriptors[Index],
+				.dstSet = EnvTexDescriptors.back(),
 				.dstBinding = 0,
-				.dstArrayElement = 0,
 				.descriptorCount = 1,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &Infos[Index],
+				.pImageInfo = &info,
 			};
+
+			Writes.push_back(write);
 		}
-		vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+
+		vkUpdateDescriptorSets(rtg.device,uint32_t(Writes.size()),Writes.data(),0,nullptr);
 	}
 }
 
@@ -477,7 +559,16 @@ UAssignmentOne::~UAssignmentOne()
 		TextureDescriptorPool = nullptr;
 
 		// this also frees the descriptor sets allocated from the pool:
-		TextureDescriptors.clear();
+		MaterialDescriptors.clear();
+	}
+
+	if(EnvTexDescriptorPool)
+	{
+		vkDestroyDescriptorPool(rtg.device, EnvTexDescriptorPool, nullptr);
+		EnvTexDescriptorPool = nullptr;
+
+		// this also frees the descriptor sets allocated from the pool:
+		EnvTexDescriptors.clear();
 	}
 
 	if(TextureSampler)
@@ -1087,7 +1178,7 @@ void UAssignmentOne::update(float dt)
 		World.SKY_ENERGY.g = 0.1f;
 		World.SKY_ENERGY.b = 0.2f;
 
-		World.SUN_DIRECTION.x = Scene.SunProxy->Direction.x;  // TODO:REPLACE IT WITH REAL SUN INFORMATION
+		World.SUN_DIRECTION.x = Scene.SunProxy->Direction.x;
 		World.SUN_DIRECTION.y = Scene.SunProxy->Direction.y;
 		World.SUN_DIRECTION.z = Scene.SunProxy->Direction.z;
 
@@ -1480,12 +1571,11 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 
 	// Bind World and Transforms descriptor sets:
 	{
-		std::array< VkDescriptorSet, 4 > DescriptorSets
+		std::array< VkDescriptorSet, 3 > DescriptorSets
 		{
             workspace.CameraDescriptors,    // 0：Camera
 			workspace.WorldDescriptors, 	// 1: World
 			workspace.TransformDescriptors, // 2: Transforms
-			workspace.LightsDescriptors,	// 3: Lights
 		};
 		vkCmdBindDescriptorSets
 		(
@@ -1497,8 +1587,14 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 			0, nullptr // DynamicOffsets Count, ptr
 		);
 	}
-
-	// Camera descriptor set is still bound, but unused(!)
+	{
+    	vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            LambertPipeline.Layout, 4, 1, &workspace.LightsDescriptors, 0, nullptr);
+	}
+	{
+    	vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            LambertPipeline.Layout, 5, 1, &EnvTexDescriptors[0], 0, nullptr);
+	}
 
 	// Use UMeshRenderProxy as ObjectInstance
 	const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
@@ -1515,7 +1611,7 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
 			LambertPipeline.Layout,				// Pipeline Layout
 			3, 	// Third Sets
-			1, &TextureDescriptors[Proxy->Texture],	// descriptor sets count, ptr
+			1, &MaterialDescriptors[Proxy->MaterialIdx],	// descriptor sets count, ptr
 			0, nullptr	// Dynamic offsets count, ptr
 		);
 		vkCmdDraw(workspace.command_buffer, Proxy->VertexNum, 1, Proxy->FirstVertexIdx, i);

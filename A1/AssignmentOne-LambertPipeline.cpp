@@ -34,6 +34,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
 
 		VK( vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set0_Camera) );
 	}
+    
     { //the set1_World layout holds world info in a uniform buffer used in the fragment shader:
 		std::array< VkDescriptorSetLayoutBinding, 2 > bindings{
 			VkDescriptorSetLayoutBinding{
@@ -80,6 +81,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
 
     { //the set3_TEXTURE layout has a single descriptor for a sampler2D used in the fragment shader:
         std::array<VkDescriptorSetLayoutBinding, 5> bindings{
+            // 0. Albedo
             VkDescriptorSetLayoutBinding
             {
                 .binding = 0,
@@ -87,6 +89,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
+            // 1. Roughness
             VkDescriptorSetLayoutBinding
             {
                 .binding = 1,
@@ -94,6 +97,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
+            // 2. Metalness
             VkDescriptorSetLayoutBinding
             {
                 .binding = 2,
@@ -101,6 +105,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
+            // 3. Normal
             VkDescriptorSetLayoutBinding
             {
                 .binding = 3,
@@ -108,6 +113,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
+            // 4. Displacement
             VkDescriptorSetLayoutBinding
             {
                 .binding = 4,
@@ -145,13 +151,35 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
         VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set4_Lights));
     }
 
+    { //the Set5_EnvTex layout has a single descriptor for a sampler2D used in the fragment shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings
+        {
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+        };
+        
+        VkDescriptorSetLayoutCreateInfo create_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set5_EnvTex));
+    }
+
     { //create pipeline layout:
-        std::array<VkDescriptorSetLayout, 5> layouts {
+        std::array<VkDescriptorSetLayout, 6> layouts {
             Set0_Camera,
             Set1_World,
             Set2_Transforms,
             Set3_TEXTURE,
             Set4_Lights,
+            Set5_EnvTex,
         };
 
         VkPipelineLayoutCreateInfo create_info {
@@ -296,6 +324,11 @@ void UAssignmentOne::FLambertPipeline::Destroy(RTG &rtg)
     {
         vkDestroyDescriptorSetLayout(rtg.device, Set4_Lights, nullptr);
         Set4_Lights = VK_NULL_HANDLE;
+    }
+
+    if (Set5_EnvTex != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(rtg.device, Set5_EnvTex, nullptr);
+        Set5_EnvTex = VK_NULL_HANDLE;
     }
     
     if (Layout != VK_NULL_HANDLE) {

@@ -125,7 +125,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
             }
         }
 
-        NewNode->environment = NewEnvironment;
+        NewNode->Environment = NewEnvironment;
         RenderScene.Environments[NewNode] = NewEnvironment;
     }
 
@@ -181,7 +181,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
             NewLight->Tint.g = S72Light.tint.g;
             NewLight->Tint.b = S72Light.tint.b;
             NewLight->shadow = S72Light.shadow;
-            NewNode->light = NewLight;
+            NewNode->Light = NewLight;
             RenderScene.Lights[NewLight] = NewNode;
         }
     }
@@ -232,30 +232,49 @@ void URenderExtractor::BuildUMaterialData(
     {
         FMaterial* NewMaterial = CloneUMaterialFromS72Material(Mat, S72Tex2UTex, Scene);
         S72Mat2UMat[&Mat] = NewMaterial;
-        Scene.Materials.push_back(NewMaterial);
+        if(NewMaterial->Type == EMaterialType::Environment)
+        {
+            Scene.EnvMaterial = NewMaterial;
+        }
+        else
+        {
+            Scene.Materials.push_back(NewMaterial);
+        }
     }
 }
 
 FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
     const S72::Material& InS72Mat, 
     std::unordered_map< const S72::Texture* , UTexture* >& S72Tex2UTex, 
-    const URenderScene& Scene)
+    URenderScene& Scene)
 {
     FMaterial* NewMat = new FMaterial();
 
     // 1. Get general Tex Idx
     if(InS72Mat.normal_map)
     {
+        // if exist, find it!
         const S72::Texture& S72Tex = *InS72Mat.normal_map;
         UTexture* Tex = S72Tex2UTex[&S72Tex];
         NewMat->NormalTexIdx = Scene.GetTextureIdx(Tex);
     }
+    else
+    {
+        // if not exist, give a fallback
+        NewMat->NormalTexIdx = Scene.GetDefaultNormalTexIdx();
+    }
 
     if(InS72Mat.displacement_map)
     {
+        // if exist, find 
         const S72::Texture& S72Tex = *InS72Mat.displacement_map;
         UTexture* Tex = S72Tex2UTex[&S72Tex];
         NewMat->DisplacementTexIdx = Scene.GetTextureIdx(Tex);
+    }
+    else
+    {
+        // if not exist, give a fallback
+        NewMat->DisplacementTexIdx = Scene.GetDefaultWhiteTexIdx(); // 1 means no depth
     }
 
     // 2. deal with variant
@@ -270,7 +289,11 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
             // Albedo
             if (auto* col = std::get_if<S72::color>(&arg.albedo)) 
             {
-                NewMat->Albedo = glm::vec4(col->r, col->g, col->b, 1.0f);
+                // NewMat->Albedo = glm::vec4(col.r, col.g, col.b, 1.0f);
+                UTexture* NewTex = new UTexture();
+                NewTex->Get1x1PixelTexture(col->r, col->g, col->b);
+                Scene.Textures.push_back(NewTex);
+                NewMat->AlbedoTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
             } 
             else 
             {
@@ -279,15 +302,30 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 {
                     const S72::Texture& S72Tex = *Albedo;
                     UTexture* Tex = S72Tex2UTex[&S72Tex];
-                    NewMat->AlbedoTex = Scene.GetTextureIdx(Tex);
+                    NewMat->AlbedoTexIdx = Scene.GetTextureIdx(Tex);
                 }
-                NewMat->Albedo = glm::vec4(1.0f);
+                // NewMat->Albedo = glm::vec4(1.0f);
             }
 
             // Roughness
             if (auto* val = std::get_if<float>(&arg.roughness)) 
             {
-                NewMat->Roughness = *val;
+                float Roughness = *val;
+                if(Roughness == 0.0f)
+                {
+                    NewMat->RoughnessTexIdx = Scene.GetDefaultBlackTexIdx();
+                }
+                else if(Roughness == 1.0f)
+                {
+                    NewMat->RoughnessTexIdx = Scene.GetDefaultWhiteTexIdx();
+                }
+                else
+                {
+                    UTexture* NewTex = new UTexture();
+                    NewTex->Get1x1PixelTexture(Roughness, Roughness, Roughness);
+                    Scene.Textures.push_back(NewTex);
+                    NewMat->RoughnessTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
+                }
             } 
             else 
             {
@@ -296,25 +334,41 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 {
                     const S72::Texture& S72Tex = *Roughness;
                     UTexture* Tex = S72Tex2UTex[&S72Tex];
-                    NewMat->RoughnessTex = Scene.GetTextureIdx(Tex);
+                    NewMat->RoughnessTexIdx = Scene.GetTextureIdx(Tex);
                 }
-                NewMat->Roughness = 1.0f;
+                // NewMat->Roughness = 1.0f;
             }
 
             // Metalness
             if (auto* val = std::get_if<float>(&arg.metalness)) 
             {
-                NewMat->Metalness = *val;
-            } else 
+                float Metalness = *val;
+                if(Metalness == 0.0f)
+                {
+                    NewMat->MetalnessTexIdx = Scene.GetDefaultBlackTexIdx();
+                }
+                else if(Metalness == 1.0f)
+                {
+                    NewMat->MetalnessTexIdx = Scene.GetDefaultWhiteTexIdx();
+                }
+                else
+                {
+                    UTexture* NewTex = new UTexture();
+                    NewTex->Get1x1PixelTexture(Metalness, Metalness, Metalness);
+                    Scene.Textures.push_back(NewTex);
+                    NewMat->MetalnessTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
+                }
+            } 
+            else 
             {
                 auto* Metalness = std::get<S72::Texture*>(arg.metalness);
                 if(Metalness)
                 {
                     const S72::Texture& S72Tex = *Metalness;
                     UTexture* Tex = S72Tex2UTex[&S72Tex];
-                    NewMat->MetalnessTex = Scene.GetTextureIdx(Tex);
+                    NewMat->MetalnessTexIdx = Scene.GetTextureIdx(Tex);
                 }
-                NewMat->Metalness = 1.0f;
+                // NewMat->Metalness = 1.0f;
             }
         }
         else if constexpr (std::is_same_v<T, S72::Material::Lambertian>) 
@@ -323,7 +377,11 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
             // Lambertian 
             if (auto* col = std::get_if<S72::color>(&arg.albedo)) 
             {
-                NewMat->Albedo = glm::vec4(col->r, col->g, col->b, 1.0f);
+                // NewMat->Albedo = glm::vec4(col->r, col->g, col->b, 1.0f);
+                UTexture* NewTexture = new UTexture();
+                NewTexture->Get1x1PixelTexture(col->r, col->g, col->b);
+                Scene.Textures.push_back(NewTexture);
+                NewMat->AlbedoTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
             } 
             else 
             {
@@ -332,22 +390,30 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 {
                     const S72::Texture& S72Tex = *Albedo;
                     UTexture* Tex = S72Tex2UTex[&S72Tex];
-                    NewMat->AlbedoTex = Scene.GetTextureIdx(Tex);
+                    NewMat->AlbedoTexIdx = Scene.GetTextureIdx(Tex);
                 }
             }
-            NewMat->Roughness = 1.0f;
-            NewMat->Metalness = 0.0f;
+            // NewMat->Roughness = 1.0f;
+            // NewMat->Metalness = 0.0f;
+            NewMat->RoughnessTexIdx = Scene.GetDefaultWhiteTexIdx();
+            NewMat->MetalnessTexIdx = Scene.GetDefaultBlackTexIdx();
         }
         else if constexpr (std::is_same_v<T, S72::Material::Mirror>) 
         {
             NewMat->Type = EMaterialType::Mirror;
-            NewMat->Albedo = glm::vec4(1.0f);
-            NewMat->Roughness = 0.0f;
-            NewMat->Metalness = 1.0f;
+            // NewMat->Albedo = glm::vec4(1.0f);
+            // NewMat->Roughness = 0.0f;
+            // NewMat->Metalness = 1.0f;
+            NewMat->AlbedoTexIdx = Scene.GetDefaultWhiteTexIdx();
+            NewMat->RoughnessTexIdx = Scene.GetDefaultBlackTexIdx();
+            NewMat->MetalnessTexIdx = Scene.GetDefaultWhiteTexIdx();
         }
         else if constexpr (std::is_same_v<T, S72::Material::Environment>) 
         {
             NewMat->Type = EMaterialType::Environment;
+            NewMat->AlbedoTexIdx = Scene.GetDefaultWhiteTexIdx();    // TODO: fix it!
+            NewMat->RoughnessTexIdx = Scene.GetDefaultWhiteTexIdx();
+            NewMat->MetalnessTexIdx = Scene.GetDefaultBlackTexIdx();
         }
     }, InS72Mat.brdf);
 
@@ -589,7 +655,7 @@ void URenderExtractor::CloneRenderMeshFromS72Mesh(
     else
     {
         // give fallback
-        OutMesh.Material = &Fallback;
+        OutMesh.Material = FMaterial::GetDefaultMaterial();
     }
 }
 //END: URenerMesh Data Extract
