@@ -1,20 +1,38 @@
-#include "AssignmentOne.hpp"
-#include "AssignmentOne-Vertex.hpp"
+#include "../AssignmentOne.hpp"
+#include "../AssignmentOne-Vertex.hpp"
 
-#include "../Helpers.hpp"
-#include "../VK.hpp"
+#include "../../Helpers.hpp"
+#include "../../VK.hpp"
 
 static uint32_t vert_code[] =
-#include "../spv/A1/lambert.vert.inl"
+#include "../../spv/A1/Pipelines/lambert.vert.inl"
 ;
 
 static uint32_t frag_code[] =
-#include "../spv/A1/lambert.frag.inl"
+#include "../../spv/A1/Pipelines/lambert.frag.inl"
 ;
 
 void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
+
+    {
+        VkPushConstantRange Range {
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset = 0,
+            .size = sizeof(FConstant),
+        };
+
+        VkPipelineLayoutCreateInfo create_info {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .setLayoutCount = 0,
+            .pSetLayouts = nullptr,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &Range,
+        };
+
+        VK ( vkCreatePipelineLayout(rtg.device, &create_info, nullptr, &Layout));
+    }
 
     { //the set0_Camera layout holds world info in a uniform buffer used in the fragment shader:
 		std::array< VkDescriptorSetLayoutBinding, 1 > bindings{
@@ -152,11 +170,20 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
     }
 
     { //the Set5_EnvTex layout has a single descriptor for a sampler2D used in the fragment shader:
-        std::array<VkDescriptorSetLayoutBinding, 1> bindings
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings
         {
+            // EnvTex
             VkDescriptorSetLayoutBinding
             {
                 .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            // IrradianceTex
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,

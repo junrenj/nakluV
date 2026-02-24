@@ -52,6 +52,7 @@ struct Helpers {
 	void destroy_buffer(AllocatedBuffer &&allocated_buffer);
 
 	struct AllocatedImage {
+		uint32_t layers = 1;
 		VkImage handle = VK_NULL_HANDLE;
 		VkExtent2D extent{.width = 0, .height = 0};
 		VkFormat format = VK_FORMAT_UNDEFINED;

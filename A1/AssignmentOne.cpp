@@ -132,7 +132,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		};
 		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &CommandPool) );
 	}
-
 	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
 
@@ -342,7 +341,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.flags = 0,
 				.image = Image.handle,
-				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.viewType = Image.layers == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_CUBE,
 				.format = Image.format,
 				// .components sets swizzling and is fine when zero-initialized
 				.subresourceRange
@@ -351,7 +350,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 					.baseMipLevel = 0,
 					.levelCount = 1,
 					.baseArrayLayer = 0,
-					.layerCount = 1,
+					.layerCount = Image.layers,
 				},
 			};
 
@@ -386,6 +385,30 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.unnormalizedCoordinates = VK_FALSE,
 		};
 		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSampler) );
+	}
+
+	{
+		VkSamplerCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.flags = 0,
+			.magFilter = VK_FILTER_LINEAR,
+			.minFilter = VK_FILTER_LINEAR,
+			.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+			.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.mipLodBias = 0.0f,
+			.anisotropyEnable = VK_FALSE,
+			.maxAnisotropy = 0.0f, 				// doesn't matter if anisotropy isn't enabled
+			.compareEnable = VK_FALSE,
+			.compareOp = VK_COMPARE_OP_ALWAYS, // doesn't matter if compare isn't enabled
+			.minLod = 0.0f,
+			.maxLod = 0.0f,
+			.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+			.unnormalizedCoordinates = VK_FALSE,
+		};
+		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSampler_1) );
 	}
 
 	// create the texture descriptor pool	
@@ -498,10 +521,8 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	// env Texture push
 	{
 		const std::unordered_map<UNode*, UEnvironment*>& Environments = Scene.Environments;
-		EnvTexDescriptors.assign(Environments.size(), VK_NULL_HANDLE);
-		
-		std::vector<VkWriteDescriptorSet> Writes;
-		Writes.reserve(Environments.size());
+		EnvTexDescriptors.clear();
+		EnvTexDescriptors.reserve(Environments.size());
 
 		for (auto& [Node, Env] : Environments)
 		{
@@ -522,25 +543,31 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				&EnvTexDescriptors.back()
 			));
 
-			VkDescriptorImageInfo info{
-				.sampler = TextureSampler,
-				.imageView = TextureViews[Env->EnvTexture],
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
+			std::vector<VkDescriptorImageInfo> Infos(2);
+			std::vector<VkWriteDescriptorSet> Writes(2);
 
-			VkWriteDescriptorSet write{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = EnvTexDescriptors.back(),
-				.dstBinding = 0,
-				.descriptorCount = 1,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &info,
-			};
+			for (uint32_t i = 0; i < 2; i++)
+			{
+				Infos[i] = VkDescriptorImageInfo
+				{
+					.sampler = TextureSampler_1,
+					.imageView = i == 0 ? TextureViews[Env->EnvTexture] : TextureViews[Scene.TestIdx],
+					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				};
 
-			Writes.push_back(write);
+				Writes[i] = VkWriteDescriptorSet 
+				{
+					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.dstSet = EnvTexDescriptors.back(),
+					.dstBinding = i,
+					.descriptorCount = 1,
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.pImageInfo = &Infos[i],
+				};
+			}
+			vkUpdateDescriptorSets(rtg.device,uint32_t(Writes.size()),Writes.data(),0,nullptr);
 		}
 
-		vkUpdateDescriptorSets(rtg.device,uint32_t(Writes.size()),Writes.data(),0,nullptr);
 	}
 }
 
@@ -1042,7 +1069,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 	// upload world info:
 	{
-		assert(workspace.CameraSrc.size == sizeof(World));
+		assert(workspace.WorldSrc.size == sizeof(World));
 
 		//host-side copy into World_src:
 		memcpy(workspace.WorldSrc.allocation.data(), &World, sizeof(World));
@@ -1228,52 +1255,88 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 			return;
 		}
 		
-		if(evt.type == InputEvent::MouseButtonDown &&
-			evt.button.button == GLFW_MOUSE_BUTTON_LEFT &&
-			evt.button.mods & GLFW_MOD_SHIFT)
+		if(evt.type == InputEvent::MouseButtonDown)
 		{
 			// start panning
 			float InitX = evt.button.x;
 			float InitY = evt.button.y;
 			FOrbitCamera InitCamera = FreeCamera;
-
-			Action = [this, InitX, InitY, InitCamera](InputEvent const &evt)
+			if (evt.button.button == GLFW_MOUSE_BUTTON_LEFT)
 			{
-				if(evt.type == InputEvent::MouseButtonUp &&
-					evt.button.button == GLFW_MOUSE_BUTTON_LEFT)
+				Action = [this, InitX, InitY, InitCamera](InputEvent const &evt)
 				{
-					// Cancel upon button lifted:
-					Action = nullptr;
-					return;
-				}
-				if(evt.type == InputEvent::MouseMotion)
+					if(evt.type == InputEvent::MouseButtonUp &&
+						evt.button.button == GLFW_MOUSE_BUTTON_LEFT)
+					{
+						// Cancel upon button lifted:
+						Action = nullptr;
+						return;
+					}
+					if(evt.type == InputEvent::MouseMotion)
+					{
+						float Height = 2.0f * std::tan(FreeCamera.FOV * 0.5f) * FreeCamera.Radius;
+
+						//motion, therefore, at target point:
+						float Dx = (evt.motion.x - InitX) / rtg.swapchain_extent.height * Height;
+						float Dy =-(evt.motion.y - InitY) / rtg.swapchain_extent.height * Height; //note: negated because glfw uses y-down coordinate system
+
+						//compute camera transform to extract right (first row) and up (second row):
+						mat4 CameraFromWorld = orbit
+						(
+							InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ,
+							InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
+						);
+
+						// move the desired distance:
+						vec3 InitTarget = vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
+						vec3 Right = vec3(CameraFromWorld[0]);
+						vec3 Up = vec3(CameraFromWorld[1]);
+						vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
+
+						FreeCamera.TargetX = NewTarget.x;
+						FreeCamera.TargetY = NewTarget.y;
+						FreeCamera.TargetZ = NewTarget.z;
+
+						return;
+					}
+				};
+			}
+			if (evt.button.button == GLFW_MOUSE_BUTTON_MIDDLE) 
+			{
+				Action = [this, InitX, InitY, InitCamera](InputEvent const &evt) 
 				{
-					float Height = 2.0f * std::tan(FreeCamera.FOV * 0.5f) * FreeCamera.Radius;
+					if (evt.type == InputEvent::MouseButtonUp && evt.button.button == GLFW_MOUSE_BUTTON_MIDDLE) 
+					{
+						Action = nullptr;
+						return;
+					}
+					if (evt.type == InputEvent::MouseMotion) 
+					{
+						float Height = 2.0f * std::tan(FreeCamera.FOV * 0.5f) * FreeCamera.Radius;
+						
+						float Dx = (evt.motion.x - InitX) / (float)rtg.swapchain_extent.height * Height;
+						float Dy = -(evt.motion.y - InitY) / (float)rtg.swapchain_extent.height * Height;
 
-					//motion, therefore, at target point:
-					float Dx = (evt.motion.x - InitX) / rtg.swapchain_extent.height * Height;
-					float Dy =-(evt.motion.y - InitY) / rtg.swapchain_extent.height * Height; //note: negated because glfw uses y-down coordinate system
+						mat4 CameraFromWorld = orbit(
+							InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ,
+							InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
+						);
 
-					//compute camera transform to extract right (first row) and up (second row):
-					mat4 CameraFromWorld = orbit
-					(
-						InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ,
-						InitCamera.Azimuth, InitCamera.Elevation, InitCamera.Radius
-					);
+						vec3 Right = vec3(CameraFromWorld[0][0], CameraFromWorld[1][0], CameraFromWorld[2][0]);
+						vec3 Up    = vec3(CameraFromWorld[0][1], CameraFromWorld[1][1], CameraFromWorld[2][1]);
 
-					// move the desired distance:
-					vec3 InitTarget = vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
-					vec3 Right = vec3(CameraFromWorld[0]);
-					vec3 Up = vec3(CameraFromWorld[1]);
-					vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
+						vec3 InitTarget = vec3(InitCamera.TargetX, InitCamera.TargetY, InitCamera.TargetZ);
+						
+						vec3 NewTarget = InitTarget - (Dx * Right) - (Dy * Up);
 
-					FreeCamera.TargetX = NewTarget.x;
-					FreeCamera.TargetY = NewTarget.y;
-					FreeCamera.TargetZ = NewTarget.z;
-
-					return;
-				}
-			};
+						FreeCamera.TargetX = NewTarget.x;
+						FreeCamera.TargetY = NewTarget.y;
+						FreeCamera.TargetZ = NewTarget.z;
+					}
+				};
+				return;
+			}
+			
 		}
 
 		if(evt.type == InputEvent::MouseButtonDown &&
@@ -1369,8 +1432,10 @@ void UAssignmentOne::ReserveTextures()
 			));
 				break;
 			case UTexture::EType::Cube:
+			uint32_t faceSize = MipmapData.SizeX;
+			assert(MipmapData.SizeY == faceSize * 6);
 			Textures.emplace_back(rtg.helpers.create_image(
-				VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
+				VkExtent2D{ .width = faceSize , .height = faceSize }, //size of image
 				VK_FORMAT_R32G32B32A32_SFLOAT, //how to interpret image data (in this case, 32 FRGBA)
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
@@ -1453,22 +1518,35 @@ void UAssignmentOne::UpdateCamera()
 			NowCamera.Projection.Near,
 			NowCamera.Projection.Far
 		);
-		mat4 View = glm::inverse(UNode::GetLocal2WorldMatrix(NowCamera.BindingNode));
-        CLIP_FROM_WORLD = Projection * View;
+		mat4 ViewInverse = UNode::GetLocal2WorldMatrix(NowCamera.BindingNode);
+		vec3 WorldSpaceCameraPos = vec3(ViewInverse[3]);
+		World.VIEW_POS.x = WorldSpaceCameraPos.x;
+		World.VIEW_POS.y = WorldSpaceCameraPos.y;
+		World.VIEW_POS.z = WorldSpaceCameraPos.z;
+		mat4 View = glm::inverse(ViewInverse);
+
+		CLIP_FROM_WORLD = Projection * View;
     }
 	else if(CameraMode == ECameraMode::Free)
 	{
+		mat4 Orbit = orbit
+		(
+			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
+			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
+		);
+		mat4 ViewInverse = glm::inverse(Orbit);
+
+		vec3 WorldSpaceCameraPos = vec3(ViewInverse[3]);
+		World.VIEW_POS.x = WorldSpaceCameraPos.x;
+		World.VIEW_POS.y = WorldSpaceCameraPos.y;
+		World.VIEW_POS.z = WorldSpaceCameraPos.z;
 		CLIP_FROM_WORLD = Perspective
 		(
 			FreeCamera.FOV,
 			DefaultAspect,	// Aspect
 			FreeCamera.Near,
 			FreeCamera.Far
-		) * orbit
-		(
-			FreeCamera.TargetX, FreeCamera.TargetY, FreeCamera.TargetZ,
-			FreeCamera.Azimuth, FreeCamera.Elevation, FreeCamera.Radius
-		);
+		) * Orbit;
 	}
 	else
 	{
@@ -1604,6 +1682,16 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 		if(!Proxy->bCanSee)
 		{
 			continue;
+		}
+		// Push time here
+		{
+			const FMaterial* Material = Scene.Materials[Proxy->MaterialIdx];
+			FLambertPipeline::FConstant Constant
+			{
+				.MaterialType = (int)Material->Type,
+			};
+			vkCmdPushConstants(workspace.command_buffer, LambertPipeline.Layout, 
+								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Constant), &Constant);
 		}
 		vkCmdBindDescriptorSets
 		(

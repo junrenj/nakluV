@@ -69,6 +69,11 @@ struct UAssignmentOne : RTG::Application
 		VkDescriptorSetLayout Set4_Lights = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set5_EnvTex = VK_NULL_HANDLE;
 
+		struct FConstant
+		{
+			int MaterialType;	// Tag for materials
+		};
+
         // types for descriptors:
 		struct FWorld
 		{
@@ -76,8 +81,9 @@ struct UAssignmentOne : RTG::Application
 			struct { float r, g, b, padding_; } SKY_ENERGY;
 			struct { float x, y, z, padding_; } SUN_DIRECTION;
 			struct { float r, g, b, padding_; } SUN_ENERGY;
+			struct { float x, y, z, padding_; } VIEW_POS;
 		};
-        static_assert(sizeof(FWorld) == 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
+        static_assert(sizeof(FWorld) == 4*4 + 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
 
 		struct FCamera
 		{
@@ -102,142 +108,144 @@ struct UAssignmentOne : RTG::Application
 		void Create(RTG &, VkRenderPass Render_pass, uint32_t Subpass);
 		void Destroy(RTG &);
 		
-		}LambertPipeline;
+	}LambertPipeline;
+	
+	VkCommandPool CommandPool = VK_NULL_HANDLE;
+	VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 
-		VkCommandPool CommandPool = VK_NULL_HANDLE;
-		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
-    
-		//workspaces hold per-render resources:
-		struct FWorkspace 
-		{
-			VkCommandBuffer command_buffer = VK_NULL_HANDLE; //from the command pool above; reset at the start of every render.
+	//workspaces hold per-render resources:
+	struct FWorkspace 
+	{
+		VkCommandBuffer command_buffer = VK_NULL_HANDLE; //from the command pool above; reset at the start of every render.
 
-			//location for ObjectsPipeline::World data: (streamed to GPU per-frame)
-			Helpers::AllocatedBuffer WorldSrc; 	// host coherent; mapped
-			Helpers::AllocatedBuffer World; 	// device-local
-			VkDescriptorSet WorldDescriptors; 	// references World
+		//location for ObjectsPipeline::World data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer WorldSrc; 	// host coherent; mapped
+		Helpers::AllocatedBuffer World; 	// device-local
+		VkDescriptorSet WorldDescriptors; 	// references World
 
-			// Location for lines data:( streamed to GPU per-frame)
-			Helpers::AllocatedBuffer LinesVerticesSrc;	// host coherent; mapped
-			Helpers::AllocatedBuffer LinesVertices;		// device-local
+		// Location for lines data:( streamed to GPU per-frame)
+		Helpers::AllocatedBuffer LinesVerticesSrc;	// host coherent; mapped
+		Helpers::AllocatedBuffer LinesVertices;		// device-local
 
-			// location for LinesPipeline::Camera data: (streamed to GPU per-frame)
-			Helpers::AllocatedBuffer CameraSrc;	// host coherent; mapped
-			Helpers::AllocatedBuffer Camera;		// device-local
-			VkDescriptorSet CameraDescriptors;		// references Camera
+		// location for LinesPipeline::Camera data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer CameraSrc;	// host coherent; mapped
+		Helpers::AllocatedBuffer Camera;		// device-local
+		VkDescriptorSet CameraDescriptors;		// references Camera
 
-			// location for ObjectsPipeline::Transforms data: (streamed to GPU per-frame)
-			Helpers::AllocatedBuffer TransformsSrc;	// host coherent; mapped
-			Helpers::AllocatedBuffer Transforms;	// device-local
-			VkDescriptorSet TransformDescriptors;	// references Transforms
+		// location for ObjectsPipeline::Transforms data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer TransformsSrc;	// host coherent; mapped
+		Helpers::AllocatedBuffer Transforms;	// device-local
+		VkDescriptorSet TransformDescriptors;	// references Transforms
 
-			// Location for ObjectsPipeline::Lights data: (streamed to GPU per-frame)
-			Helpers::AllocatedBuffer LightsSrc;		// host coherent; mapped
-			Helpers::AllocatedBuffer Lights;		// device-local
-			VkDescriptorSet LightsDescriptors;		// references Lights
-		};
-		std::vector< FWorkspace > workspaces;
+		// Location for ObjectsPipeline::Lights data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer LightsSrc;		// host coherent; mapped
+		Helpers::AllocatedBuffer Lights;		// device-local
+		VkDescriptorSet LightsDescriptors;		// references Lights
+	};
+	std::vector< FWorkspace > workspaces;
 
-		//-------------------------------------------------------------------
-		//static scene resources:
-		Helpers::AllocatedBuffer ObjectVertices;
+	//-------------------------------------------------------------------
+	//static scene resources:
+	Helpers::AllocatedBuffer ObjectVertices;
 
-		std::vector< Helpers::AllocatedImage > Textures;
-		std::vector< VkImageView > TextureViews;
-		VkSampler TextureSampler = VK_NULL_HANDLE;
-		VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
-		std::vector< VkDescriptorSet > MaterialDescriptors;
-		VkDescriptorPool EnvTexDescriptorPool = VK_NULL_HANDLE;
-		std::vector< VkDescriptorSet > EnvTexDescriptors;
+	std::vector< Helpers::AllocatedImage > Textures;
+	std::vector< VkImageView > TextureViews;
+	VkSampler TextureSampler = VK_NULL_HANDLE;
+	VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
+	std::vector< VkDescriptorSet > MaterialDescriptors;
+	VkDescriptorPool EnvTexDescriptorPool = VK_NULL_HANDLE;
+	std::vector< VkDescriptorSet > EnvTexDescriptors;
 
-		//--------------------------------------------------------------------
-		//Resources that change when the swapchain is resized:
+	VkSampler TextureSampler_1 = VK_NULL_HANDLE;
 
-		virtual void on_swapchain(RTG &, RTG::SwapchainEvent const &) override;
+	//--------------------------------------------------------------------
+	//Resources that change when the swapchain is resized:
 
-		Helpers::AllocatedImage SwapchainDepthImage;
-		VkImageView SwapchainDepthImageView = VK_NULL_HANDLE;
-		std::vector< VkFramebuffer > SwapchainFramebuffer;
-		//used from on_swapchain and the destructor: (framebuffers are created in on_swapchain)
-		void DestroyFramebuffers();
+	virtual void on_swapchain(RTG &, RTG::SwapchainEvent const &) override;
 
-		//--------------------------------------------------------------------
-		//Resources that change when time passes or the user interacts:
+	Helpers::AllocatedImage SwapchainDepthImage;
+	VkImageView SwapchainDepthImageView = VK_NULL_HANDLE;
+	std::vector< VkFramebuffer > SwapchainFramebuffer;
+	//used from on_swapchain and the destructor: (framebuffers are created in on_swapchain)
+	void DestroyFramebuffers();
 
-		virtual void update(float dt) override;
-		virtual void on_input(InputEvent const &) override;
+	//--------------------------------------------------------------------
+	//Resources that change when time passes or the user interacts:
 
-		// Modal action, intercepts inputs
-		std::function< void(InputEvent const &) > Action; 
+	virtual void update(float dt) override;
+	virtual void on_input(InputEvent const &) override;
 
-		float Time = 0.0f;
+	// Modal action, intercepts inputs
+	std::function< void(InputEvent const &) > Action; 
 
-		enum class ECameraMode
-		{
-			Scene = 0,
-			Free = 1,
-		} CameraMode = ECameraMode::Scene;
+	float Time = 0.0f;
 
-		// Used when cameraMode == cameraMode::Free
-		struct FOrbitCamera
-		{
-			float TargetX = 0.0f, TargetY = 0.0f, TargetZ = 0.0f; // Where Camera Looking + Orbiting
-			float Radius = 2.0f; 	// Distance from camera to target
-			float Azimuth = 0.0f; 	// Counterclockwise angle around z axis between x axis and camera direction (radians)
-			float Elevation = 0.25f * float(M_PI); // Angle up from xy plane to camera direction(radians)
+	enum class ECameraMode
+	{
+		Scene = 0,
+		Free = 1,
+	} CameraMode = ECameraMode::Scene;
 
-			float FOV = 60.0f / 180.0f * float(M_PI);	// vertical field of view (radians)
-			float Near = 0.1f;		// Near Clippping plane
-			float Far = 1000.0f;	// Far Clipping plane 
-		} FreeCamera;
+	// Used when cameraMode == cameraMode::Free
+	struct FOrbitCamera
+	{
+		float TargetX = 0.0f, TargetY = 0.0f, TargetZ = 0.0f; // Where Camera Looking + Orbiting
+		float Radius = 2.0f; 	// Distance from camera to target
+		float Azimuth = 0.0f; 	// Counterclockwise angle around z axis between x axis and camera direction (radians)
+		float Elevation = 0.25f * float(M_PI); // Angle up from xy plane to camera direction(radians)
 
-		// Computed from the current camera (as set by camera_mode) during update():
-		mat4 CLIP_FROM_WORLD;
+		float FOV = 60.0f / 180.0f * float(M_PI);	// vertical field of view (radians)
+		float Near = 0.1f;		// Near Clippping plane
+		float Far = 1000.0f;	// Far Clipping plane 
+	} FreeCamera;
 
-		FLambertPipeline::FWorld World;
-		
-		struct { float x, y, z, padding_; } EYE;
+	// Computed from the current camera (as set by camera_mode) during update():
+	mat4 CLIP_FROM_WORLD;
 
-		//--------------------------------------------------------------------
-		//Rendering function, uses all the resources above to queue work to draw a frame:
+	FLambertPipeline::FWorld World;
+	
+	struct { float x, y, z, padding_; } EYE;
 
-		virtual void render(RTG &, RTG::RenderParams const &) override;
+	//--------------------------------------------------------------------
+	//Rendering function, uses all the resources above to queue work to draw a frame:
 
-		// Initial command line 
-		void InitializeCommandLineSettings();
+	virtual void render(RTG &, RTG::RenderParams const &) override;
 
-		// Load Scene
-		URenderScene Scene;
-		void InitializeRenderScene();
-		
-		// Pipeline Render
-		void RenderBackgroundPipeline(FWorkspace &workspace);	// maybe abandoned, because it is no use now
-		void RenderLinesPipeline(FWorkspace &workspace);		// for debug
-		void RenderLambertPipeline(FWorkspace &workspace);		// the major Pipeline to pass
+	// Initial command line 
+	void InitializeCommandLineSettings();
 
-		// Texture Loader
-		void ReserveTextures();		// Reserve Texture to gpu
+	// Load Scene
+	URenderScene Scene;
+	void InitializeRenderScene();
+	
+	// Pipeline Render
+	void RenderBackgroundPipeline(FWorkspace &workspace);	// maybe abandoned, because it is no use now
+	void RenderLinesPipeline(FWorkspace &workspace);		// for debug
+	void RenderLambertPipeline(FWorkspace &workspace);		// the major Pipeline to pass
 
-		// Viewport
-		const float DefaultAspect = 16.0f / 9.0f;
-		void ViewportPillarBoxing(FWorkspace &workspace);
+	// Texture Loader
+	void ReserveTextures();		// Reserve Texture to gpu
 
-		// Camera Function
-		uint8_t ActiveCameraIdx = 0;
-		void UpdateCamera();
+	// Viewport
+	const float DefaultAspect = 16.0f / 9.0f;
+	void ViewportPillarBoxing(FWorkspace &workspace);
 
-		// Culling
-		enum class ECullingMode
-		{
-			None = 0,
-			Normal = 1,
-		}CullingMode;
+	// Camera Function
+	uint8_t ActiveCameraIdx = 0;
+	void UpdateCamera();
 
-		// Animation
-		bool bIsPlay = true;
+	// Culling
+	enum class ECullingMode
+	{
+		None = 0,
+		Normal = 1,
+	}CullingMode;
 
-		// for debug
-		UDebugScene DebugScene;
-		void InitializeDebugRenderScene();
-		void DrawDebugLines();
+	// Animation
+	bool bIsPlay = true;
+
+	// for debug
+	UDebugScene DebugScene;
+	void InitializeDebugRenderScene();
+	void DrawDebugLines();
 };

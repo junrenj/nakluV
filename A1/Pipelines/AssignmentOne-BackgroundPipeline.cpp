@@ -1,50 +1,33 @@
-#include "AssignmentOne.hpp"
+#include "../AssignmentOne.hpp"
 
-#include "../Helpers.hpp"
-#include "../VK.hpp"
+#include "../../Helpers.hpp"
+#include "../../VK.hpp"
 
 static uint32_t vert_code[] =
-#include "../spv/A1/lines.vert.inl"
+#include "../../spv/A1/Pipelines/background.vert.inl"
 ;
 
 static uint32_t frag_code[] =
-#include "../spv/A1/lines.frag.inl"
+#include "../../spv/A1/Pipelines/background.frag.inl"
 ;
 
-void UAssignmentOne::FLinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
+void UAssignmentOne::FBackgroundPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass) {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
 
     {
-        std::array<VkDescriptorSetLayoutBinding, 1> bindings {
-            VkDescriptorSetLayoutBinding {
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-        };
-
-        VkDescriptorSetLayoutCreateInfo create_info {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = uint32_t(bindings.size()),
-            .pBindings = bindings.data(),
-        };
-
-        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set0_Camera));
-    }
-
-    {
-        std::array<VkDescriptorSetLayout, 1> layouts {
-            Set0_Camera,
+        VkPushConstantRange range {
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset = 0,
+            .size = sizeof(FPush),
         };
 
         VkPipelineLayoutCreateInfo create_info {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = uint32_t(layouts.size()),
-            .pSetLayouts = layouts.data(),
-            .pushConstantRangeCount = 0,
-            .pPushConstantRanges = nullptr,
+            .setLayoutCount = 0,
+            .pSetLayouts = nullptr,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &range,
         };
 
         VK ( vkCreatePipelineLayout(rtg.device, &create_info, nullptr, &Layout));
@@ -77,9 +60,17 @@ void UAssignmentOne::FLinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, 
             .pDynamicStates = dynamic_states.data(),
         };
 
+        VkPipelineVertexInputStateCreateInfo vertex_input_state {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .vertexBindingDescriptionCount = 0,
+            .pVertexBindingDescriptions = nullptr,
+            .vertexAttributeDescriptionCount = 0,
+            .pVertexAttributeDescriptions = nullptr,
+        };
+
         VkPipelineInputAssemblyStateCreateInfo input_assembly_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            .topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .primitiveRestartEnable = VK_FALSE,
         };
 
@@ -108,9 +99,7 @@ void UAssignmentOne::FLinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, 
 
         VkPipelineDepthStencilStateCreateInfo depth_stencil_state {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .depthTestEnable = VK_TRUE,
-            .depthWriteEnable = VK_TRUE,
-            .depthCompareOp = VK_COMPARE_OP_LESS,
+            .depthTestEnable = VK_FALSE,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
         };
@@ -134,7 +123,7 @@ void UAssignmentOne::FLinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, 
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = (uint32_t) (stages.size()),
             .pStages = stages.data(),
-            .pVertexInputState = &FDebugColVertex::ArrayInputState,
+            .pVertexInputState = &vertex_input_state,
             .pInputAssemblyState = &input_assembly_state,
             .pViewportState = &viewport_state,
             .pRasterizationState = &rasterization_state,
@@ -154,13 +143,7 @@ void UAssignmentOne::FLinesPipeline::Create(RTG &rtg, VkRenderPass render_pass, 
     vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 
-void UAssignmentOne::FLinesPipeline::Destroy(RTG &rtg) 
-{
-    if (Set0_Camera != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(rtg.device, Set0_Camera, nullptr);
-        Set0_Camera = VK_NULL_HANDLE;
-    }
-    
+void UAssignmentOne::FBackgroundPipeline::Destroy(RTG &rtg) {
     if (Layout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
         Layout = VK_NULL_HANDLE;

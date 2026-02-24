@@ -11,6 +11,7 @@ enum class EMaterialType
     Lambertian = 1,
     Mirror = 2,
     Environment = 3,
+    Displacement = 4,
 };
 
 

@@ -50,6 +50,13 @@ const main_objs = [
 	// maek.CPP('external/s72Loader/print_scene.cpp'),
 ];
 
+const cube_objs = [
+    maek.CPP('A1/UtilsTool/CubeUtils.cpp'),
+];
+
+
+const cube_exe = maek.LINK([...cube_objs], 'bin/cube');
+
 //maek.GLSLC(...) builds a glsl source file:
 // it returns the path to the output .inl file
 
@@ -76,28 +83,28 @@ main_objs.push( maek.CPP('Tutorial-ObjectsPipeline.cpp', undefined, { depends:[.
 
 // A1
 const A1_background_shaders = [
-	maek.GLSLC('A1/background.vert'),
-	maek.GLSLC('A1/background.frag'),
+	maek.GLSLC('A1/Pipelines/background.vert'),
+	maek.GLSLC('A1/Pipelines/background.frag'),
 ];
-main_objs.push( maek.CPP('A1/AssignmentOne-BackgroundPipeline.cpp', undefined, { depends:[...A1_background_shaders] } ) );
+main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-BackgroundPipeline.cpp', undefined, { depends:[...A1_background_shaders] } ) );
 
 const A1_lines_shaders = [
-	maek.GLSLC('A1/lines.vert'),
-	maek.GLSLC('A1/lines.frag'),
+	maek.GLSLC('A1/Pipelines/lines.vert'),
+	maek.GLSLC('A1/Pipelines/lines.frag'),
 ];
-main_objs.push( maek.CPP('A1/AssignmentOne-LinesPipeline.cpp', undefined, { depends:[...A1_lines_shaders] } ) );
+main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-LinesPipeline.cpp', undefined, { depends:[...A1_lines_shaders] } ) );
 
 const A1_lambert_shaders = [
-	maek.GLSLC('A1/lambert.vert'),
-	maek.GLSLC('A1/lambert.frag'),
+	maek.GLSLC('A1/Pipelines/lambert.vert'),
+	maek.GLSLC('A1/Pipelines/lambert.frag'),
 ];
-main_objs.push( maek.CPP('A1/AssignmentOne-LambertPipeline.cpp', undefined, { depends:[...A1_lambert_shaders] } ) );
+main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-LambertPipeline.cpp', undefined, { depends:[...A1_lambert_shaders] } ) );
 
 
 const main_exe = maek.LINK([...main_objs], 'bin/main');
 
 //default targets:
-maek.TARGETS = [main_exe];
+maek.TARGETS = [main_exe, cube_exe];
 
 //- - - - - - - - - - - - - - - - - - - - -
 function custom_flags_and_rules() {

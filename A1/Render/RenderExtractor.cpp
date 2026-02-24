@@ -33,6 +33,51 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     RenderScene.GenerateWholeVertexBuffer();
     // 4. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
+
+    UTexture* NewTexture = new UTexture();
+    NewTexture->Type = UTexture::EType::Cube;   
+    const std::string path = "external/s72/examples/ox_bridge_morning.lambertian.png";
+    NewTexture->Format = UTexture::EFormat::Linear;
+    stbi_set_flip_vertically_on_load(false);
+
+    int Width, Height, Channels;
+    uint8_t* Pixels = stbi_load(path.c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
+
+    if (Pixels) 
+    {
+        // 3. Mipmap Structure
+        UTexture::FTextureMipMap* Mip0 = new UTexture::FTextureMipMap();
+        Mip0->SizeX = static_cast<uint32_t>(Width);
+        Mip0->SizeY = static_cast<uint32_t>(Height);
+        
+        size_t NumPixels = Width * Height;
+        size_t TotalBtyes = NumPixels * 4 * sizeof(float); // R32G32B32A32_SFLOAT
+        Mip0->BulkData.resize(TotalBtyes);
+
+        float* FloatData = reinterpret_cast<float*>(Mip0->BulkData.data());
+        for (size_t i = 0; i < NumPixels; i++)
+        {
+            glm::u8vec4 RGBE(
+                Pixels[i * 4 + 0],
+                Pixels[i * 4 + 1],
+                Pixels[i * 4 + 2],
+                Pixels[i * 4 + 3]
+            );
+
+            glm::vec3 RGBF = RGBE2Float(RGBE);
+
+            FloatData[i * 4 + 0] = RGBF.r;
+            FloatData[i * 4 + 1] = RGBF.g;
+            FloatData[i * 4 + 2] = RGBF.b;
+            FloatData[i * 4 + 3] = 1.0f;
+        }
+
+        NewTexture->MipmapsData.push_back(std::move(Mip0));
+        RenderScene.Textures.push_back(NewTexture);
+        RenderScene.TestIdx = uint32_t(RenderScene.Textures.size() - 1);
+        // 4. release data
+        stbi_image_free(Pixels);
+    }
 }
 
 //BEGIN: UNode Data Extract
@@ -236,10 +281,7 @@ void URenderExtractor::BuildUMaterialData(
         {
             Scene.EnvMaterial = NewMaterial;
         }
-        else
-        {
-            Scene.Materials.push_back(NewMaterial);
-        }
+        Scene.Materials.push_back(NewMaterial);
     }
 }
 
@@ -407,13 +449,15 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
             NewMat->AlbedoTexIdx = Scene.GetDefaultWhiteTexIdx();
             NewMat->RoughnessTexIdx = Scene.GetDefaultBlackTexIdx();
             NewMat->MetalnessTexIdx = Scene.GetDefaultWhiteTexIdx();
+            NewMat->DisplacementTexIdx = Scene.GetDefaultBlackTexIdx();
         }
         else if constexpr (std::is_same_v<T, S72::Material::Environment>) 
         {
             NewMat->Type = EMaterialType::Environment;
-            NewMat->AlbedoTexIdx = Scene.GetDefaultWhiteTexIdx();    // TODO: fix it!
+            NewMat->AlbedoTexIdx = Scene.GetDefaultWhiteTexIdx();
             NewMat->RoughnessTexIdx = Scene.GetDefaultWhiteTexIdx();
             NewMat->MetalnessTexIdx = Scene.GetDefaultBlackTexIdx();
+            NewMat->NormalTexIdx = Scene.GetDefaultNormalTexIdx();
         }
     }, InS72Mat.brdf);
 
@@ -437,7 +481,6 @@ void URenderExtractor::BuildUTextureData(
 
 UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
 {
-    stbi_set_flip_vertically_on_load(true);
     UTexture* NewTexture = new UTexture();
     NewTexture->Type = InTexture.type == S72::Texture::Type::cube ? UTexture::EType::Cube : UTexture::EType::Flat;
 
@@ -445,16 +488,17 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
     {
         case S72::Texture::Format::srgb:
             NewTexture->Format = UTexture::EFormat::SRGB;
+            stbi_set_flip_vertically_on_load(true);
             break;
         case S72::Texture::Format::rgbe:
             default:
             NewTexture->Format = UTexture::EFormat::Linear;
+            stbi_set_flip_vertically_on_load(false);
             break;
     }
 
     int Width, Height, Channels;
     uint8_t* Pixels = stbi_load(InTexture.path.c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
-
     if (!Pixels) 
     {
         return nullptr; 
@@ -495,7 +539,6 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
         Mip0->BulkData.resize(ImageSize);
         std::memcpy(Mip0->BulkData.data(), Pixels, ImageSize);
     }
-
 
     NewTexture->MipmapsData.push_back(std::move(Mip0));
 

@@ -99,9 +99,8 @@ void URenderScene::GenerateLightProxy()
         SunProxy = LightProxy;
         SunProxy->Type = static_cast<uint32_t>(ELightType::Sun);
         SunProxy->Position = vec3(0,0,0);
-        SunProxy->Color = vec3(0,0,0);
-        const vec4 Dir = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-        SunProxy->Direction = vec3(Dir);
+        SunProxy->Color = vec3(1,1,1);
+        SunProxy->Direction = vec3(0,0.7,0.7);
     }
 }
 
