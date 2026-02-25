@@ -52,14 +52,14 @@ CubeHelpers::Allocation CubeHelpers::Allocate(VkDeviceSize size, VkDeviceSize al
 		.memoryTypeIndex = memory_type_index
 	};
 
-	VK( vkAllocateMemory( rtg.device, &AllocationInfo, nullptr, &AllocationTemp.handle ) );
+	VK( vkAllocateMemory( CubeExe.device, &AllocationInfo, nullptr, &AllocationTemp.handle ) );
 
 	AllocationTemp.size = size;
 	AllocationTemp.offset = 0;
 
 	if (map == Mapped) 
 	{
-		VK( vkMapMemory(rtg.device, AllocationTemp.handle, 0, AllocationTemp.size, 0, &AllocationTemp.mapped) );
+		VK( vkMapMemory(CubeExe.device, AllocationTemp.handle, 0, AllocationTemp.size, 0, &AllocationTemp.mapped) );
 	}
 
 	return AllocationTemp;
@@ -74,11 +74,11 @@ void CubeHelpers::Free(CubeHelpers::Allocation &&Allocation)
 {
 	if(Allocation.mapped != nullptr)
 	{
-		vkUnmapMemory(rtg.device, Allocation.handle);
+		vkUnmapMemory(CubeExe.device, Allocation.handle);
 		Allocation.mapped = nullptr;
 	}
 
-	vkFreeMemory(rtg.device, Allocation.handle, nullptr);
+	vkFreeMemory(CubeExe.device, Allocation.handle, nullptr);
 
 	Allocation.handle = VK_NULL_HANDLE;
 	Allocation.offset = 0;
@@ -94,25 +94,25 @@ CubeHelpers::AllocatedBuffer CubeHelpers::create_buffer(VkDeviceSize size, VkBuf
 		.usage = usage,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
-	VK( vkCreateBuffer(rtg.device, &CreateInfo, nullptr, &buffer.handle));
+	VK( vkCreateBuffer(CubeExe.device, &CreateInfo, nullptr, &buffer.handle));
 	buffer.size = size;
 
 	// determine memory requirements
 	VkMemoryRequirements Request;
-	vkGetBufferMemoryRequirements(rtg.device, buffer.handle, &Request);
+	vkGetBufferMemoryRequirements(CubeExe.device, buffer.handle, &Request);
 
 	// allocate memory
 	buffer.allocation = Allocate(Request, properties, map);
 
 	// bind memory
-	VK( vkBindBufferMemory(rtg.device, buffer.handle, buffer.allocation.handle, buffer.allocation.offset));
+	VK( vkBindBufferMemory(CubeExe.device, buffer.handle, buffer.allocation.handle, buffer.allocation.offset));
 
 	return buffer;
 }
 
 void CubeHelpers::destroy_buffer(AllocatedBuffer &&buffer) 
 {
-	vkDestroyBuffer(rtg.device, buffer.handle, nullptr);
+	vkDestroyBuffer(CubeExe.device, buffer.handle, nullptr);
 	buffer.handle = VK_NULL_HANDLE;
 	buffer.size = 0;
 
@@ -147,21 +147,21 @@ CubeHelpers::AllocatedImage CubeHelpers::create_image(VkExtent2D const &extent, 
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
-	VK( vkCreateImage(rtg.device, &CreateInfo, nullptr, &image.handle));
+	VK( vkCreateImage(CubeExe.device, &CreateInfo, nullptr, &image.handle));
 
 	VkMemoryRequirements Require;
-	vkGetImageMemoryRequirements(rtg.device, image.handle, &Require);
+	vkGetImageMemoryRequirements(CubeExe.device, image.handle, &Require);
 
 	image.allocation = Allocate(Require, properties, map);
 
-	VK( vkBindImageMemory(rtg.device, image.handle, image.allocation.handle, image.allocation.offset));
+	VK( vkBindImageMemory(CubeExe.device, image.handle, image.allocation.handle, image.allocation.offset));
 
 	return image;
 }
 
 void CubeHelpers::destroy_image(AllocatedImage &&image) 
 {
-	vkDestroyImage(rtg.device, image.handle, nullptr);
+	vkDestroyImage(CubeExe.device, image.handle, nullptr);
 
 	image.handle = VK_NULL_HANDLE;
 	image.extent = VkExtent2D{.width = 0, .height = 0};
@@ -216,17 +216,17 @@ void CubeHelpers::transfer_to_buffer(void const *data, size_t size, AllocatedBuf
 			.pCommandBuffers = &TransferCommandBuffer
 		};
 
-		VK( vkQueueSubmit(rtg.graphics_queue, 1, &SubmitInfo, VK_NULL_HANDLE));
+		VK( vkQueueSubmit(CubeExe.graphics_queue, 1, &SubmitInfo, VK_NULL_HANDLE));
 	}
 
 	// wait for command buffer to finish
-	VK(vkQueueWaitIdle(rtg.graphics_queue));
+	VK(vkQueueWaitIdle(CubeExe.graphics_queue));
 
 	//don't leak buffer memory:
 	destroy_buffer(std::move(TransferSrc));
 }
 
-void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImage &target) 
+void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImage &target, VkImageLayout imageLayout) 
 {
 	assert(target.handle != VK_NULL_HANDLE);	// target iamgen should be allocated already
 
@@ -385,7 +385,7 @@ void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImag
 			.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
 			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.newLayout = imageLayout,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.image = target.handle,
@@ -414,10 +414,10 @@ void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImag
 		.pCommandBuffers = &TransferCommandBuffer
 	};
 
-	VK(vkQueueSubmit(rtg.graphics_queue, 1, &SubmitInfo, VK_NULL_HANDLE));
+	VK(vkQueueSubmit(CubeExe.graphics_queue, 1, &SubmitInfo, VK_NULL_HANDLE));
 
 	// wait for command buffer to finish executing
-	VK( vkQueueWaitIdle(rtg.graphics_queue));
+	VK( vkQueueWaitIdle(CubeExe.graphics_queue));
 
 	// destroy the source buffer
 	destroy_buffer(std::move(TransferSrc));
@@ -444,7 +444,7 @@ VkFormat CubeHelpers::find_image_format(std::vector< VkFormat > const &candidate
 	for (VkFormat Format : candidates)
 	{
 		VkFormatProperties Props;
-		vkGetPhysicalDeviceFormatProperties(rtg.physical_device, Format, &Props);
+		vkGetPhysicalDeviceFormatProperties(CubeExe.physical_device, Format, &Props);
 		if (tiling == VK_IMAGE_TILING_LINEAR && (Props.linearTilingFeatures & features) == features) 
 		{
 			return Format;
@@ -466,13 +466,13 @@ VkShaderModule CubeHelpers::create_shader_module(uint32_t const *code, size_t by
 		.codeSize = bytes,
 		.pCode = code
 	};
-	VK( vkCreateShaderModule(rtg.device, &CreateInfo, nullptr, &shader_module));
+	VK( vkCreateShaderModule(CubeExe.device, &CreateInfo, nullptr, &shader_module));
 	return shader_module;
 }
 
 //----------------------------
 
-CubeHelpers::CubeHelpers(CubeExecute const &rtg_) : rtg(rtg_) {
+CubeHelpers::CubeHelpers(CubeExecute const &rtg_) : CubeExe(rtg_) {
 }
 
 CubeHelpers::~CubeHelpers() {
@@ -484,9 +484,9 @@ void CubeHelpers::create()
 	{
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		.queueFamilyIndex = rtg.graphics_queue_family.value(),
+		.queueFamilyIndex = CubeExe.graphics_queue_family.value(),
 	};
-	VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &TransferCommandPool) );
+	VK( vkCreateCommandPool(CubeExe.device, &CreateInfo, nullptr, &TransferCommandPool) );
 
 	VkCommandBufferAllocateInfo AllocInfo
 	{
@@ -495,11 +495,11 @@ void CubeHelpers::create()
 		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		.commandBufferCount = 1
 	};
-	VK( vkAllocateCommandBuffers(rtg.device, &AllocInfo, &TransferCommandBuffer) );
+	VK( vkAllocateCommandBuffers(CubeExe.device, &AllocInfo, &TransferCommandBuffer) );
 
-	vkGetPhysicalDeviceMemoryProperties(rtg.physical_device, &MemoryProperties);
+	vkGetPhysicalDeviceMemoryProperties(CubeExe.physical_device, &MemoryProperties);
 
-	if(rtg.configuration.debug)
+	if(CubeExe.configuration.debug)
 	{
 		std::cout << "Memory types:\n";
 		for (uint32_t i = 0; i < MemoryProperties.memoryTypeCount; ++i) 
@@ -522,13 +522,13 @@ void CubeHelpers::destroy()
 	// Technically not needed since freeing the pool will free all contained buffers:
 	if(TransferCommandBuffer != VK_NULL_HANDLE)
 	{
-		vkFreeCommandBuffers(rtg.device, TransferCommandPool, 1, &TransferCommandBuffer);
+		vkFreeCommandBuffers(CubeExe.device, TransferCommandPool, 1, &TransferCommandBuffer);
 		TransferCommandBuffer = VK_NULL_HANDLE;
 	}
 
 	if(TransferCommandPool != VK_NULL_HANDLE)
 	{
-		vkDestroyCommandPool(rtg.device, TransferCommandPool, nullptr);
+		vkDestroyCommandPool(CubeExe.device, TransferCommandPool, nullptr);
 		TransferCommandPool = VK_NULL_HANDLE;
 	}
 

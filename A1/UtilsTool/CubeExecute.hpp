@@ -77,15 +77,6 @@ struct CubeExecute {
 		// run without a window, read events from stdin
 		bool headless = false;
 
-		// file path to open
-		std::string FilePath = "A1/Report/Scenes/PirateShip/A1Show.s72";
-
-		// Camera to use, if user inputs a specific name for a camera
-		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
-
-		// Culling mode
-		std::string CullMode = "NORMAL";	// by default isOn SAT
-
 		//for configuration construction + management:
 		Configuration() = default;
 		void parse(int argc, char **argv); //parse command-line options; throws on error
@@ -191,7 +182,7 @@ struct CubeExecute {
 		virtual void render(CubeExecute &, RenderParams const &) = 0;
 	};
 
-	//------------------------------
+	//------------------------------W
 	//Structure definitions:
 
 	//event structure (well, union) used to pass events from CubeExecute -> App:

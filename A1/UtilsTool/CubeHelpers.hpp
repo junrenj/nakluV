@@ -69,7 +69,7 @@ struct CubeHelpers {
 
 	// NOTE: synchronizes *hard* against the GPU; inefficient to use for streaming data!
 	void transfer_to_buffer(void const *data, size_t size, AllocatedBuffer &target);
-	void transfer_to_image(void const *data, size_t size, AllocatedImage &image); //NOTE: image layout after call is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	void transfer_to_image(void const *data, size_t size, AllocatedImage &image, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); //NOTE: image layout after call is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 
 	VkCommandPool TransferCommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer TransferCommandBuffer = VK_NULL_HANDLE;
@@ -97,9 +97,9 @@ struct CubeHelpers {
 	CubeHelpers(CubeExecute const &);
 	CubeHelpers(CubeHelpers const &) = delete; //you shouldn't be copying CubeHelpers
 	~CubeHelpers();
-	CubeExecute const &rtg; //remember the owning RTG object
+	CubeExecute const &CubeExe; //remember the owning CubeExe object
 
-	//used to synchronize create/destroy with RTG:
+	//used to synchronize create/destroy with CubeExe:
 	void create(); //create vulkan resources (after GPU-held handles are created)
 	void destroy(); //destroy vulkan resources (before GPU-held handles are destroyed)
 };

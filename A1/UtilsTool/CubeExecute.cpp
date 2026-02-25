@@ -452,7 +452,7 @@ CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 	//create initial swapchain:
 	recreate_swapchain();
 
-	//create workspace resources:
+	// create workspace resources:
 	workspaces.resize(configuration.workspaces);
 	for (auto &workspace : workspaces) 
 	{
@@ -478,6 +478,7 @@ CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 		}
 	}
 
+	std::cout << "Construction finished" << std::endl;
 
 }
 
@@ -1271,13 +1272,13 @@ retry:
 		}
 	}
 	// tear down event handling
-	// if(!configuration.headless)
-	// {
-	// 	glfwSetWindowUserPointer(window, nullptr);
+	if(!configuration.headless)
+	{
+		glfwSetWindowUserPointer(window, nullptr);
 
-	// 	glfwSetMouseButtonCallback(window, nullptr);
-	// 	glfwSetCursorPosCallback(window, nullptr);
-	// 	glfwSetScrollCallback(window, nullptr);
-	// 	glfwSetKeyCallback(window, nullptr);
-	// }
+		glfwSetMouseButtonCallback(window, nullptr);
+		glfwSetCursorPosCallback(window, nullptr);
+		glfwSetScrollCallback(window, nullptr);
+		glfwSetKeyCallback(window, nullptr);
+	}
 }

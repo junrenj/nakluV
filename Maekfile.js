@@ -52,11 +52,15 @@ const main_objs = [
 
 const cube_objs = [
     maek.CPP('A1/UtilsTool/main.cpp'),
-	maek.CPP('A1/UtilsTool/CubeUtils.cpp'),
 	maek.CPP('A1/UtilsTool/CubeHelpers.cpp'),
 	maek.CPP('A1/UtilsTool/CubeExecute.cpp'),
+	maek.CPP('A1/UtilsTool/GPUFace.cpp'),
 ];
 
+const cube_shader = [
+	maek.GLSLC('A1/UtilsTool/cube.comp'),
+];
+cube_objs.push( maek.CPP('A1/UtilsTool/CubePipeline.cpp', undefined, { depends:[...cube_shader] } ) );
 
 const cube_exe = maek.LINK([...cube_objs], 'bin/cube');
 
