@@ -34,6 +34,8 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     // 4. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
 
+
+    // TODO: delete this, because this is to load irradiance texture
     UTexture* NewTexture = new UTexture();
     NewTexture->Type = UTexture::EType::Cube;   
     const std::string path = "external/s72/examples/ox_bridge_morning.lambertian.png";

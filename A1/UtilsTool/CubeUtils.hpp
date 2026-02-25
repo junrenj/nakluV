@@ -4,32 +4,32 @@
 #include <string>
 #include <vector>
 #include "glm/glm/glm.hpp"
-#include "../../RTG.hpp"
 
 using vec3 = glm::vec3;
 
-class UCubeUtils : RTG::Application
+struct UCubeUtils
 {
-private:
-	//Basic vulkan handles:
-	VkInstance instance = VK_NULL_HANDLE;
-    VkPhysicalDevice physical_device = VK_NULL_HANDLE;
-    VkApplicationInfo application_info
+    VkImage CreateCubemapImage(VkDevice Device, uint32_t Size, VkFormat Format, VkImageUsageFlags Uasge);
+    VkImageView CreateCubeView(VkDevice Device, VkImage Image, VkFormat Format);
+    VkDescriptorSetLayout CreateComputeLayout(VkDevice Device);
+
+    struct VulkanContext
     {
-        .pApplicationName = "Unknown",
-        .applicationVersion = VK_MAKE_VERSION(0,0,0),
-        .pEngineName = "Unknown",
-        .engineVersion = VK_MAKE_VERSION(0,0,0),
-        .apiVersion = VK_API_VERSION_1_3
-	};
+        VkInstance Instance;
+        VkPhysicalDevice PhysicalDevice;
+        VkDevice Device;
 
-    std::vector<vec3> DataFloat;
-    int TextureSize;
+        uint32_t ComputeQueueFamily;
+        VkQueue ComputeQueue;
 
-    void LoadImage(const char* Path);
-    void GetPhyscialDevice();
-public:
+        VkCommandPool CommandPool;
+    };
     
-    UCubeUtils(const char* Path, uint32_t OutputSize);
+	VkSampler TextureSampler = VK_NULL_HANDLE;
+    VkDescriptorSet EnvDescriptorSet;
+    VkDescriptorSet IrradianceDescriptorSet;
+
+    
+    UCubeUtils(VulkanContext* InContext, const char* Path, uint32_t InSize, uint32_t OutputSize);
     ~UCubeUtils();
 };

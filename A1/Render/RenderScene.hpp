@@ -120,7 +120,7 @@ public:
     uint32_t GetDefaultNormalTexIdx()const {return 2;}  // normal ->2
     uint32_t GetDefaultMatColTexIdx()const {return 3;}  // Magenta ->3
 
-    uint32_t TestIdx = 0;
+    uint32_t TestIdx = 0;   // TODO: delete this irradiance texture idx
 
     URenderScene()
     {
