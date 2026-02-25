@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Helpers.hpp"
-#include "InputEvent.hpp"
+#include "CubeHelpers.hpp"
+#include "../../InputEvent.hpp"
 
 #include <vulkan/vulkan_core.h>
 
@@ -97,7 +97,7 @@ struct CubeExecute {
 	//------------------------------------------------
 	//Helper functions, split off into their own little package:
 	// see Helpers.hpp
-	Helpers helpers;
+	CubeHelpers helpers;
 
 	//------------------------------------------------
 	//Basic vulkan handles:
@@ -136,8 +136,8 @@ struct CubeExecute {
 	VkCommandPool HeadlessCommandPool = VK_NULL_HANDLE;
 	struct HeadlessSwapchainImage
 	{
-		Helpers::AllocatedImage Image;		// on-GPU rendering target
-		Helpers::AllocatedBuffer Buffer;	// host memory to copy image to after rendering
+		CubeHelpers::AllocatedImage Image;		// on-GPU rendering target
+		CubeHelpers::AllocatedBuffer Buffer;	// host memory to copy image to after rendering
 		VkCommandBuffer CopyCommand = VK_NULL_HANDLE;	// copy image -> buffer
 		VkFence ImagePresented = VK_NULL_HANDLE;		// fence to signal after copy finishes
 		std::string SaveTo = "";			// (if non-"") file to save to

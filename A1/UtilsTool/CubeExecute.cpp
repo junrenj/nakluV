@@ -605,7 +605,7 @@ void CubeExecute::recreate_swapchain()
 				vkuFormatTexelBlockSize(surface_format.format) / vkuFormatTexelsPerBlock(surface_format.format),
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				Helpers::Mapped
+				CubeHelpers::Mapped
 			);
 
 			// Create and record copy command:
@@ -1271,16 +1271,13 @@ retry:
 		}
 	}
 	// tear down event handling
-	if(!configuration.headless)
-	{
-		glfwSetWindowUserPointer(window, nullptr);
+	// if(!configuration.headless)
+	// {
+	// 	glfwSetWindowUserPointer(window, nullptr);
 
-		glfwSetMouseButtonCallback(window, nullptr);
-		glfwSetCursorPosCallback(window, nullptr);
-		glfwSetScrollCallback(window, nullptr);
-		glfwSetKeyCallback(window, nullptr);
-	}
-
-
-
+	// 	glfwSetMouseButtonCallback(window, nullptr);
+	// 	glfwSetCursorPosCallback(window, nullptr);
+	// 	glfwSetScrollCallback(window, nullptr);
+	// 	glfwSetKeyCallback(window, nullptr);
+	// }
 }

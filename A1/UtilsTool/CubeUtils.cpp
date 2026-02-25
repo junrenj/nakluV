@@ -74,7 +74,8 @@ UCubeUtils::UCubeUtils(VulkanContext* InContext, const char* Path, uint32_t InSi
         VkPipelineLayoutCreateInfo LayoutInfo{};
         LayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         LayoutInfo.setLayoutCount = 1;
-        LayoutInfo.pSetLayouts = &descriptorSetLayout;
+        // LayoutInfo.pSetLayouts = &descriptorSetLayout;
+        LayoutInfo.pSetLayouts = nullptr;
 
         VkPipelineLayout PipelineLayout;
         vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout);
@@ -82,8 +83,8 @@ UCubeUtils::UCubeUtils(VulkanContext* InContext, const char* Path, uint32_t InSi
         VkComputePipelineCreateInfo PipelineInfo
         {
             .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-            .stage = CreateShaderStage("irradiance.comp.spv"),
-            .layout = PipelineLayout,
+            // .stage = CreateShaderStage("irradiance.comp.spv"),
+            // .layout = PipelineLayout,
         };
 
         VkPipeline Pipeline;
@@ -91,13 +92,13 @@ UCubeUtils::UCubeUtils(VulkanContext* InContext, const char* Path, uint32_t InSi
     }
 
     {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        //vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+        //vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-        vkCmdDispatch(cmd,
-            (32 + 7) / 8,
-            (32 + 7) / 8,
-            6);
+        // vkCmdDispatch(cmd,
+        //     (32 + 7) / 8,
+        //     (32 + 7) / 8,
+        //     6);
     }
 
     {
@@ -108,7 +109,7 @@ UCubeUtils::UCubeUtils(VulkanContext* InContext, const char* Path, uint32_t InSi
             .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            .image = irradianceImage,
+            //.image = irradianceImage,
             .subresourceRange
             {
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -116,16 +117,16 @@ UCubeUtils::UCubeUtils(VulkanContext* InContext, const char* Path, uint32_t InSi
                 .layerCount = 6,
             },
         };
-        vkCmdPipelineBarrier
-        (
-            cmd,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            0,
-            0,nullptr,
-            0,nullptr,
-            1,&Barrier
-        );
+        // vkCmdPipelineBarrier
+        // (
+        //     cmd,
+        //     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        //     VK_PIPELINE_STAGE_TRANSFER_BIT,
+        //     0,
+        //     0,nullptr,
+        //     0,nullptr,
+        //     1,&Barrier
+        // );
     }
 }
 
@@ -158,7 +159,7 @@ VkImageView UCubeUtils::CreateCubeView(VkDevice Device, VkImage Image, VkFormat 
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .viewType = VK_IMAGE_VIEW_TYPE_CUBE,
         .format = Format,
-        .image = Image,
+        // .image = Image,
         .subresourceRange
         {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -195,8 +196,8 @@ VkDescriptorSetLayout UCubeUtils::CreateComputeLayout(VkDevice Device)
 
     VkDescriptorSetLayoutCreateInfo Info
     {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = Bindings.size(),
+        // .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = (uint32_t)Bindings.size(),
         .pBindings = Bindings.data(),
     };
     

@@ -53,6 +53,8 @@ const main_objs = [
 const cube_objs = [
     maek.CPP('A1/UtilsTool/main.cpp'),
 	maek.CPP('A1/UtilsTool/CubeUtils.cpp'),
+	maek.CPP('A1/UtilsTool/CubeHelpers.cpp'),
+	maek.CPP('A1/UtilsTool/CubeExecute.cpp'),
 ];
 
 
