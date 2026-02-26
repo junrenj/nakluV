@@ -1,28 +1,33 @@
 #include "GPUFace.hpp"
 #include "../../VK.hpp"
 
-void FGPUFace::Create(CubeExecute &CubeExe, VkDescriptorPool DescriptorPool, FCubePipeline const &Pipeline, uint32_t const Size, vec3 * const Data) 
+void FGPUFace::Create(CubeExecute &CubeExe, VkDescriptorPool DescriptorPool, FCubePipeline const &Pipeline, uint32_t const Width, uint32_t const Height, vec3 * const Data) 
 {
+    assert(Width * 6 == Height);
+
 	std::vector< vec4 > DataPadded;
-	DataPadded.reserve(Size * Size);
-	for (uint32_t i = 0; i < Size * Size; ++i) 
+	DataPadded.reserve(Width * Height);
+	for (uint32_t i = 0; i < Width * Height; ++i) 
 	{
 		DataPadded.emplace_back(vec4(Data[i], 0.0f));
 	}
 
 	//create image:
+    uint32_t FaceSize = Width;
 	Image = CubeExe.helpers.create_image
 	(
-		VkExtent2D{ .width = Size, .height = Size },
+		VkExtent2D{ .width = FaceSize, .height = FaceSize },
 		VK_FORMAT_R32G32B32A32_SFLOAT,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		CubeHelpers::Unmapped
+		CubeHelpers::Unmapped,
+        6,
+        VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
 	);
 
 	//actually upload the image:
-	CubeExe.helpers.transfer_to_image(DataPadded.data(), sizeof(DataPadded[0]) * Size * Size, Image, VK_IMAGE_LAYOUT_GENERAL);
+	CubeExe.helpers.transfer_to_image(DataPadded.data(), sizeof(DataPadded[0]) * DataPadded.size(), Image, VK_IMAGE_LAYOUT_GENERAL);
 
 	//---- buffer ----
 	{
@@ -37,18 +42,18 @@ void FGPUFace::Create(CubeExecute &CubeExe, VkDescriptorPool DescriptorPool, FCu
 		FCubePipeline::FFace FaceInfo{};
 
 		vec3 s = vec3(0.0f, 0.0f, -1.0f);
-		vec3 t = vec3(0.0f,-1.0f, -0.0f);
+		vec3 t = vec3(0.0f, -1.0f, -0.0f);
 		vec3 Center = vec3(1.0f, 0.0f, 0.0f);
 
-		FaceInfo.WORLD_FROM_PX.m0 = 2.0f * s.x / float(Size);
-		FaceInfo.WORLD_FROM_PX.m1 = 2.0f * s.y / float(Size);
-		FaceInfo.WORLD_FROM_PX.m2 = 2.0f * s.z / float(Size);
+		FaceInfo.WORLD_FROM_PX.m0 = 2.0f * s.x / float(Width);
+		FaceInfo.WORLD_FROM_PX.m1 = 2.0f * s.y / float(Width);
+		FaceInfo.WORLD_FROM_PX.m2 = 2.0f * s.z / float(Width);
 
-		FaceInfo.WORLD_FROM_PX.m3 = 2.0f * t.x / float(Size);
-		FaceInfo.WORLD_FROM_PX.m4 = 2.0f * t.y / float(Size);
-		FaceInfo.WORLD_FROM_PX.m5 = 2.0f * t.z / float(Size);
+		FaceInfo.WORLD_FROM_PX.m3 = 2.0f * t.x / float(Width);
+		FaceInfo.WORLD_FROM_PX.m4 = 2.0f * t.y / float(Width);
+		FaceInfo.WORLD_FROM_PX.m5 = 2.0f * t.z / float(Width);
 
-		float Corner = 1.0f - 2.0f / float(Size) * 0.5f;
+		float Corner = 1.0f - 2.0f / float(Width) * 0.5f;
 		FaceInfo.WORLD_FROM_PX.m6 = Center.x - Corner * s.x - Corner * t.x;
 		FaceInfo.WORLD_FROM_PX.m7 = Center.y - Corner * s.y - Corner * t.y;
 		FaceInfo.WORLD_FROM_PX.m8 = Center.z - Corner * s.z - Corner * t.z;
@@ -63,7 +68,7 @@ void FGPUFace::Create(CubeExecute &CubeExe, VkDescriptorPool DescriptorPool, FCu
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 			.flags = 0,
 			.image = Image.handle,
-			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.viewType = VK_IMAGE_VIEW_TYPE_CUBE,
 			.format = Image.format,
 			// .components sets swizzling and is fine when zero-initialized
 			.subresourceRange{
@@ -71,7 +76,7 @@ void FGPUFace::Create(CubeExecute &CubeExe, VkDescriptorPool DescriptorPool, FCu
 				.baseMipLevel = 0,
 				.levelCount = 1,
 				.baseArrayLayer = 0,
-				.layerCount = 1,
+				.layerCount = 6,
 			},
 		};
 		VK( vkCreateImageView(CubeExe.device, &CreateInfo, nullptr, &View) );

@@ -14,6 +14,6 @@ struct FGPUFace
 	VkImageView View = VK_NULL_HANDLE;
 	VkDescriptorSet Descriptors = VK_NULL_HANDLE;
 
-	void Create(CubeExecute &CubeExe, VkDescriptorPool descriptor_pool, FCubePipeline const &pipeline, uint32_t const sz, vec3 * const data);
+	void Create(CubeExecute &CubeExe, VkDescriptorPool DescriptorPool, FCubePipeline const &Pipeline, uint32_t const Width, uint32_t const Height, vec3 * const Data);
 	void Destroy(CubeExecute &CubeExe);
 };

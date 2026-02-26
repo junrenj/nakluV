@@ -59,18 +59,6 @@ int main(int argc, char **argv)
 		FCubePipeline Pipeline;
 		Pipeline.Create(CubeExe);
 
-		// load images / create descriptors
-		int width, height, channels;
-		stbi_set_flip_vertically_on_load(false);
-		const char* temp = CubeExe.configuration.InImagePath.c_str();
-		uint8_t* data = stbi_load(temp, &width, &height, &channels, 4);
-		
-		std::vector<vec3> inputFloats;
-		for (int i = 0; i < width * height; ++i) 
-		{
-			inputFloats.push_back(RGBE2Float(glm::u8vec4(data[i*4], data[i*4+1], data[i*4+2], data[i*4+3])));
-		}
-
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 		// create descriptor pool
 		{
@@ -124,12 +112,27 @@ int main(int argc, char **argv)
 			VK( vkAllocateCommandBuffers(CubeExe.device, &AllocInfo, &CommandBuffer) );
 		}
 
-		size_t Size = 128;
-		std::vector< vec3 > Data (Size * Size, vec3(1.0f, 1.0f, 1.0f));
+        // load images / create descriptors
+		int Width, Height, Channels;
+		stbi_set_flip_vertically_on_load(false);
+		const char* Temp = CubeExe.configuration.InImagePath.c_str();
+		uint8_t* Data = stbi_load(Temp, &Width, &Height, &Channels, 4);
+		
+		std::vector< vec3 > InputFloats;
+		for (int i = 0; i < Width * Height; ++i) 
+		{
+			InputFloats.push_back(RGBE2Float(glm::u8vec4(Data[i*4], Data[i*4+1], Data[i*4+2], Data[i*4+3])));
+		}
+
+		size_t InSize = Width;
+        size_t OutSize = configuration.IrradianceOutputSize;
+        std::vector< vec3 > OutData (OutSize * OutSize * 6, vec3(0.0f));
+
+        // Create 
 		FGPUFace InFace;
-		InFace.Create(CubeExe, DescriptorPool, Pipeline, (uint32_t)Size, Data.data());
 		FGPUFace OutFace;
-		OutFace.Create(CubeExe, DescriptorPool, Pipeline, (uint32_t)Size, Data.data());
+		InFace.Create(CubeExe, DescriptorPool, Pipeline, (uint32_t)Width, (uint32_t)Height, InputFloats.data());
+		OutFace.Create(CubeExe, DescriptorPool, Pipeline, (uint32_t)OutSize, (uint32_t)OutSize * 6, OutData.data());
 
 		// run pipeline
 		{ 
@@ -155,18 +158,18 @@ int main(int argc, char **argv)
 				};
 				vkCmdBindDescriptorSets
 				(
-					CommandBuffer, // command buffer
+					CommandBuffer,                  // command buffer
 					VK_PIPELINE_BIND_POINT_COMPUTE, // pipeline bind point
-					Pipeline.Layout, // pipeline layout
-					0, //first set
-					uint32_t(DescriptorSets.size()), DescriptorSets.data(), //descriptor sets count, ptr
-					0, nullptr //dynamic offsets count, ptr
+					Pipeline.Layout,                // pipeline layout
+					0,                              // first set
+					uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
+					0, nullptr // dynamic offsets count, ptr
 				);
 			}
 
 	
 			// actually run the thing:
-			vkCmdDispatchBase(CommandBuffer, 0, 0, 1, (uint32_t)Size, (uint32_t)Size, 1);
+			vkCmdDispatchBase(CommandBuffer, 0, 0, 1, (uint32_t)InSize, (uint32_t)InSize, 1);
 
 			// done recording:
 			VK( vkEndCommandBuffer(CommandBuffer) );

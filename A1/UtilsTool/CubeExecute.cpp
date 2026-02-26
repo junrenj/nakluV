@@ -55,13 +55,19 @@ void CubeExecute::Configuration::parse(int argc, char **argv)
 			// Output Path
 			argi += 1;
 			OutImagePath = argv[argi];
+			if(argi + 1 < argc)
+			{
+				// mean has size input
+				arg = argv[argi];
+				IrradianceOutputSize = static_cast<uint8_t>(std::stoi(arg));
+			}
 		}
 	}
 }
 
 void CubeExecute::Configuration::usage(std::function< void(const char *, const char *) > const &callback) 
 {
-	callback("--cube", "generate an irradiance texture based on a cubemap ex: --cube input.png --lambertian output.png");
+	callback("--cube", "generate an irradiance texture based on a cubemap ex: --cube input.png --lambertian output.png 16");
 	callback("--cube", "generate a set of ggx texture for roughness ex: --cube input.png --roughness output.png");
 }
 

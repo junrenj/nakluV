@@ -34,7 +34,8 @@ CubeHelpers::Allocation &CubeHelpers::Allocation::operator=(Allocation &&from) {
 }
 
 CubeHelpers::Allocation::~Allocation() {
-	if (!(handle == VK_NULL_HANDLE && offset == 0 && size == 0 && mapped == nullptr)) {
+	if (!(handle == VK_NULL_HANDLE && offset == 0 && size == 0 && mapped == nullptr)) 
+	{
 		std::cerr << "Destructing a non-empty Allocation; device memory will leak." << std::endl;
 	}
 }

@@ -85,6 +85,9 @@ struct CubeExecute
 			Cubemap2Roughness,
 		}ProcessMode;
 
+		// Output Info
+		uint8_t IrradianceOutputSize = 16;
+
 		// Path of the Image
 		std::string InImagePath = "";
 		std::string OutImagePath = "";
