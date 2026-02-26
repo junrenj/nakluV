@@ -26,10 +26,13 @@ struct GLFWwindow;
  *  MyApplication app(ce); //note: derives from CubeExecute::Application
  *
  *  ce.run(app);
+ * 
+ *  actually the simple version of rtg, dont want to containment the logic of rtg
  *
  */
 
-struct CubeExecute {
+struct CubeExecute 
+{
 	//----------------------------------------
 	// Creating an CubeExecute wrapper:
 
@@ -40,19 +43,17 @@ struct CubeExecute {
 	CubeExecute(CubeExecute const &) = delete; //don't copy this structure!
 
 	//Configuration passed to CubeExecute constructor:
-	struct Configuration {
+	struct Configuration 
+	{
 		//application info passed to Vulkan:
-		VkApplicationInfo application_info{
+		VkApplicationInfo application_info
+		{
 			.pApplicationName = "Unknown",
 			.applicationVersion = VK_MAKE_VERSION(0,0,0),
 			.pEngineName = "Unknown",
 			.engineVersion = VK_MAKE_VERSION(0,0,0),
 			.apiVersion = VK_API_VERSION_1_3
 		};
-
-		//if true, add debug and validation layers and print more debug output:
-		//  `--debug` and `--no-debug` command-line flags
-		bool debug = false;
 
 		//if set, use a specific device for rendering:
 		// `--physical-device <name>` command-line flag
@@ -77,6 +78,17 @@ struct CubeExecute {
 		// run without a window, read events from stdin
 		bool headless = false;
 
+		// enum class for process mode
+		enum class EProcessMode
+		{
+			Cubemap2Irradiance,
+			Cubemap2Roughness,
+		}ProcessMode;
+
+		// Path of the Image
+		std::string InImagePath = "";
+		std::string OutImagePath = "";
+
 		//for configuration construction + management:
 		Configuration() = default;
 		void parse(int argc, char **argv); //parse command-line options; throws on error
@@ -94,7 +106,6 @@ struct CubeExecute {
 	//Basic vulkan handles:
 
 	VkInstance instance = VK_NULL_HANDLE;
-	VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 	VkDevice device = VK_NULL_HANDLE;
 

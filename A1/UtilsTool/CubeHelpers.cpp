@@ -498,23 +498,6 @@ void CubeHelpers::create()
 	VK( vkAllocateCommandBuffers(CubeExe.device, &AllocInfo, &TransferCommandBuffer) );
 
 	vkGetPhysicalDeviceMemoryProperties(CubeExe.physical_device, &MemoryProperties);
-
-	if(CubeExe.configuration.debug)
-	{
-		std::cout << "Memory types:\n";
-		for (uint32_t i = 0; i < MemoryProperties.memoryTypeCount; ++i) 
-		{
-			VkMemoryType const &Type = MemoryProperties.memoryTypes[i];
-			std::cout << " [" << i << "] heap " << Type.heapIndex << ", flags: " << string_VkMemoryPropertyFlags(Type.propertyFlags) << '\n';
-		}
-		std::cout << "Memory heaps:\n";
-		for (uint32_t i = 0; i < MemoryProperties.memoryHeapCount; ++i) 
-		{
-			VkMemoryHeap const &Heap = MemoryProperties.memoryHeaps[i];
-			std::cout << " [" << i << "] " << Heap.size << " bytes, flags: " << string_VkMemoryHeapFlags( Heap.flags ) << '\n';
-		}
-		std::cout.flush();
-	}
 }
 
 void CubeHelpers::destroy() 

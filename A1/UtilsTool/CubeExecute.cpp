@@ -21,16 +21,48 @@
 
 void CubeExecute::Configuration::parse(int argc, char **argv) 
 {
+	if(argc <= 1)
+	{
+		throw std::runtime_error("require process mode");
+	}
 	for (int argi = 1; argi < argc; ++argi) 
 	{
 		std::string arg = argv[argi];
-		
+		if(arg == "--cube")
+		{
+			if (argi + 3 >= argc) 
+			{
+        		throw std::runtime_error("--cube require input image path, output image path and mode");
+    		}
+			// Input Path
+    		argi += 1;
+    		InImagePath = argv[argi];
+
+			// Mode
+			argi += 1;
+			arg = argv[argi];
+			if(arg == "--lambertian")
+			{
+				// generate an irradiance texture based on a cubemap
+				ProcessMode = EProcessMode::Cubemap2Irradiance;
+			}
+			else if(arg == "--roughness")
+			{
+				// generate a set of ggx texture for roughness
+				ProcessMode = EProcessMode::Cubemap2Roughness;
+			}
+
+			// Output Path
+			argi += 1;
+			OutImagePath = argv[argi];
+		}
 	}
 }
 
 void CubeExecute::Configuration::usage(std::function< void(const char *, const char *) > const &callback) 
 {
-
+	callback("--cube", "generate an irradiance texture based on a cubemap ex: --cube input.png --lambertian output.png");
+	callback("--cube", "generate a set of ggx texture for roughness ex: --cube input.png --roughness output.png");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
@@ -83,13 +115,6 @@ CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 		InstanceExtensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
 		InstanceExtensions.emplace_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
 		#endif
-		
-		// add extensions and layers for debugging:
-		if(configuration.debug)
-		{
-			InstanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-			InstanceLayers.emplace_back("VK_LAYER_KHRONOS_validation");
-		}
 
 		if(!configuration.headless)
 		{
@@ -135,7 +160,7 @@ CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 		VkInstanceCreateInfo CreateInfo
 		{
 			.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-			.pNext = configuration.debug ? &DebugMessengerCreateInfo : nullptr,
+			.pNext = nullptr,
 			.flags = InstanceFlags,
 			.pApplicationInfo = &configuration.application_info,
 			.enabledLayerCount = uint32_t(InstanceLayers.size()),
@@ -144,17 +169,6 @@ CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 			.ppEnabledExtensionNames = InstanceExtensions.data()
 		};
 		VK( vkCreateInstance(&CreateInfo, nullptr, &instance));
-
-		// Create debug messenger
-		if(configuration.debug)
-		{
-			PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-			if (!vkCreateDebugUtilsMessengerEXT) 
-			{
-				throw std::runtime_error("Failed to lookup debug utils create fn.");
-			}
-			VK( vkCreateDebugUtilsMessengerEXT(instance, &DebugMessengerCreateInfo, nullptr, &debug_messenger) );
-		}
 	}
 	
 
@@ -477,9 +491,6 @@ CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 			VK( vkCreateSemaphore(device, &CreateInfo, nullptr, &workspace.image_available));
 		}
 	}
-
-	std::cout << "Construction finished" << std::endl;
-
 }
 
 CubeExecute::~CubeExecute() {
@@ -528,16 +539,6 @@ CubeExecute::~CubeExecute() {
 	{
 		glfwDestroyWindow(window);
 		window = nullptr;
-	}
-
-	if(debug_messenger != VK_NULL_HANDLE)
-	{
-		PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-		if(vkDestroyDebugUtilsMessengerEXT)
-		{
-			vkDestroyDebugUtilsMessengerEXT(instance, debug_messenger, nullptr);
-			debug_messenger = VK_NULL_HANDLE;
-		}
 	}
 
 	if(instance != VK_NULL_HANDLE)
@@ -782,10 +783,6 @@ void CubeExecute::recreate_swapchain()
 		{
 			VK( vkCreateSemaphore(device, &CreateInfo, nullptr, &swapchain_image_dones[i]));
 		}
-	}
-	if (configuration.debug) 
-	{
-		std::cout << "Swapchain is now " << swapchain_images.size() << " images of size " << swapchain_extent.width << "x" << swapchain_extent.height << "." << std::endl;
 	}
 }
 
