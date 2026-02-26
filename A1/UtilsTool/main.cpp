@@ -1,8 +1,15 @@
 #include "CubeExecute.hpp"
 #include "CubePipeline.hpp"
 #include "GPUFace.hpp"
+#include "../Render/Color.hpp"
 #include "../../VK.hpp"
 #include <iostream>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../stb_image.h"
+
+
+
 
 int main(int argc, char **argv)
 {
@@ -51,6 +58,18 @@ int main(int argc, char **argv)
 		// Initialize Pipeline & Process Logic
 		FCubePipeline Pipeline;
 		Pipeline.Create(CubeExe);
+
+		// load images / create descriptors
+		int width, height, channels;
+		stbi_set_flip_vertically_on_load(false);
+		const char* temp = CubeExe.configuration.InImagePath.c_str();
+		uint8_t* data = stbi_load(temp, &width, &height, &channels, 4);
+		
+		std::vector<vec3> inputFloats;
+		for (int i = 0; i < width * height; ++i) 
+		{
+			inputFloats.push_back(RGBE2Float(glm::u8vec4(data[i*4], data[i*4+1], data[i*4+2], data[i*4+3])));
+		}
 
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 		// create descriptor pool
