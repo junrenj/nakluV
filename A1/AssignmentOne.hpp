@@ -82,8 +82,9 @@ struct UAssignmentOne : RTG::Application
 			struct { float x, y, z, padding_; } SUN_DIRECTION;
 			struct { float r, g, b, padding_; } SUN_ENERGY;
 			struct { float x, y, z, padding_; } VIEW_POS;
+			struct { float exposure, tonemappingMode, padding_0, padding_1; } AJUST_VAR;
 		};
-        static_assert(sizeof(FWorld) == 4*4 + 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
+        static_assert(sizeof(FWorld) == 4*4 + 4*4 + 4*4 + 4*4 + 4*4 + 4*4, "World is the expected size.");
 
 		struct FCamera
 		{
@@ -233,13 +234,6 @@ struct UAssignmentOne : RTG::Application
 	// Camera Function
 	uint8_t ActiveCameraIdx = 0;
 	void UpdateCamera();
-
-	// Culling
-	enum class ECullingMode
-	{
-		None = 0,
-		Normal = 1,
-	}CullingMode;
 
 	// Animation
 	bool bIsPlay = true;

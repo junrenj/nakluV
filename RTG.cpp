@@ -87,7 +87,52 @@ void RTG::Configuration::parse(int argc, char **argv)
         		throw std::runtime_error("--cull requires a parameter (name of the cull mode you want to use).");
     		}
     		argi += 1;
-    		CullMode = argv[argi];
+			const std::string value = argv[argi];
+			if(value == "NONE")
+			{
+				CullMode = ECullingMode::None;
+			}
+			else if(value == "NORMAL")
+			{
+				CullMode = ECullingMode::Normal;
+			}
+		}
+		else if(arg == "--exposure")
+		{
+			if (argi + 1 >= argc) 
+			{
+        		throw std::runtime_error("--exposure requires a parameter (exposure intensity).");
+    		}
+    		argi += 1;
+			try
+			{
+    			ExposureIntensity = std::stof(argv[argi]);
+			}
+			catch(const std::exception& e)
+			{
+				std::cout << "Invalid exposure number" << e.what() << std::endl;
+			}
+		}
+		else if(arg == "--tonemap")
+		{
+			if (argi + 1 >= argc) 
+			{
+        		throw std::runtime_error("--tonemap requires a parameter (tonemapping mode).");
+    		}
+    		argi += 1;
+			const std::string value = argv[argi];
+			if(value == "linear")
+			{
+    			TonemappingMode = ETonemappingMode::Linear;
+			}
+			else if(value == "gamma")
+			{
+				TonemappingMode = ETonemappingMode::Gamma;
+			}
+			else if(value == "reinhard")
+			{
+				TonemappingMode = ETonemappingMode::Reinhard;
+			}
 		}
 		else 
 		{
@@ -104,6 +149,8 @@ void RTG::Configuration::usage(std::function< void(const char *, const char *) >
 	callback("--scene FILEPATH", "replace FILEPATH with your filepath ex: external/s72Loader/example_scene/example.s72");
 	callback("--camera NAME", "replace NAME with camera's name you want to use ex: Camera001");
 	callback("--cull CULLMODE", "replace CULLMODE with mode you want to use, for now only support: NONE, NORMAL");
+	callback("--exposure E", "replace E with exposure intensity you want to use");
+	callback("--tonemap MODE", "replace MODE with tonemap mode you want to use, for now only support: linear, gamma, reinhard");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(

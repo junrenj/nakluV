@@ -20,6 +20,7 @@ layout(set=1,binding=0,std140) uniform World
 	vec3 SUN_DIRECTION;
 	vec3 SUN_ENERGY; 	// energy supplied by sun to a surface patch with normal = SUN_DIRECTION
 	vec3 EYE;
+	vec2 AJUST_VAR;
 };
 
 layout(set=4,binding=0,std140) readonly buffer Lights
@@ -102,20 +103,41 @@ vec4 Lambertian()
 
 void main() 
 {
+	vec4 computeColor = vec4(0.0);
 	if(materialType == 0)	// PBR
 	{
-		outColor = PBR();
+		computeColor = PBR();
 	}
 	else if(materialType == 1) // Lambertian
 	{
-		outColor = Lambertian();
+		computeColor = Lambertian();
 	}
 	else if(materialType == 2)	// Mirror
 	{
-		outColor = Mirror();
+		computeColor = Mirror();
 	}
 	else if(materialType == 3)	// Environment
 	{
-		outColor = Environment();
+		computeColor = Environment();
+	}
+
+	// exposure
+	float exposure = pow(2, AJUST_VAR.x);
+	computeColor *= exposure;
+
+	if(AJUST_VAR.y == 0)
+	{
+		// 0. linear
+		outColor = computeColor;
+	}
+	else if(AJUST_VAR.y == 1)
+	{
+		// 1. simple gamma
+		outColor = pow(computeColor, vec4(1.0/2.2));
+	}
+	else if(AJUST_VAR.y == 2)
+	{
+		// 2. reinhard
+		outColor = computeColor / (computeColor + vec4(1.0));
 	}
 }

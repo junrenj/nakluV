@@ -567,7 +567,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			}
 			vkUpdateDescriptorSets(rtg.device,uint32_t(Writes.size()),Writes.data(),0,nullptr);
 		}
-
 	}
 }
 
@@ -1189,7 +1188,7 @@ void UAssignmentOne::update(float dt)
 		DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes);
 	}
 	{
-		Scene.Update(ActiveCameraIdx, CullingMode == ECullingMode::Normal);
+		Scene.Update(ActiveCameraIdx, rtg.configuration.CullMode == RTG::Configuration::ECullingMode::Normal);
 	}
 	UpdateCamera();
     DrawDebugLines();
@@ -1398,7 +1397,7 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_C)
 	{
-		CullingMode = ECullingMode((int(CullingMode) + 1) % 2);
+		rtg.configuration.CullMode = RTG::Configuration::ECullingMode((int(rtg.configuration.CullMode) + 1) % 2);
 	}
 }
 
@@ -1710,17 +1709,6 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 //~BEGIN CommandLine Settings
 void UAssignmentOne::InitializeCommandLineSettings()
 {
-	// Culling mode
-	const std::string& CullMode = rtg.configuration.CullMode;
-	if(CullMode == "NONE")
-	{
-		CullingMode = ECullingMode::None;
-	}
-	else if(CullMode == "NORMAL")
-	{
-		CullingMode = ECullingMode::Normal;
-	}
-
 	// Active Camera
 	const std::vector<UCamera*>& Cameras = Scene.Cameras;
 	bool hasFound = false;
@@ -1737,5 +1725,9 @@ void UAssignmentOne::InitializeCommandLineSettings()
 	{
 		CameraMode = ECameraMode::Free;
 	}
+
+	// tonemapping and exposure
+	World.AJUST_VAR.exposure = rtg.configuration.ExposureIntensity;
+	World.AJUST_VAR.tonemappingMode = (float)rtg.configuration.TonemappingMode;
 	
 }

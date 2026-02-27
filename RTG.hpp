@@ -78,13 +78,27 @@ struct RTG {
 		bool headless = false;
 
 		// file path to open
-		std::string FilePath = "A1/Report/Scenes/PirateShip/A1Show.s72";
-
+		std::string FilePath = "external/s72/examples/materials.s72";
 		// Camera to use, if user inputs a specific name for a camera
 		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
 
 		// Culling mode
-		std::string CullMode = "NORMAL";	// by default isOn SAT
+		enum class ECullingMode
+		{
+			None = 0,
+			Normal = 1,
+		}CullMode;	// by default isOn SAT
+
+		// Exposure level
+		float ExposureIntensity = 0.0f;
+
+		// Tone mapping
+		enum class ETonemappingMode
+		{
+			Linear = 0,
+			Gamma = 1,
+			Reinhard = 2,
+		}TonemappingMode = ETonemappingMode::Linear;
 
 		//for configuration construction + management:
 		Configuration() = default;
