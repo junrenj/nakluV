@@ -25,6 +25,7 @@ layout(location=3) in vec2 Texcoord;
 layout(location=0) out vec3 position;
 layout(location=1) out vec3 normal;
 layout(location=2) out vec2 texcoord;
+layout(location=3) out mat3 TBN;
 
 void main() 
 {
@@ -33,4 +34,14 @@ void main()
 	position = mat4x3(TRANSFORMS[gl_InstanceIndex].WORLD_FROM_LOCAL) * vec4(Position, 1.0);
 	normal = mat3(TRANSFORMS[gl_InstanceIndex].WORLD_FROM_LOCAL_NORMAL) * Normal;
 	texcoord = Texcoord;
+
+	mat3 normalMatrix = mat3(TRANSFORMS[gl_InstanceIndex].WORLD_FROM_LOCAL_NORMAL);
+	vec3 N = normalize(normalMatrix * Normal);
+	vec3 T = normalize(normalMatrix * Tangent.xyz);
+
+	T = normalize(T - dot(T, N) * N);
+	vec3 B = cross(N, T) * Tangent.w;
+	normal = N;
+
+	TBN = mat3(T, B, N);
 }

@@ -98,6 +98,7 @@ struct RTG {
 			Linear = 0,
 			Gamma = 1,
 			Reinhard = 2,
+			ACES = 3,
 		}TonemappingMode = ETonemappingMode::Linear;
 
 		//for configuration construction + management:

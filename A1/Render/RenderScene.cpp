@@ -45,8 +45,9 @@ void URenderScene::GenerateMeshProxy()
             ProxyInstance->FirstVertexIdx = RenderMesh->FirstVertexIdx;
             ProxyInstance->VertexNum = static_cast<uint32_t>(RenderMesh->VertexData.size()) / BytePerVertex;
             // Transform
-            ProxyInstance->Transform.WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
-            ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = UNode::GetLocal2WorldMatrix(Node);
+            const glm::mat4 WORLD_FROM_LOCAL = UNode::GetLocal2WorldMatrix(Node);
+            ProxyInstance->Transform.WORLD_FROM_LOCAL = WORLD_FROM_LOCAL;
+            ProxyInstance->Transform.WORLD_FROM_LOCAL_NORMAL = glm::transpose(glm::inverse(WORLD_FROM_LOCAL));
             // Material
             ProxyInstance->MaterialIdx = GetMaterialIdx(RenderMesh->Material);
 

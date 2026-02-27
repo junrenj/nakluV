@@ -1423,7 +1423,7 @@ void UAssignmentOne::ReserveTextures()
 			case UTexture::EType::Flat:
 			Textures.emplace_back(rtg.helpers.create_image(
 				VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
-				VK_FORMAT_R8G8B8A8_SRGB, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				Texture->Format == UTexture::EFormat::SRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local

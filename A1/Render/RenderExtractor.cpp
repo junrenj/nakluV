@@ -459,7 +459,6 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
             NewMat->AlbedoTexIdx = Scene.GetDefaultWhiteTexIdx();
             NewMat->RoughnessTexIdx = Scene.GetDefaultWhiteTexIdx();
             NewMat->MetalnessTexIdx = Scene.GetDefaultBlackTexIdx();
-            NewMat->NormalTexIdx = Scene.GetDefaultNormalTexIdx();
         }
     }, InS72Mat.brdf);
 
@@ -489,14 +488,19 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
     switch (InTexture.format)
     {
         case S72::Texture::Format::srgb:
+        default:
             NewTexture->Format = UTexture::EFormat::SRGB;
             stbi_set_flip_vertically_on_load(true);
             break;
         case S72::Texture::Format::rgbe:
-            default:
-            NewTexture->Format = UTexture::EFormat::Linear;
+            NewTexture->Format = UTexture::EFormat::RGBE;
             stbi_set_flip_vertically_on_load(false);
             break;
+        case S72::Texture::Format::linear:
+            NewTexture->Format = UTexture::EFormat::Linear;
+            stbi_set_flip_vertically_on_load(true);
+            break;
+            
     }
 
     int Width, Height, Channels;

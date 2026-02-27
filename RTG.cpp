@@ -133,6 +133,10 @@ void RTG::Configuration::parse(int argc, char **argv)
 			{
 				TonemappingMode = ETonemappingMode::Reinhard;
 			}
+			else if(value == "aces")
+			{
+				TonemappingMode = ETonemappingMode::ACES;
+			}
 		}
 		else 
 		{
@@ -150,7 +154,7 @@ void RTG::Configuration::usage(std::function< void(const char *, const char *) >
 	callback("--camera NAME", "replace NAME with camera's name you want to use ex: Camera001");
 	callback("--cull CULLMODE", "replace CULLMODE with mode you want to use, for now only support: NONE, NORMAL");
 	callback("--exposure E", "replace E with exposure intensity you want to use");
-	callback("--tonemap MODE", "replace MODE with tonemap mode you want to use, for now only support: linear, gamma, reinhard");
+	callback("--tonemap MODE", "replace MODE with tonemap mode you want to use, for now only support: linear, gamma, reinhard, aces");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
