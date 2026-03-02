@@ -82,11 +82,13 @@ struct CubeExecute
 		enum class EProcessMode
 		{
 			Cubemap2Irradiance,
-			Cubemap2Roughness,
+			Cubemap2GGX,
+			BrdfLUT,
 		}ProcessMode;
 
 		// Output Info
-		uint8_t IrradianceOutputSize = 16;
+		uint8_t IrradianceOutputSize = 32;
+		uint8_t GGXLevelsCount = 5;
 
 		// Path of the Image
 		std::string InImagePath = "";

@@ -3,25 +3,56 @@
 #include "CubeHelpers.hpp"
 #include "../../VK.hpp"
 
-static uint32_t cube_code[] =
-#include "../../spv/A1/UtilsTool/cube.comp.inl"
+static uint32_t roughness_code[] =
+#include "../../spv/A1/UtilsTool/Shaders/ggx.comp.inl"
+;
+static uint32_t irradiance_code[] =
+#include "../../spv/A1/UtilsTool/Shaders/irradiance.comp.inl"
 ;
 
-void FCubePipeline::Create(CubeExecute &CubeExe) {
-	VkShaderModule module = CubeExe.helpers.create_shader_module(cube_code);
+void FCubePipeline::Create(CubeExecute &CubeExe)
+{
+	VkShaderModule module;
+	if(CubeExe.configuration.ProcessMode == CubeExecute::Configuration::EProcessMode::Cubemap2Irradiance)
+	{
+		module = CubeExe.helpers.create_shader_module(irradiance_code);
+	}
+	else if(CubeExe.configuration.ProcessMode == CubeExecute::Configuration::EProcessMode::Cubemap2GGX)
+	{
+		module = CubeExe.helpers.create_shader_module(roughness_code);
+	}
+	else
+	{
+		return;
+	}
 	
 	{ //the set0_in layout holds input face info:
-		std::array< VkDescriptorSetLayoutBinding, 2 > Bindings{
+		std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
+		{
 			VkDescriptorSetLayoutBinding
             {
 				.binding = 0,
-				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 				.descriptorCount = 1,
 				.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
 			},
+		};
+		
+		VkDescriptorSetLayoutCreateInfo CreateInfo{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = uint32_t(Bindings.size()),
+			.pBindings = Bindings.data(),
+		};
+
+		VK( vkCreateDescriptorSetLayout(CubeExe.device, &CreateInfo, nullptr, &Set0_InFace) );
+	}
+
+	{ //the set1_in layout holds output face info:
+		std::array< VkDescriptorSetLayoutBinding, 1 > Bindings
+		{
 			VkDescriptorSetLayoutBinding
             {
-				.binding = 1,
+				.binding = 0,
 				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
 				.descriptorCount = 1,
 				.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
@@ -34,7 +65,7 @@ void FCubePipeline::Create(CubeExecute &CubeExe) {
 			.pBindings = Bindings.data(),
 		};
 
-		VK( vkCreateDescriptorSetLayout(CubeExe.device, &CreateInfo, nullptr, &Set1_Face) );
+		VK( vkCreateDescriptorSetLayout(CubeExe.device, &CreateInfo, nullptr, &Set1_OutFace) );
 	}
 
 	{ //the set2 layout holds roughness info (and maybe, someday, more brdf params):
@@ -58,9 +89,10 @@ void FCubePipeline::Create(CubeExecute &CubeExe) {
 
 
 	{ //create pipeline layout:
-		std::array< VkDescriptorSetLayout, 3 > Layouts{
-			Set1_Face,
-			Set1_Face,
+		std::array< VkDescriptorSetLayout, 3 > Layouts
+		{
+			Set0_InFace,
+			Set1_OutFace,
 			Set2_Params,
 		};
 
@@ -97,7 +129,8 @@ void FCubePipeline::Create(CubeExecute &CubeExe) {
 	vkDestroyShaderModule(CubeExe.device, module, nullptr);
 }
 
-void FCubePipeline::Destroy(CubeExecute &CubeExe) {
+void FCubePipeline::Destroy(CubeExecute &CubeExe) 
+{
 	if (Handle != VK_NULL_HANDLE) {
 		vkDestroyPipeline(CubeExe.device, Handle, nullptr);
 		Handle = VK_NULL_HANDLE;
@@ -113,8 +146,8 @@ void FCubePipeline::Destroy(CubeExecute &CubeExe) {
 		Set2_Params = VK_NULL_HANDLE;
 	}
 
-	if (Set1_Face != VK_NULL_HANDLE) {
-		vkDestroyDescriptorSetLayout(CubeExe.device, Set1_Face, nullptr);
-		Set1_Face = VK_NULL_HANDLE;
+	if (Set1_OutFace != VK_NULL_HANDLE) {
+		vkDestroyDescriptorSetLayout(CubeExe.device, Set1_OutFace, nullptr);
+		Set1_OutFace = VK_NULL_HANDLE;
 	}
 }

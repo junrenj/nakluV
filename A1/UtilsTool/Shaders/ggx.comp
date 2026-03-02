@@ -2,20 +2,13 @@
 
 // Constant PI
 const float PI = 3.1415926;
+const uint SAMPLE_COUNT = 8192;
 
 layout(local_size_x=8, local_size_y=8, local_size_z=1) in;
 
-layout(set=0, binding=0, std140) uniform InFace 
-{
-	mat3x3 WORLD_FROM_IN_PX;
-};
-layout(set=0, binding=1, rgba32f ) uniform restrict readonly image2D inFace;
+layout(set=0, binding=0) uniform samplerCube inFace;
 
-layout(set=1, binding=0, std140) uniform OutFace 
-{
-	mat3x3 WORLD_FROM_OUT_PX;
-};
-layout(set=1, binding=1, rgba32f ) uniform restrict image2D outFace;
+layout(set=1, binding=0, rgba32f ) writeonly uniform imageCube outFace;
 
 layout(set=2, binding=0) uniform Roughness 
 {
@@ -44,7 +37,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
 {
     float a = Roughness * Roughness;
     float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a - 1.0) * Xi.y));
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     
     vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
@@ -56,28 +49,43 @@ vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
     return tangent * H.x + bitangent * H.y + N * H.z;
 }
 
+vec3 GetDirection(uvec3 pixelCoord, vec2 imageSize) 
+{
+    vec2 st = (vec2(pixelCoord.xy) + 0.5) / imageSize;
+    vec2 uv = st * 2.0 - 1.0;
+    
+    vec3 dir;
+    switch(pixelCoord.z) 
+    {
+        case 0: dir = vec3( 1.0, -uv.y, -uv.x); break; // +X
+        case 1: dir = vec3(-1.0, -uv.y,  uv.x); break; // -X
+        case 2: dir = vec3( uv.x,  1.0,  uv.y); break; // +Y
+        case 3: dir = vec3( uv.x, -1.0, -uv.y); break; // -Y
+        case 4: dir = vec3( uv.x, -uv.y,  1.0); break; // +Z
+        case 5: dir = vec3(-uv.x, -uv.y, -1.0); break; // -Z
+    }
+    return normalize(dir);
+}
+
 void main() 
 {
-	ivec2 outSize = imageSize(outFace);
+	ivec2 outSize = imageSize(outFace).xy;
 	if(gl_GlobalInvocationID.x >= outSize.x || gl_GlobalInvocationID.y >= outSize.y)
 	{
 		return;
 	}
+    int face = int(gl_GlobalInvocationID.z);
+	float inputSize = float(textureSize(inFace, 0).x);
 
-	vec2 uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(outSize);
-	vec3 localPos = vec3(uv * 2.0 - 1.0, 1.0);
-	vec3 N = normalize(WORLD_FROM_OUT_PX * localPos);
+	vec3 N = GetDirection(gl_GlobalInvocationID.xyz, vec2(outSize));
 	vec3 V = N;
 
 	vec3 prefilteredColor = vec3(0.0);
 	float totalWeight = 0.0;
-	const uint numSamples = 1024u;
-
-	float inputSize = float(imageSize(inFace).x);
-
-	for(uint i = 0u; i < numSamples; ++i)
+	
+	for(uint i = 0u; i < SAMPLE_COUNT; ++i)
 	{
-		vec2 Xi = Hammersley(i, numSamples);
+		vec2 Xi = Hammersley(i, SAMPLE_COUNT);
 		vec3 H = ImportanceSampleGGX(Xi, roughness, N);
 		vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
@@ -86,19 +94,20 @@ void main()
 		{
 			float NDotH = clamp(dot(N, H), 0.0, 1.0);
 			float VDotH = clamp(dot(V, H), 0.0, 1.0);
-			float d = D_GGX(NDotH, roughness);
+			float a = roughness * roughness;
+			float d = D_GGX(NDotH, a);
 			float pdf = (d * NDotH) / (4.0 * VDotH + 0.0001);
 
-			float saSample = 1.0 / (float(numSamples) * pdf + 0.0001);
+			float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 			float saTexel = 4.0 * PI / (6.0 * inputSize * inputSize);
 			float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
-			prefilteredColor += imageLoad(inFace, ivec2(L.x, L.y)).rgb * NDotL;
+			mipLevel = clamp(mipLevel, 0.0, float(textureQueryLevels(inFace) - 1));
+			prefilteredColor += textureLod(inFace, L, mipLevel).rgb * NDotL;
 			totalWeight += NDotL;
 		}
 	}
-
 	vec3 result = prefilteredColor / (totalWeight + 0.0001);
 
-	imageStore(outFace, ivec2(gl_GlobalInvocationID.xy), vec4(result, 0.0));
+	imageStore(outFace, ivec3(gl_GlobalInvocationID.xy, face), vec4(result, 1.0));
 }
 

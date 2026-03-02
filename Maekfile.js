@@ -55,12 +55,19 @@ const cube_objs = [
 	maek.CPP('A1/UtilsTool/CubeHelpers.cpp'),
 	maek.CPP('A1/UtilsTool/CubeExecute.cpp'),
 	maek.CPP('A1/UtilsTool/GPUFace.cpp'),
+	maek.CPP('A1/UtilsTool/ImageProcessor.cpp'),
 ];
 
 const cube_shader = [
-	maek.GLSLC('A1/UtilsTool/cube.comp'),
+	maek.GLSLC('A1/UtilsTool/Shaders/ggx.comp'),
+	maek.GLSLC('A1/UtilsTool/Shaders/irradiance.comp'),
 ];
 cube_objs.push( maek.CPP('A1/UtilsTool/CubePipeline.cpp', undefined, { depends:[...cube_shader] } ) );
+
+const lut_shader = [
+	maek.GLSLC('A1/UtilsTool/Shaders/brdfLUT.comp'),
+];
+cube_objs.push( maek.CPP('A1/UtilsTool/LUTPipeline.cpp', undefined, { depends:[...lut_shader] } ) );
 
 const cube_exe = maek.LINK([...cube_objs], 'bin/cube');
 

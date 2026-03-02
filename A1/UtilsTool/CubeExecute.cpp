@@ -46,10 +46,10 @@ void CubeExecute::Configuration::parse(int argc, char **argv)
 				// generate an irradiance texture based on a cubemap
 				ProcessMode = EProcessMode::Cubemap2Irradiance;
 			}
-			else if(arg == "--roughness")
+			else if(arg == "--ggx")
 			{
 				// generate a set of ggx texture for roughness
-				ProcessMode = EProcessMode::Cubemap2Roughness;
+				ProcessMode = EProcessMode::Cubemap2GGX;
 			}
 
 			// Output Path
@@ -62,13 +62,52 @@ void CubeExecute::Configuration::parse(int argc, char **argv)
 				IrradianceOutputSize = static_cast<uint8_t>(std::stoi(arg));
 			}
 		}
+		if(arg == "--irradiance")
+		{
+			// generate an irradiance texture based on a cubemap
+			ProcessMode = EProcessMode::Cubemap2Irradiance;
+			if (argi + 2 >= argc) 
+			{
+        		throw std::runtime_error("--irradiance require input image path, output image path");
+    		}
+			// Input Path
+    		argi += 1;
+    		InImagePath = argv[argi];
+			// output Path
+			argi += 1;
+			OutImagePath = argv[argi];
+
+		}
+		else if(arg == "--ggx")
+		{
+			// generate a set of ggx texture for roughness
+			ProcessMode = EProcessMode::Cubemap2GGX;
+			if (argi + 2 >= argc) 
+			{
+        		throw std::runtime_error("--ggx require input image path, output image path");
+    		}
+			// Input Path
+    		argi += 1;
+    		InImagePath = argv[argi];
+			// output Path
+			argi += 1;
+			OutImagePath = argv[argi];
+		}
+		else if(arg == "--lut")
+		{
+			argi += 1;
+			arg = argv[argi];
+			OutImagePath = argv[argi];
+			ProcessMode = EProcessMode::BrdfLUT;
+		}
 	}
 }
 
 void CubeExecute::Configuration::usage(std::function< void(const char *, const char *) > const &callback) 
 {
-	callback("--cube", "generate an irradiance texture based on a cubemap ex: --cube input.png --lambertian output.png 16");
-	callback("--cube", "generate a set of ggx texture for roughness ex: --cube input.png --roughness output.png");
+	callback("--irradiance", "generate an irradiance texture based on a cubemap ex: --irradiance input.png outputFileName");
+	callback("--ggx", "generate a set of ggx texture for roughness ex: --ggx input.png --ggx outputFileName");
+	callback("--lut", "generate a set of ggx texture for lut ex: --lut outputFileName");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(

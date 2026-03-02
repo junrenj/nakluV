@@ -1,14 +1,7 @@
-#include "CubeExecute.hpp"
-#include "CubePipeline.hpp"
-#include "GPUFace.hpp"
-#include "../Render/Color.hpp"
-#include "../../VK.hpp"
+
+#include "ImageProcessor.hpp"
 #include <iostream>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "../../stb_image.h"
-
-
+#include <fstream>
 
 
 int main(int argc, char **argv)
@@ -55,139 +48,29 @@ int main(int argc, char **argv)
 		//loads vulkan library, load device, initializes helpers:
 		CubeExecute CubeExe(configuration);
 
-		// Initialize Pipeline & Process Logic
-		FCubePipeline Pipeline;
-		Pipeline.Create(CubeExe);
-
-		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
-		// create descriptor pool
+		if(configuration.ProcessMode == CubeExecute::Configuration::EProcessMode::Cubemap2Irradiance)
 		{
-			std::array< VkDescriptorPoolSize, 2> PoolSizes
-			{
-				VkDescriptorPoolSize
-				{
-					.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.descriptorCount = 6*2 + 1, // one for each input and output cube face, plus one for params
-				},
-				VkDescriptorPoolSize
-				{
-					.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-					.descriptorCount = 6*2, // one for each input and output cube face
-				},
-			};
-
-			VkDescriptorPoolCreateInfo CreateInfo
-			{
-				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-				.flags = 0, //because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-				.maxSets = 12 + 1, //one set per in/out cube face, plus one for params
-				.poolSizeCount = uint32_t(PoolSizes.size()),
-				.pPoolSizes = PoolSizes.data(),
-			};
-			VK( vkCreateDescriptorPool(CubeExe.device, &CreateInfo, nullptr, &DescriptorPool) );
+			const std::string FileName = configuration.OutImagePath + "_Irradiance" + ".png";
+			UImageProcessor::IrradianceProcess(CubeExe, configuration, configuration.IrradianceOutputSize, FileName);
 		}
-
-		VkCommandPool CommandPool = VK_NULL_HANDLE;
-		// create command pool
+		else if(configuration.ProcessMode == CubeExecute::Configuration::EProcessMode::Cubemap2GGX)
 		{
-			VkCommandPoolCreateInfo CreateInfo
+			const uint8_t GGXLevelsCount = configuration.GGXLevelsCount; 
+			for (uint8_t i = 1; i <= GGXLevelsCount; i++)
 			{
-				.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-				.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-				.queueFamilyIndex = CubeExe.graphics_queue_family.value(),
-			};
-			VK( vkCreateCommandPool(CubeExe.device, &CreateInfo, nullptr, &CommandPool) );
+				const std::string FileName = configuration.OutImagePath + "_GGX_" + std::to_string(i) + ".png";
+				const float InRoughness = (float)i / (float)GGXLevelsCount;
+				const float Ratio = 1.0f / powf(2.0f, i);
+				UImageProcessor::GGXProcess(CubeExe, configuration, InRoughness, Ratio, FileName);
+			}
+			
 		}
-
-		VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
-		// allocate a command buffer from the command pool:
-		{ 
-			VkCommandBufferAllocateInfo AllocInfo
-			{
-				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-				.commandPool = CommandPool,
-				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-				.commandBufferCount = 1,
-			};
-			VK( vkAllocateCommandBuffers(CubeExe.device, &AllocInfo, &CommandBuffer) );
-		}
-
-        // load images / create descriptors
-		int Width, Height, Channels;
-		stbi_set_flip_vertically_on_load(false);
-		const char* Temp = CubeExe.configuration.InImagePath.c_str();
-		uint8_t* Data = stbi_load(Temp, &Width, &Height, &Channels, 4);
-		
-		std::vector< vec3 > InputFloats;
-		for (int i = 0; i < Width * Height; ++i) 
+		else if(configuration.ProcessMode == CubeExecute::Configuration::EProcessMode::BrdfLUT)
 		{
-			InputFloats.push_back(RGBE2Float(glm::u8vec4(Data[i*4], Data[i*4+1], Data[i*4+2], Data[i*4+3])));
+			const std::string FileName = configuration.OutImagePath + ".hdr"; 	// HDR Format
+			UImageProcessor::BRDFLUTProcess(CubeExe, configuration, FileName);
 		}
 
-		size_t InSize = Width;
-        size_t OutSize = configuration.IrradianceOutputSize;
-        std::vector< vec3 > OutData (OutSize * OutSize * 6, vec3(0.0f));
-
-        // Create 
-		FGPUFace InFace;
-		FGPUFace OutFace;
-		InFace.Create(CubeExe, DescriptorPool, Pipeline, (uint32_t)Width, (uint32_t)Height, InputFloats.data());
-		OutFace.Create(CubeExe, DescriptorPool, Pipeline, (uint32_t)OutSize, (uint32_t)OutSize * 6, OutData.data());
-
-		// run pipeline
-		{ 
-			VK( vkResetCommandBuffer(CommandBuffer, 0) );
-
-			// begin recording:
-			{
-				VkCommandBufferBeginInfo BeginInfo{
-					.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-					.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, //will record again every submit
-				};
-				VK( vkBeginCommandBuffer(CommandBuffer, &BeginInfo) );
-			}
-
-			// use the cube pipeline:
-			vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline.Handle);
-
-			{ //bind in/out descriptor sets:
-				std::array< VkDescriptorSet, 2 > DescriptorSets
-				{
-					InFace.Descriptors,
-					OutFace.Descriptors,
-				};
-				vkCmdBindDescriptorSets
-				(
-					CommandBuffer,                  // command buffer
-					VK_PIPELINE_BIND_POINT_COMPUTE, // pipeline bind point
-					Pipeline.Layout,                // pipeline layout
-					0,                              // first set
-					uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
-					0, nullptr // dynamic offsets count, ptr
-				);
-			}
-
-	
-			// actually run the thing:
-			vkCmdDispatchBase(CommandBuffer, 0, 0, 1, (uint32_t)InSize, (uint32_t)InSize, 1);
-
-			// done recording:
-			VK( vkEndCommandBuffer(CommandBuffer) );
-
-			// submit command buffer:
-			{
-				VkSubmitInfo SubmitInfo
-				{
-					.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-					.commandBufferCount = 1,
-					.pCommandBuffers = &CommandBuffer,
-				};
-
-				VK( vkQueueSubmit(CubeExe.graphics_queue, 1, &SubmitInfo, nullptr) );
-			}
-
-			VK( vkDeviceWaitIdle(CubeExe.device) );
-		}
 		std::cout << "Computing: done." << std::endl;
 		
 	} 
@@ -198,3 +81,4 @@ int main(int argc, char **argv)
 	}
     return 0;
 }
+

@@ -1,5 +1,7 @@
 #version 450
 
+const int DisplacementMaxSteps = 32;
+
 struct Light
 {
 	uint TYPE;
@@ -44,13 +46,68 @@ layout(location=3) in mat3 TBN;
 
 layout(location=0) out vec4 outColor;
 
+//~BEGIN function for feature
+vec4 Displacement()
+{
+	vec2 ddx = dFdx(texcoord);
+    vec2 ddy = dFdy(texcoord);
+	vec3 worldV = normalize(EYE - position);
+	vec3 vTangent = transpose(TBN) * worldV;
+	vec2 UVDist = vec2(vTangent.x, vTangent.y) / vTangent.z * 0.05;
+	float rayHeight = 1.0;
+	float stepSize = 1.0 / DisplacementMaxSteps;
+	vec2 outputUV;
 
-vec4 Mirror()
+	int i = 0;
+	float oldRayDepth = 1;
+	float oldTexDepth = texture(DISPLACEMENT_TEX, texcoord).r;
+	float currentTexDepth;
+	float yIntersect;
+	vec2 uvOffset = vec2(0.0);
+	while(i < DisplacementMaxSteps + 2)
+	{
+		currentTexDepth = textureGrad(DISPLACEMENT_TEX, texcoord + uvOffset, ddx, ddy).r;
+
+		if(rayHeight < currentTexDepth)
+		{
+			float xIntersect = (oldRayDepth - oldTexDepth) + (currentTexDepth - rayHeight);
+			xIntersect = (currentTexDepth - rayHeight) / xIntersect;
+			yIntersect = (oldRayDepth * xIntersect) + (rayHeight * (1.0 - xIntersect));
+			uvOffset -= (xIntersect * UVDist);
+			break;
+		}
+
+		oldRayDepth = rayHeight;
+		rayHeight -= stepSize;
+		uvOffset += UVDist * stepSize;
+		oldTexDepth = currentTexDepth;
+
+		i++;
+	}
+
+	vec4 outputValue;
+	outputValue.xy = uvOffset + texcoord;
+	outputValue.z = yIntersect;
+	outputValue.w = 1;
+
+	return outputValue;
+}
+
+vec3 NormalFromTexture()
 {
 	vec3 nTangent = texture(NORMAL_TEX, texcoord).rgb;
 	nTangent = nTangent * 2.0 - 1.0;
 
 	vec3 nWorld = normalize(TBN * nTangent);
+	return nWorld;
+}
+//~END function for feature
+
+
+// function for different material calculation
+vec4 Mirror()
+{
+	vec3 nWorld = NormalFromTexture();
 	vec3 v = normalize(EYE - position);
 	vec3 r = reflect(-v, nWorld);
 	vec3 env = texture(ENV_TEX, r).rgb;
@@ -59,26 +116,20 @@ vec4 Mirror()
 
 vec4 Environment()
 {
-	vec3 nTangent = texture(NORMAL_TEX, texcoord).rgb;
-	nTangent = nTangent * 2.0 - 1.0;
-
-	vec3 nWorld = normalize(TBN * nTangent);
+	vec3 nWorld = NormalFromTexture();
 	vec3 env = texture(ENV_TEX, nWorld).rgb;
 	return vec4(env, 1.0);
 }
 
-vec4 PBR()
+vec4 PBR(vec2 uv)
 {
 	// Basic Info
-	vec3 albedo = texture(ALBEDO_TEX, texcoord).rgb;
-	float rough = texture(ROUGHNESS_TEX, texcoord).r;
-	float metal = texture(METALNESS_TEX, texcoord).r;
-	float displace = texture(DISPLACEMENT_TEX, texcoord).r;
-	vec3 nTangent = texture(NORMAL_TEX, texcoord).rgb;
-	nTangent = nTangent * 2.0 - 1.0;
+	vec3 albedo = texture(ALBEDO_TEX, uv).rgb;
+	float rough = texture(ROUGHNESS_TEX, uv).r;
+	float metal = texture(METALNESS_TEX, uv).r;
 
 	// Dir
-	vec3 nWorld = normalize(TBN * nTangent);
+	vec3 nWorld = NormalFromTexture();
 	vec3 v = normalize(EYE - position);
 	vec3 r = reflect(-v, nWorld);
 
@@ -89,15 +140,12 @@ vec4 PBR()
 	return vec4(nWorld,1);	// TODO: finish it
 }
 
-vec4 Lambertian()
+vec4 Lambertian(vec2 uv)
 {
 	// Basic Info
-	vec3 albedo = texture(ALBEDO_TEX, texcoord).rgb;
-	vec3 nTangent = texture(NORMAL_TEX, texcoord).rgb;
-	nTangent = nTangent * 2.0 - 1.0;
-	float displace = texture(DISPLACEMENT_TEX, texcoord).r;
+	vec3 albedo = texture(ALBEDO_TEX, uv).rgb;
 	// Dir
-	vec3 nWorld = normalize(TBN * nTangent);
+	vec3 nWorld = NormalFromTexture();
 	vec3 v = normalize(EYE - position);
 	vec3 r = reflect(-v, nWorld);
 
@@ -125,11 +173,13 @@ void main()
 	vec4 computeColor = vec4(0.0);
 	if(materialType == 0)	// PBR
 	{
-		computeColor = PBR();
+		vec2 uv = Displacement().xy;
+		computeColor = PBR(uv);
 	}
 	else if(materialType == 1) // Lambertian
 	{
-		computeColor = Lambertian();
+		vec2 uv = Displacement().xy;
+		computeColor = Lambertian(uv);
 	}
 	else if(materialType == 2)	// Mirror
 	{
@@ -144,6 +194,7 @@ void main()
 	float exposure = pow(2, AJUST_VAR.x);
 	computeColor *= exposure;
 
+	// Tonemapping
 	if(AJUST_VAR.y == 0)
 	{
 		// 0. linear

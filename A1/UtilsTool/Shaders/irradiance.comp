@@ -1,0 +1,70 @@
+#version 450
+
+const float PI = 3.14159265359;
+const uint SAMPLE_COUNT = 4096;
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform samplerCube inFace;
+layout(set = 1, binding = 0, rgba32f) writeonly uniform imageCube outFace;
+
+mat3 GetTangentSpace(vec3 normal) 
+{
+    vec3 up = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, normal));
+    vec3 bitangent = cross(normal, tangent);
+    return mat3(tangent, bitangent, normal);
+}
+
+vec3 GetDirection(ivec3 pixelCoord, vec2 imageSize) 
+{
+    vec2 st = (vec2(pixelCoord.xy) + 0.5) / imageSize;
+    vec2 uv = st * 2.0 - 1.0;
+    
+    vec3 dir;
+    switch(pixelCoord.z) 
+    {
+        case 0: dir = vec3( 1.0, -uv.y, -uv.x); break; // +X
+        case 1: dir = vec3(-1.0, -uv.y,  uv.x); break; // -X
+        case 2: dir = vec3( uv.x,  1.0,  uv.y); break; // +Y
+        case 3: dir = vec3( uv.x, -1.0, -uv.y); break; // -Y
+        case 4: dir = vec3( uv.x, -uv.y,  1.0); break; // +Z
+        case 5: dir = vec3(-uv.x, -uv.y, -1.0); break; // -Z
+    }
+    return normalize(dir);
+}
+
+void main() 
+{
+    ivec2 outImageSize = imageSize(outFace);
+    ivec3 globalId = ivec3(gl_GlobalInvocationID.xyz);
+
+    if (globalId.x >= outImageSize.x || globalId.y >= outImageSize.y)
+    {
+        return;
+    }
+
+    vec3 N = GetDirection(globalId, vec2(outImageSize.xy));
+    mat3 TBN = GetTangentSpace(N);
+
+    vec3 irradiance = vec3(0.0);
+
+    float sampleDelta = 2.0 * PI / SAMPLE_COUNT;
+    float sampleCount = 0.0; 
+
+    for (float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta) 
+    {
+        for (float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta) 
+        {
+            vec3 tangentSample = vec3(sin(theta) * cos(phi),  sin(theta) * sin(phi), cos(theta));
+            vec3 sampleVec = TBN * tangentSample;
+
+            irradiance += texture(inFace, sampleVec).rgb * cos(theta) * sin(theta);
+            sampleCount ++;
+        }
+    }
+
+    irradiance = PI * irradiance * (1.0 / sampleCount);
+
+    imageStore(outFace, globalId, vec4(irradiance, 1.0));
+}

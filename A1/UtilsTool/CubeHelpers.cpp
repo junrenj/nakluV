@@ -120,12 +120,13 @@ void CubeHelpers::destroy_buffer(AllocatedBuffer &&buffer)
 	this->Free(std::move(buffer.allocation));
 }
 
-CubeHelpers::AllocatedImage CubeHelpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map, uint8_t layers, VkImageCreateFlags flag) {
+CubeHelpers::AllocatedImage CubeHelpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map, uint8_t layers, VkImageCreateFlags flag, uint32_t mipLevels) {
 	AllocatedImage image;
 	
 	image.extent = extent;
 	image.format = format;
 	image.layers = layers;
+	image.mipLevels = mipLevels;
 
 	VkImageCreateInfo CreateInfo
 	{
@@ -139,7 +140,7 @@ CubeHelpers::AllocatedImage CubeHelpers::create_image(VkExtent2D const &extent, 
 			.height = extent.height,
 			.depth = 1
 		},
-		.mipLevels = 1,
+		.mipLevels = mipLevels,
 		.arrayLayers = layers,
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.tiling = tiling,
@@ -263,7 +264,7 @@ void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImag
 	{
 		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 		.baseMipLevel = 0,
-		.levelCount = 1,
+		.levelCount = target.mipLevels,
 		.baseArrayLayer = 0,
 		.layerCount = target.layers,
 	};
@@ -375,9 +376,15 @@ void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImag
 			);
 		}
 
-		// NOTE: if image had mip levels, would need to copy as additional regions here.
+		
 	}
 
+	if(target.mipLevels > 1)
+	{
+		// NOTE: if image had mip levels, would need to copy as additional regions here.
+		GenerateMipmaps(target);
+	}
+	else
 	// transition the image memory to shader-read-only-optimal layout
 	{
 		VkImageMemoryBarrier Barrier
@@ -422,6 +429,56 @@ void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImag
 
 	// destroy the source buffer
 	destroy_buffer(std::move(TransferSrc));
+}
+
+void CubeHelpers::GenerateMipmaps(AllocatedImage& Image)
+{
+    uint32_t MipLevels = Image.mipLevels;
+    int32_t MipWidth = Image.extent.width;
+    int32_t MipHeight = Image.extent.height;
+
+    for (uint32_t i = 1; i < MipLevels; i++)
+    {
+        VkImageMemoryBarrier Barrier = { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+        Barrier.image = Image.handle;
+        Barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 1, 0, 6 };
+        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        Barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(TransferCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
+        VkImageBlit Blit{};
+        Blit.srcOffsets[0] = {0, 0, 0};
+        Blit.srcOffsets[1] = {MipWidth, MipHeight, 1};
+        Blit.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 6};
+        Blit.dstOffsets[0] = {0, 0, 0};
+        Blit.dstOffsets[1] = { MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1 };
+        Blit.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 6};
+
+        vkCmdBlitImage(TransferCommandBuffer, Image.handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Image.handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Blit, VK_FILTER_LINEAR);
+
+        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(TransferCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
+        if (MipWidth > 1) MipWidth /= 2;
+        if (MipHeight > 1) MipHeight /= 2;
+    }
+
+    VkImageMemoryBarrier LastBarrier = { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+    LastBarrier.image = Image.handle;
+    LastBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, MipLevels - 1, 1, 0, 6 };
+    LastBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    LastBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    LastBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    LastBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(TransferCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &LastBarrier);
 }
 
 //----------------------------
