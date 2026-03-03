@@ -253,7 +253,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.TransformDescriptors));
 			// NOTE: will fill in this descriptor set in render when buffers are [re-]allocated
 		}
-		
+
 		// allocate descriptor set for Light descriptor
 		{
 			VkDescriptorSetAllocateInfo AllocInfo
@@ -348,7 +348,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				{
 					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 					.baseMipLevel = 0,
-					.levelCount = 1,
+					.levelCount = Image.mipLevels,
 					.baseArrayLayer = 0,
 					.layerCount = Image.layers,
 				},
@@ -384,7 +384,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
 			.unnormalizedCoordinates = VK_FALSE,
 		};
-		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSampler) );
+		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSamplerNearest) );
 	}
 
 	{
@@ -404,11 +404,11 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.compareEnable = VK_FALSE,
 			.compareOp = VK_COMPARE_OP_ALWAYS, // doesn't matter if compare isn't enabled
 			.minLod = 0.0f,
-			.maxLod = 0.0f,
+			.maxLod = 5.0f,
 			.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
 			.unnormalizedCoordinates = VK_FALSE,
 		};
-		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSampler_1) );
+		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSamplerLinear) );
 	}
 
 	// create the texture descriptor pool	
@@ -439,7 +439,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 
 	// create env texture descriptor pool
 	{
-		const std::unordered_map<UNode*, UEnvironment*>& Environments = Scene.Environments;
+		const std::vector<UEnvironment*>& Environments = Scene.Environments;
 		const uint32_t EnvCount = uint32_t(Environments.size());
 
 		std::array< VkDescriptorPoolSize, 1 > PoolSizes
@@ -499,7 +499,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				const uint32_t Index = Indices[k];
 				Infos[k] = VkDescriptorImageInfo
 				{
-					.sampler = TextureSampler,
+					.sampler = TextureSamplerNearest,
 					.imageView = TextureViews[Index],
 					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				};
@@ -520,11 +520,11 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 	
 	// env Texture push
 	{
-		const std::unordered_map<UNode*, UEnvironment*>& Environments = Scene.Environments;
+		const std::vector<UEnvironment*>& Environments = Scene.Environments;
 		EnvTexDescriptors.clear();
 		EnvTexDescriptors.reserve(Environments.size());
 
-		for (auto& [Node, Env] : Environments)
+		for (auto& Env : Environments)
 		{
 			if (!Env) continue;
 
@@ -543,17 +543,28 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				&EnvTexDescriptors.back()
 			));
 
-			std::vector<VkDescriptorImageInfo> Infos(2);
-			std::vector<VkWriteDescriptorSet> Writes(2);
+			std::vector<VkDescriptorImageInfo> Infos(3);
+			std::vector<VkWriteDescriptorSet> Writes(3);
 
-			for (uint32_t i = 0; i < 2; i++)
+			for (uint32_t i = 0; i < 3; i++)
 			{
 				Infos[i] = VkDescriptorImageInfo
 				{
-					.sampler = TextureSampler_1,
-					.imageView = i == 0 ? TextureViews[Env->EnvTexture] : TextureViews[Scene.TestIdx],
+					.sampler = TextureSamplerLinear,
 					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				};
+				if(i == 0)
+				{
+					Infos[i].imageView = TextureViews[Env->EnvTexture];
+				}
+				else if(i == 1)
+				{
+					Infos[i].imageView = TextureViews[Scene.IrradianceTexIdx];
+				}
+				else if(i == 2)
+				{
+					Infos[i].imageView = TextureViews[Scene.LutTexIdx];
+				}
 
 				Writes[i] = VkWriteDescriptorSet 
 				{
@@ -597,10 +608,10 @@ UAssignmentOne::~UAssignmentOne()
 		EnvTexDescriptors.clear();
 	}
 
-	if(TextureSampler)
+	if(TextureSamplerNearest)
 	{
-		vkDestroySampler(rtg.device, TextureSampler, nullptr);
-		TextureSampler = VK_NULL_HANDLE;
+		vkDestroySampler(rtg.device, TextureSamplerNearest, nullptr);
+		TextureSamplerNearest = VK_NULL_HANDLE;
 	}
 
 	for (VkImageView &View : TextureViews)
@@ -1413,27 +1424,54 @@ void UAssignmentOne::ReserveTextures()
 {
     const std::vector<UTexture*>& TexturesData = Scene.Textures;
     Textures.reserve(TexturesData.size());
-    // TODO: if we have mipmap, it would pull more on it. for now mipmap level0 is enough
     for (uint32_t i = 0; i < TexturesData.size(); i++)
     {
 		const UTexture* Texture = TexturesData[i];
+		const size_t MipmapsCount = Texture->MipmapsData.size();
+		std::vector<uint8_t> CombinedData;
+		// Combine all mipmapsData
+		for (uint32_t mip = 0; mip < MipmapsCount; ++mip)
+		{
+			const UTexture::FTextureMipMap& MipmapData = *(Texture->MipmapsData[mip]);
+    		const uint8_t* src = reinterpret_cast<const uint8_t*>(MipmapData.BulkData.data());
+    		size_t mipSize = sizeof(MipmapData.BulkData[0]) * MipmapData.BulkData.size();
+    		CombinedData.insert(CombinedData.end(), src, src + mipSize);
+		}
+		
         const UTexture::FTextureMipMap& MipmapData = *(Texture->MipmapsData[0]);
+		
+		VkFormat Format = VK_FORMAT_R8G8B8A8_SRGB;
 		switch (Texture->Type)
 		{
 			case UTexture::EType::Flat:
+				switch (Texture->Format)
+				{
+					case UTexture::EFormat::SRGB:
+						Format = VK_FORMAT_R8G8B8A8_SRGB;
+						break;
+					case UTexture::EFormat::Linear:
+						Format = VK_FORMAT_R8G8B8A8_UNORM;
+						break;
+					case UTexture::EFormat::RGBE:
+						Format = VK_FORMAT_R32G32B32A32_SFLOAT;
+						break;
+				}
 			Textures.emplace_back(rtg.helpers.create_image(
 				VkExtent2D{ .width = MipmapData.SizeX , .height = MipmapData.SizeY }, //size of image
-				Texture->Format == UTexture::EFormat::SRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM, //how to interpret image data (in this case, linearly-encoded 8-bit RGBA)
+				Format,
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, //will sample and upload
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
-				Helpers::Unmapped
-			));
+				Helpers::Unmapped,
+				1,
+				0u,
+				(uint32_t)MipmapsCount
+				));
 				break;
+
 			case UTexture::EType::Cube:
-			uint32_t faceSize = MipmapData.SizeX;
-			assert(MipmapData.SizeY == faceSize * 6);
-			Textures.emplace_back(rtg.helpers.create_image(
+				uint32_t faceSize = MipmapData.SizeX;
+				Textures.emplace_back(rtg.helpers.create_image(
 				VkExtent2D{ .width = faceSize , .height = faceSize }, //size of image
 				VK_FORMAT_R32G32B32A32_SFLOAT, //how to interpret image data (in this case, 32 FRGBA)
 				VK_IMAGE_TILING_OPTIMAL,
@@ -1441,12 +1479,13 @@ void UAssignmentOne::ReserveTextures()
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //should be device-local
 				Helpers::Unmapped,
 				6,
-				VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
-			));
+				VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+				(uint32_t)MipmapsCount
+				));
 				break;
 		}
         // transfer data
-        rtg.helpers.transfer_to_image(MipmapData.BulkData.data(), sizeof(MipmapData.BulkData[0]) * MipmapData.BulkData.size(), Textures.back());
+        rtg.helpers.transfer_to_image(CombinedData.data(), CombinedData.size(), Textures.back());
     }
 }
 //~END Load Texture

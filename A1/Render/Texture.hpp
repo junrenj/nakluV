@@ -15,7 +15,7 @@ public:
     {
         Linear,
         SRGB,
-        RGBE
+        RGBE,
     }Format = EFormat::Linear;
 
     struct FTextureMipMap
@@ -60,7 +60,8 @@ public:
         static UTexture Tex = []
         {
             UTexture T;
-            T.Get1x1PixelTexture(0.5,0.5,1);
+            T.Get1x1PixelTexture(0.3f,0.3f,1.0f);
+            T.Format = EFormat::Linear;
             return T;
         }();
         return &Tex;

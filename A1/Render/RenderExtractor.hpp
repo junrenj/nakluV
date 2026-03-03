@@ -44,6 +44,10 @@ public:
     // New Animation Structure
     static void BuildAnimData(std::unordered_map< const S72::Node* , UNode* >& S72Node2UNode);
     static void CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInstance& AnimInstance);
+
+    // Get Irradiance、LUT、GGX Texture
+    static void GetPBRDependencyTexture(const std::string& S72FilePath, URenderScene& RenderScene);
+
 private:
     static std::vector<uint8_t> ReadBinaryFile(const std::string& path);
 private:

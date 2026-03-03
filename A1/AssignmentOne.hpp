@@ -151,13 +151,13 @@ struct UAssignmentOne : RTG::Application
 
 	std::vector< Helpers::AllocatedImage > Textures;
 	std::vector< VkImageView > TextureViews;
-	VkSampler TextureSampler = VK_NULL_HANDLE;
+	VkSampler TextureSamplerNearest = VK_NULL_HANDLE;
 	VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
 	std::vector< VkDescriptorSet > MaterialDescriptors;
 	VkDescriptorPool EnvTexDescriptorPool = VK_NULL_HANDLE;
 	std::vector< VkDescriptorSet > EnvTexDescriptors;
 
-	VkSampler TextureSampler_1 = VK_NULL_HANDLE;
+	VkSampler TextureSamplerLinear = VK_NULL_HANDLE;
 
 	//--------------------------------------------------------------------
 	//Resources that change when the swapchain is resized:

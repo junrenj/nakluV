@@ -4,6 +4,7 @@
 #include "Color.hpp"
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb_image.h"
 
@@ -33,53 +34,8 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     RenderScene.GenerateWholeVertexBuffer();
     // 4. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
-
-
-    // TODO: delete this, because this is to load irradiance texture
-    UTexture* NewTexture = new UTexture();
-    NewTexture->Type = UTexture::EType::Cube;   
-    const std::string path = "external/s72/examples/ox_bridge_morning.lambertian.png";
-    NewTexture->Format = UTexture::EFormat::Linear;
-    stbi_set_flip_vertically_on_load(false);
-
-    int Width, Height, Channels;
-    uint8_t* Pixels = stbi_load(path.c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
-
-    if (Pixels) 
-    {
-        // 3. Mipmap Structure
-        UTexture::FTextureMipMap* Mip0 = new UTexture::FTextureMipMap();
-        Mip0->SizeX = static_cast<uint32_t>(Width);
-        Mip0->SizeY = static_cast<uint32_t>(Height);
-        
-        size_t NumPixels = Width * Height;
-        size_t TotalBtyes = NumPixels * 4 * sizeof(float); // R32G32B32A32_SFLOAT
-        Mip0->BulkData.resize(TotalBtyes);
-
-        float* FloatData = reinterpret_cast<float*>(Mip0->BulkData.data());
-        for (size_t i = 0; i < NumPixels; i++)
-        {
-            glm::u8vec4 RGBE(
-                Pixels[i * 4 + 0],
-                Pixels[i * 4 + 1],
-                Pixels[i * 4 + 2],
-                Pixels[i * 4 + 3]
-            );
-
-            glm::vec3 RGBF = RGBE2Float(RGBE);
-
-            FloatData[i * 4 + 0] = RGBF.r;
-            FloatData[i * 4 + 1] = RGBF.g;
-            FloatData[i * 4 + 2] = RGBF.b;
-            FloatData[i * 4 + 3] = 1.0f;
-        }
-
-        NewTexture->MipmapsData.push_back(std::move(Mip0));
-        RenderScene.Textures.push_back(NewTexture);
-        RenderScene.TestIdx = uint32_t(RenderScene.Textures.size() - 1);
-        // 4. release data
-        stbi_image_free(Pixels);
-    }
+    // 5. Get PBR Dependency
+    GetPBRDependencyTexture(S72Path, RenderScene);
 }
 
 //BEGIN: UNode Data Extract
@@ -173,7 +129,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
         }
 
         NewNode->Environment = NewEnvironment;
-        RenderScene.Environments[NewNode] = NewEnvironment;
+        RenderScene.Environments.push_back(NewEnvironment);
     }
 
     if(InS72Node.light)
@@ -336,6 +292,7 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 // NewMat->Albedo = glm::vec4(col.r, col.g, col.b, 1.0f);
                 UTexture* NewTex = new UTexture();
                 NewTex->Get1x1PixelTexture(col->r, col->g, col->b);
+                NewTex->Format = UTexture::EFormat::SRGB;
                 Scene.Textures.push_back(NewTex);
                 NewMat->AlbedoTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
             } 
@@ -367,6 +324,7 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 {
                     UTexture* NewTex = new UTexture();
                     NewTex->Get1x1PixelTexture(Roughness, Roughness, Roughness);
+                    NewTex->Format = UTexture::EFormat::Linear;
                     Scene.Textures.push_back(NewTex);
                     NewMat->RoughnessTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
                 }
@@ -399,6 +357,7 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 {
                     UTexture* NewTex = new UTexture();
                     NewTex->Get1x1PixelTexture(Metalness, Metalness, Metalness);
+                    NewTex->Format = UTexture::EFormat::Linear;
                     Scene.Textures.push_back(NewTex);
                     NewMat->MetalnessTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
                 }
@@ -424,6 +383,7 @@ FMaterial* URenderExtractor::CloneUMaterialFromS72Material(
                 // NewMat->Albedo = glm::vec4(col->r, col->g, col->b, 1.0f);
                 UTexture* NewTexture = new UTexture();
                 NewTexture->Get1x1PixelTexture(col->r, col->g, col->b);
+                NewTexture->Format = UTexture::EFormat::SRGB;
                 Scene.Textures.push_back(NewTexture);
                 NewMat->AlbedoTexIdx = static_cast<uint32_t>(Scene.Textures.size() - 1);
             } 
@@ -553,6 +513,7 @@ UTexture* URenderExtractor::ReadBulkDataFromImage(const S72::Texture& InTexture)
 
     return NewTexture;
 }
+
 //END: Texture Data Extract
 
 //BEGIN: URenerMesh Data Extract
@@ -760,3 +721,156 @@ void URenderExtractor::CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInst
     AnimInstance.Values.insert(AnimInstance.Values.end(), Driver.values.begin(), Driver.values.end());
 }
 //END: Animation
+
+//BEGIN: Get PBR Texture Dependency - ggx and irradiance
+void URenderExtractor::GetPBRDependencyTexture(const std::string& S72FilePath, URenderScene& RenderScene)
+{
+    // 0. irradiance
+    {
+        stbi_set_flip_vertically_on_load(false);
+        std::filesystem::path Path(S72FilePath);
+        std::string IrradiancePath = Path.parent_path().string() + "/" + "env_irradiance.png";  // TODO: make it more flexible
+
+        UTexture* NewTexture = new UTexture();
+        NewTexture->Type = UTexture::EType::Cube;
+        const std::string path = IrradiancePath;
+        NewTexture->Format = UTexture::EFormat::Linear;
+
+        int Width, Height, Channels;
+        uint8_t* Pixels = stbi_load(path.c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
+
+        if (Pixels) 
+        {
+            // Mipmap Structure
+            UTexture::FTextureMipMap* Mip0 = new UTexture::FTextureMipMap();
+            Mip0->SizeX = static_cast<uint32_t>(Width);
+            Mip0->SizeY = static_cast<uint32_t>(Height);
+            
+            size_t NumPixels = Width * Height;
+            size_t TotalBtyes = NumPixels * 4 * sizeof(float); // R32G32B32A32_SFLOAT
+            Mip0->BulkData.resize(TotalBtyes);
+
+            float* FloatData = reinterpret_cast<float*>(Mip0->BulkData.data());
+            for (size_t i = 0; i < NumPixels; i++)
+            {
+                glm::u8vec4 RGBE(
+                    Pixels[i * 4 + 0],
+                    Pixels[i * 4 + 1],
+                    Pixels[i * 4 + 2],
+                    Pixels[i * 4 + 3]
+                );
+
+                glm::vec3 RGBF = RGBE2Float(RGBE);
+
+                FloatData[i * 4 + 0] = RGBF.r;
+                FloatData[i * 4 + 1] = RGBF.g;
+                FloatData[i * 4 + 2] = RGBF.b;
+                FloatData[i * 4 + 3] = 1.0f;
+            }
+
+            NewTexture->MipmapsData.push_back(std::move(Mip0));
+            RenderScene.Textures.push_back(NewTexture);
+            RenderScene.IrradianceTexIdx = uint32_t(RenderScene.Textures.size() - 1);
+            // 4. release data
+            stbi_image_free(Pixels);
+        }
+    }
+    // 1. LUT RGB_F16 Hdr format
+    { 
+        stbi_set_flip_vertically_on_load(true);
+
+        std::filesystem::path Path(S72FilePath);
+        std::string LutPath = Path.parent_path().string() + "/" + "brdf_lut.hdr";  // TODO: make it more flexible
+
+        UTexture* NewTexture = new UTexture();
+        NewTexture->Type = UTexture::EType::Flat;
+        const std::string path = LutPath;
+        NewTexture->Format = UTexture::EFormat::RGBE;
+
+        int Width, Height, Channels;
+        float* Pixels = stbi_loadf(path.c_str(), &Width, &Height, &Channels, 0);
+
+        if (Pixels) 
+        {
+            // 3. Mipmap Structure
+
+            UTexture::FTextureMipMap* Mip0 = new UTexture::FTextureMipMap();
+            Mip0->SizeX = static_cast<uint32_t>(Width);
+            Mip0->SizeY = static_cast<uint32_t>(Height);
+            
+            size_t NumPixels = Width * Height;
+            size_t TotalBytes = NumPixels * 4 * sizeof(float);
+
+            Mip0->BulkData.resize(TotalBytes);
+            float* FloatData = reinterpret_cast<float*>(Mip0->BulkData.data());
+
+            for (size_t i = 0; i < NumPixels; i++)
+            {
+                FloatData[i * 4 + 0] = Pixels[i * Channels + 0];
+                FloatData[i * 4 + 1] = Pixels[i * Channels + 1];
+                FloatData[i * 4 + 2] = Pixels[i * Channels + 2];
+                FloatData[i * 4 + 3] = 1.0f;
+            }
+
+            NewTexture->MipmapsData.push_back(std::move(Mip0));
+            RenderScene.Textures.push_back(NewTexture);
+            RenderScene.LutTexIdx = uint32_t(RenderScene.Textures.size() - 1);
+            // 4. release data
+            stbi_image_free(Pixels);
+        }
+    }
+    // 2. GGX add mipmap level for envTex
+    {
+        if(CurrentS72.environments.size() > 0)
+        {
+            stbi_set_flip_vertically_on_load(false);
+            // TODO: now just get the first Env
+            uint32_t EnvTexIdx = RenderScene.Environments[0]->EnvTexture;
+            UTexture* EnvTex = RenderScene.Textures[EnvTexIdx];
+
+            std::filesystem::path Path(S72FilePath);
+            const std::string GGXBasePath = Path.parent_path().string() + "/" + "ggx";  // TODO: make it more flexible
+            for (uint8_t j = 1; j <= 5; j++)  // TODO: make it more flexible
+            {
+                std::string GGXPath = GGXBasePath + "_" + std::to_string(j) + ".png";
+
+                int Width, Height, Channels;
+                uint8_t* Pixels = stbi_load(GGXPath.c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
+
+                if (Pixels) 
+                {
+                    // Mipmap Structure
+                    UTexture::FTextureMipMap* MipCurrent = new UTexture::FTextureMipMap();
+                    MipCurrent->SizeX = static_cast<uint32_t>(Width);
+                    MipCurrent->SizeY = static_cast<uint32_t>(Height);
+                    
+                    size_t NumPixels = Width * Height;
+                    size_t TotalBtyes = NumPixels * 4 * sizeof(float); // R32G32B32A32_SFLOAT
+                    MipCurrent->BulkData.resize(TotalBtyes);
+
+                    float* FloatData = reinterpret_cast<float*>(MipCurrent->BulkData.data());
+                    for (size_t i = 0; i < NumPixels; i++)
+                    {
+                        glm::u8vec4 RGBE(
+                            Pixels[i * 4 + 0],
+                            Pixels[i * 4 + 1],
+                            Pixels[i * 4 + 2],
+                            Pixels[i * 4 + 3]
+                        );
+
+                        glm::vec3 RGBF = RGBE2Float(RGBE);
+
+                        FloatData[i * 4 + 0] = RGBF.r;
+                        FloatData[i * 4 + 1] = RGBF.g;
+                        FloatData[i * 4 + 2] = RGBF.b;
+                        FloatData[i * 4 + 3] = 1.0f;
+                    }
+                    // Just add mipmap data
+                    EnvTex->MipmapsData.push_back(std::move(MipCurrent));
+                    stbi_image_free(Pixels);
+                }
+            }
+        }
+    }
+}
+//END: Get PBR Texture Dependency

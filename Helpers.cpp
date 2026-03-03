@@ -119,12 +119,13 @@ void Helpers::destroy_buffer(AllocatedBuffer &&buffer)
 	this->Free(std::move(buffer.allocation));
 }
 
-Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map, uint8_t layers, VkImageCreateFlags flag) {
+Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map, uint8_t layers, VkImageCreateFlags flag, uint32_t mipLevels) {
 	AllocatedImage image;
 	
 	image.extent = extent;
 	image.format = format;
 	image.layers = layers;
+	image.mipLevels = mipLevels;
 
 	VkImageCreateInfo CreateInfo
 	{
@@ -138,7 +139,7 @@ Helpers::AllocatedImage Helpers::create_image(VkExtent2D const &extent, VkFormat
 			.height = extent.height,
 			.depth = 1
 		},
-		.mipLevels = 1,
+		.mipLevels = mipLevels,
 		.arrayLayers = layers,
 		.samples = VK_SAMPLE_COUNT_1_BIT,
 		.tiling = tiling,
@@ -233,8 +234,18 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 	// check data is the right size
 	size_t BytesPerBlock = vkuFormatTexelBlockSize(target.format);
 	size_t TexelsPerBlock = vkuFormatTexelsPerBlock(target.format);
-	assert(size == target.extent.width * target.extent.height * target.layers * BytesPerBlock / TexelsPerBlock);
 
+	size_t ExpectedSize = 0;
+
+	for (uint32_t mip = 0; mip < target.mipLevels; ++mip)
+	{
+		uint32_t Width = std::max(1u, target.extent.width >> mip);
+		uint32_t Height = std::max(1u, target.extent.height >> mip);
+
+		ExpectedSize += Width * Height * target.layers * BytesPerBlock / TexelsPerBlock;
+	}
+	assert(size == ExpectedSize);
+	
 	// create a host-coherent source buffer
 	AllocatedBuffer TransferSrc = create_buffer
 	(
@@ -262,7 +273,7 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 	{
 		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 		.baseMipLevel = 0,
-		.levelCount = 1,
+		.levelCount = target.mipLevels,
 		.baseArrayLayer = 0,
 		.layerCount = target.layers,
 	};
@@ -297,26 +308,45 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 	{
 		if(target.layers != 6)
 		{
-			VkBufferImageCopy Region
+			std::vector<VkBufferImageCopy> Regions;
+			size_t Offset = 0;
+			for (uint32_t mip = 0; mip < target.mipLevels; ++mip)
 			{
-				.bufferOffset = 0,
-				.bufferRowLength = target.extent.width,
-				.bufferImageHeight = target.extent.height,
-				.imageSubresource
+				uint32_t MipWidth  = std::max(1u, target.extent.width  >> mip);
+				uint32_t MipHeight = std::max(1u, target.extent.height >> mip);
+
+				size_t MipSize = MipWidth * MipHeight * BytesPerBlock / TexelsPerBlock;
+
+				VkBufferImageCopy Region
 				{
-					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-					.mipLevel = 0,
-					.baseArrayLayer = 0,
-					.layerCount = 1,
-				},
-				.imageOffset{ .x = 0, .y = 0, .z = 0 },
-				.imageExtent
-				{
-					.width = target.extent.width,
-					.height = target.extent.height,
-					.depth = 1
-				},
-			};
+					.bufferOffset = Offset,
+					.bufferRowLength = 0,
+					.bufferImageHeight = 0,
+					.imageSubresource
+					{
+						.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+						.mipLevel = mip,
+						.baseArrayLayer = 0,
+						.layerCount = 1,
+					},
+					.imageOffset
+					{
+						.x = 0,
+						.y = 0,
+						.z = 0
+					},
+					.imageExtent
+					{ 
+						.width = MipWidth,
+						.height = MipHeight,
+						.depth = 1 
+					},
+				};
+
+				Regions.push_back(Region);
+
+				Offset += MipSize;
+			}
 
 			vkCmdCopyBufferToImage
 			(
@@ -324,44 +354,47 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 				TransferSrc.handle,
 				target.handle,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1, &Region
+				(uint32_t)Regions.size(),
+				Regions.data()
 			);
 		}
 		else
 		{
 			const uint32_t FaceSize = target.extent.width;
-
 			const size_t BytesPerTexel = BytesPerBlock / TexelsPerBlock;
-
-			const size_t SingleFaceSize = FaceSize * FaceSize * BytesPerTexel;
+			size_t Offset = 0;
 
 			std::vector<VkBufferImageCopy> Regions;
-			Regions.reserve(6);
-
-			for (uint32_t i = 0; i < 6; ++i)
+			for (uint32_t mip = 0; mip < target.mipLevels; ++mip)
 			{
-				VkBufferImageCopy Region{};
+				uint32_t MipSize = std::max(1u, FaceSize >> mip);
+				size_t SingleFaceSize = MipSize * MipSize * BytesPerTexel;
 
-				Region.bufferOffset = SingleFaceSize * i;
-
-				// tightly packed
-				Region.bufferRowLength = 0;
-				Region.bufferImageHeight = 0;
-
-				Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				Region.imageSubresource.mipLevel = 0;
-				Region.imageSubresource.baseArrayLayer = i;
-				Region.imageSubresource.layerCount = 1;
-
-				Region.imageOffset = { 0, 0, 0 };
-				Region.imageExtent = 
+				for (uint32_t face = 0; face < 6; ++face)
 				{
-					FaceSize,
-					FaceSize,
-					1
-				};
+					VkBufferImageCopy Region
+					{
+						.bufferOffset = Offset,
+						.bufferRowLength = 0,
+						.bufferImageHeight = 0,
+						.imageSubresource
+						{
+							.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+							.mipLevel = mip,
+							.baseArrayLayer = face,
+							.layerCount = 1,
+						},
+						.imageExtent
+						{ 
+							.width = MipSize,
+							.height = MipSize,
+							.depth = 1 
+						},
+					};
+					Regions.push_back(Region);
 
-				Regions.push_back(Region);
+					Offset += SingleFaceSize;
+				}
 			}
 
 			vkCmdCopyBufferToImage(
@@ -373,8 +406,6 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 				Regions.data()
 			);
 		}
-
-		// NOTE: if image had mip levels, would need to copy as additional regions here.
 	}
 
 	// transition the image memory to shader-read-only-optimal layout
@@ -421,6 +452,56 @@ void Helpers::transfer_to_image(void const *data, size_t size, AllocatedImage &t
 
 	// destroy the source buffer
 	destroy_buffer(std::move(TransferSrc));
+}
+
+void Helpers::GenerateMipmaps(AllocatedImage& Image)
+{
+    uint32_t MipLevels = Image.mipLevels;
+    int32_t MipWidth = Image.extent.width;
+    int32_t MipHeight = Image.extent.height;
+
+    for (uint32_t i = 1; i < MipLevels; i++)
+    {
+        VkImageMemoryBarrier Barrier = { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+        Barrier.image = Image.handle;
+        Barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 1, 0, 6 };
+        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        Barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        Barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(TransferCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
+        VkImageBlit Blit{};
+        Blit.srcOffsets[0] = {0, 0, 0};
+        Blit.srcOffsets[1] = {MipWidth, MipHeight, 1};
+        Blit.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 6};
+        Blit.dstOffsets[0] = {0, 0, 0};
+        Blit.dstOffsets[1] = { MipWidth > 1 ? MipWidth / 2 : 1, MipHeight > 1 ? MipHeight / 2 : 1, 1 };
+        Blit.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 6};
+
+        vkCmdBlitImage(TransferCommandBuffer, Image.handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Image.handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Blit, VK_FILTER_LINEAR);
+
+        Barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        Barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        Barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(TransferCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &Barrier);
+
+        if (MipWidth > 1) MipWidth /= 2;
+        if (MipHeight > 1) MipHeight /= 2;
+    }
+
+    VkImageMemoryBarrier LastBarrier = { .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+    LastBarrier.image = Image.handle;
+    LastBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, MipLevels - 1, 1, 0, 6 };
+    LastBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    LastBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    LastBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    LastBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(TransferCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &LastBarrier);
 }
 
 //----------------------------

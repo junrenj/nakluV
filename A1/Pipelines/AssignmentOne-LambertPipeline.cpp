@@ -170,7 +170,7 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
     }
 
     { //the Set5_EnvTex layout has a single descriptor for a sampler2D used in the fragment shader:
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings
+        std::array<VkDescriptorSetLayoutBinding, 3> bindings
         {
             // EnvTex
             VkDescriptorSetLayoutBinding
@@ -184,6 +184,14 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
             VkDescriptorSetLayoutBinding
             {
                 .binding = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            // LUT Tex
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 2,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,

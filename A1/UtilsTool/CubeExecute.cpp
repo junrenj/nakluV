@@ -28,40 +28,6 @@ void CubeExecute::Configuration::parse(int argc, char **argv)
 	for (int argi = 1; argi < argc; ++argi) 
 	{
 		std::string arg = argv[argi];
-		if(arg == "--cube")
-		{
-			if (argi + 3 >= argc) 
-			{
-        		throw std::runtime_error("--cube require input image path, output image path and mode");
-    		}
-			// Input Path
-    		argi += 1;
-    		InImagePath = argv[argi];
-
-			// Mode
-			argi += 1;
-			arg = argv[argi];
-			if(arg == "--lambertian")
-			{
-				// generate an irradiance texture based on a cubemap
-				ProcessMode = EProcessMode::Cubemap2Irradiance;
-			}
-			else if(arg == "--ggx")
-			{
-				// generate a set of ggx texture for roughness
-				ProcessMode = EProcessMode::Cubemap2GGX;
-			}
-
-			// Output Path
-			argi += 1;
-			OutImagePath = argv[argi];
-			if(argi + 1 < argc)
-			{
-				// mean has size input
-				arg = argv[argi];
-				IrradianceOutputSize = static_cast<uint8_t>(std::stoi(arg));
-			}
-		}
 		if(arg == "--irradiance")
 		{
 			// generate an irradiance texture based on a cubemap
@@ -76,7 +42,18 @@ void CubeExecute::Configuration::parse(int argc, char **argv)
 			// output Path
 			argi += 1;
 			OutImagePath = argv[argi];
+			if (argi + 1 < argc)
+			{
+				std::string PossibleNumber = argv[argi + 1];
+				size_t Pos;
+				int Value = std::stoi(PossibleNumber, &Pos);
 
+				if (Pos == PossibleNumber.length())
+				{
+					IrradianceOutputSize = (uint8_t)Value;
+					argi += 1;
+				}
+			}
 		}
 		else if(arg == "--ggx")
 		{
@@ -106,7 +83,7 @@ void CubeExecute::Configuration::parse(int argc, char **argv)
 void CubeExecute::Configuration::usage(std::function< void(const char *, const char *) > const &callback) 
 {
 	callback("--irradiance", "generate an irradiance texture based on a cubemap ex: --irradiance input.png outputFileName");
-	callback("--ggx", "generate a set of ggx texture for roughness ex: --ggx input.png --ggx outputFileName");
+	callback("--ggx", "generate a set of ggx texture for roughness ex: --ggx input.png outputFileName");
 	callback("--lut", "generate a set of ggx texture for lut ex: --lut outputFileName");
 }
 

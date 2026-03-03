@@ -375,8 +375,6 @@ void CubeHelpers::transfer_to_image(void const *data, size_t size, AllocatedImag
 				Regions.data()
 			);
 		}
-
-		
 	}
 
 	if(target.mipLevels > 1)

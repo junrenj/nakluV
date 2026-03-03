@@ -57,10 +57,11 @@ struct Helpers {
 		VkExtent2D extent{.width = 0, .height = 0};
 		VkFormat format = VK_FORMAT_UNDEFINED;
 		Allocation allocation;
+		uint32_t mipLevels = 1;
 
 		//NOTE: could define default constructor, move constructor, move assignment, destructor for a bit more paranoia
 	};
-	AllocatedImage create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map = Unmapped, uint8_t layers = 1, VkImageCreateFlags flag = 0u);
+	AllocatedImage create_image(VkExtent2D const &extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, MapFlag map = Unmapped, uint8_t layers = 1, VkImageCreateFlags flag = 0u, uint32_t mipLevels = 1);
 	void destroy_image(AllocatedImage &&allocated_image);
 	
 
@@ -70,6 +71,7 @@ struct Helpers {
 	// NOTE: synchronizes *hard* against the GPU; inefficient to use for streaming data!
 	void transfer_to_buffer(void const *data, size_t size, AllocatedBuffer &target);
 	void transfer_to_image(void const *data, size_t size, AllocatedImage &image); //NOTE: image layout after call is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	void GenerateMipmaps(AllocatedImage& Image);
 
 	VkCommandPool TransferCommandPool = VK_NULL_HANDLE;
 	VkCommandBuffer TransferCommandBuffer = VK_NULL_HANDLE;

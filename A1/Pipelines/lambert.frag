@@ -1,6 +1,7 @@
 #version 450
 
-const int DisplacementMaxSteps = 32;
+const int DISPLACE_MAX_STEP = 32;
+const float MAX_GGX_LOD = 5.0;
 
 struct Light
 {
@@ -38,6 +39,7 @@ layout(set=3,binding=4) uniform sampler2D DISPLACEMENT_TEX;
 
 layout(set=5,binding=0) uniform samplerCube ENV_TEX;
 layout(set=5,binding=1) uniform samplerCube IRRADIANCE_TEX;
+layout(set=5,binding=2) uniform sampler2D LUT_TEX;
 
 layout(location=0) in vec3 position;
 layout(location=1) in vec3 normal;
@@ -55,7 +57,7 @@ vec4 Displacement()
 	vec3 vTangent = transpose(TBN) * worldV;
 	vec2 UVDist = vec2(vTangent.x, vTangent.y) / vTangent.z * 0.05;
 	float rayHeight = 1.0;
-	float stepSize = 1.0 / DisplacementMaxSteps;
+	float stepSize = 1.0 / DISPLACE_MAX_STEP;
 	vec2 outputUV;
 
 	int i = 0;
@@ -64,7 +66,7 @@ vec4 Displacement()
 	float currentTexDepth;
 	float yIntersect;
 	vec2 uvOffset = vec2(0.0);
-	while(i < DisplacementMaxSteps + 2)
+	while(i < DISPLACE_MAX_STEP + 2)
 	{
 		currentTexDepth = textureGrad(DISPLACEMENT_TEX, texcoord + uvOffset, ddx, ddy).r;
 
@@ -96,6 +98,7 @@ vec4 Displacement()
 vec3 NormalFromTexture()
 {
 	vec3 nTangent = texture(NORMAL_TEX, texcoord).rgb;
+	
 	nTangent = nTangent * 2.0 - 1.0;
 
 	vec3 nWorld = normalize(TBN * nTangent);
@@ -110,34 +113,56 @@ vec4 Mirror()
 	vec3 nWorld = NormalFromTexture();
 	vec3 v = normalize(EYE - position);
 	vec3 r = reflect(-v, nWorld);
-	vec3 env = texture(ENV_TEX, r).rgb;
+	vec3 env = textureLod(ENV_TEX, r, 0.0).rgb;
 	return vec4(env, 1.0);
 }
 
 vec4 Environment()
 {
 	vec3 nWorld = NormalFromTexture();
-	vec3 env = texture(ENV_TEX, nWorld).rgb;
+	vec3 env = textureLod(ENV_TEX, nWorld, 0.0).rgb;
 	return vec4(env, 1.0);
 }
 
 vec4 PBR(vec2 uv)
 {
-	// Basic Info
+	// 0. Basic Info
 	vec3 albedo = texture(ALBEDO_TEX, uv).rgb;
 	float rough = texture(ROUGHNESS_TEX, uv).r;
 	float metal = texture(METALNESS_TEX, uv).r;
 
-	// Dir
+	// 1. Dir
 	vec3 nWorld = NormalFromTexture();
 	vec3 v = normalize(EYE - position);
 	vec3 r = reflect(-v, nWorld);
 
-	// Test
-	vec3 irradiance = texture(IRRADIANCE_TEX, nWorld).rgb;
-	vec3 diffuse = albedo * (1.0 - metal); 
+	float NdotV = max(dot(nWorld, v), 0.0);
 
-	return vec4(nWorld,1);	// TODO: finish it
+	// 2. F0
+    vec3 F0 = mix(vec3(0.04), albedo, metal);
+
+    // 3. Diffuse
+    vec3 irradiance = textureLod(IRRADIANCE_TEX, nWorld, 0.0).rgb;
+    vec3 diffAlbedo = albedo * (1.0 - metal);
+    vec3 diffuse = irradiance * diffAlbedo;
+
+    // 4. Specular
+    float maxMip = MAX_GGX_LOD;
+    float mipLevel = rough * maxMip;
+
+    vec3 prefilteredColor = textureLod(ENV_TEX, r, mipLevel).rgb;
+
+    vec2 brdf = texture(LUT_TEX, vec2(NdotV, rough)).rg;
+
+    vec3 specular = prefilteredColor * (F0 * brdf.x + brdf.y);
+
+    // Energy Conservation
+    vec3 kS = F0;
+    vec3 kD = (1.0 - kS) * (1.0 - metal);
+
+    vec3 color = kD * diffuse + specular;
+
+    return vec4(color, 1.0);
 }
 
 vec4 Lambertian(vec2 uv)
@@ -173,13 +198,13 @@ void main()
 	vec4 computeColor = vec4(0.0);
 	if(materialType == 0)	// PBR
 	{
-		vec2 uv = Displacement().xy;
-		computeColor = PBR(uv);
+		// vec2 uv = Displacement().xy;
+		computeColor = PBR(texcoord);
 	}
 	else if(materialType == 1) // Lambertian
 	{
-		vec2 uv = Displacement().xy;
-		computeColor = Lambertian(uv);
+		// vec2 uv = Displacement().xy;
+		computeColor = Lambertian(texcoord);
 	}
 	else if(materialType == 2)	// Mirror
 	{

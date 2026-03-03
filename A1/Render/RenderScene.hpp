@@ -94,7 +94,7 @@ public:
     // Light Data
     std::unordered_map<ULight*, UNode*> Lights;
     FLightRenderProxy* SunProxy = nullptr;
-    std::unordered_map<UNode*, UEnvironment*> Environments;
+    std::vector<UEnvironment*> Environments;
 
     // VertexBuffer
     uint32_t TotalBytes = 0;
@@ -120,7 +120,9 @@ public:
     uint32_t GetDefaultNormalTexIdx()const {return 2;}  // normal ->2
     uint32_t GetDefaultMatColTexIdx()const {return 3;}  // Magenta ->3
 
-    uint32_t TestIdx = 0;   // TODO: delete this irradiance texture idx
+    // PBR Dependency Tex
+    uint32_t IrradianceTexIdx = 0;
+    uint32_t LutTexIdx = 0;
 
     URenderScene()
     {

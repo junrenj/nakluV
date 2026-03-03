@@ -78,7 +78,7 @@ struct RTG {
 		bool headless = false;
 
 		// file path to open
-		std::string FilePath = "external/s72/examples/materials.s72";
+		std::string FilePath = "A2/Scene/PBR/materials.s72";
 		// Camera to use, if user inputs a specific name for a camera
 		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
 
