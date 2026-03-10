@@ -9,7 +9,9 @@ class UAnimInstance;
 class URenderExtractor
 {
 public:
-    static void BuildRenderScene(std::string S72Path, URenderScene& RenderScene);
+    static void BuildRenderScene(URenderScene& RenderScene, 
+                                const std::string& S72Path, const std::string& EnvIrradianceName,
+                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum);
 
     // New Node Tree
     static void BuildUNodeTree(URenderScene& RenderScene, 
@@ -46,7 +48,9 @@ public:
     static void CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInstance& AnimInstance);
 
     // Get Irradiance、LUT、GGX Texture
-    static void GetPBRDependencyTexture(const std::string& S72FilePath, URenderScene& RenderScene);
+    static void GetPBRDependencyTexture(URenderScene& RenderScene, 
+                                const std::string& S72FilePath, const std::string& EnvIrradianceName,
+                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum);
 
 private:
     static std::vector<uint8_t> ReadBinaryFile(const std::string& path);

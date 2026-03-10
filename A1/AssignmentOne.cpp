@@ -1415,7 +1415,10 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 //~BEGIN Load Scene
 void UAssignmentOne::InitializeRenderScene()
 {
-	URenderExtractor::BuildRenderScene(rtg.configuration.FilePath, Scene);
+	const RTG::Configuration& Configuration = rtg.configuration;
+	URenderExtractor::BuildRenderScene(Scene,
+									Configuration.FilePath, Configuration.EnvIrradianceTexName, 
+									Configuration.BrdfLutTexName, Configuration.GGXTexName, Configuration.GGXNum);
 }
 //~END Load Scene
 

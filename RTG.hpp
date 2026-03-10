@@ -79,6 +79,15 @@ struct RTG {
 
 		// file path to open
 		std::string FilePath = "A2/Scene/PBR/materials.s72";
+
+		// name of irradiance texture
+		std::string EnvIrradianceTexName = "env_irradiance";
+		// name of BrdfLut texture
+		std::string BrdfLutTexName = "brdf_lut";
+		// name of BrdfLut texture
+		std::string GGXTexName = "ggx";
+		uint8_t GGXNum = 5;
+
 		// Camera to use, if user inputs a specific name for a camera
 		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
 

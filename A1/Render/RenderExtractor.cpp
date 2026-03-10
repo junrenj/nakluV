@@ -8,7 +8,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb_image.h"
 
-void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& RenderScene)
+void URenderExtractor::BuildRenderScene(URenderScene& RenderScene, 
+                                const std::string& S72Path, const std::string& EnvIrradianceName,
+                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum)
 {
     CurrentS72 = S72::load(S72Path);
     std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
@@ -35,7 +37,7 @@ void URenderExtractor::BuildRenderScene(std::string S72Path, URenderScene& Rende
     // 4. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
     // 5. Get PBR Dependency
-    GetPBRDependencyTexture(S72Path, RenderScene);
+    GetPBRDependencyTexture(RenderScene, S72Path, EnvIrradianceName, BrdfLutName, GGXName, GGXNum);
 }
 
 //BEGIN: UNode Data Extract
@@ -723,13 +725,15 @@ void URenderExtractor::CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInst
 //END: Animation
 
 //BEGIN: Get PBR Texture Dependency - ggx and irradiance
-void URenderExtractor::GetPBRDependencyTexture(const std::string& S72FilePath, URenderScene& RenderScene)
+void URenderExtractor::GetPBRDependencyTexture(URenderScene& RenderScene, 
+                                const std::string& S72FilePath, const std::string& EnvIrradianceName,
+                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum)
 {
     // 0. irradiance
     {
         stbi_set_flip_vertically_on_load(false);
         std::filesystem::path Path(S72FilePath);
-        std::string IrradiancePath = Path.parent_path().string() + "/" + "env_irradiance.png";  // TODO: make it more flexible
+        std::string IrradiancePath = Path.parent_path().string() + "/" + EnvIrradianceName + ".png";
 
         UTexture* NewTexture = new UTexture();
         NewTexture->Type = UTexture::EType::Cube;
@@ -780,7 +784,7 @@ void URenderExtractor::GetPBRDependencyTexture(const std::string& S72FilePath, U
         stbi_set_flip_vertically_on_load(true);
 
         std::filesystem::path Path(S72FilePath);
-        std::string LutPath = Path.parent_path().string() + "/" + "brdf_lut.hdr";  // TODO: make it more flexible
+        std::string LutPath = Path.parent_path().string() + "/" + BrdfLutName + ".hdr";
 
         UTexture* NewTexture = new UTexture();
         NewTexture->Type = UTexture::EType::Flat;
@@ -829,8 +833,8 @@ void URenderExtractor::GetPBRDependencyTexture(const std::string& S72FilePath, U
             UTexture* EnvTex = RenderScene.Textures[EnvTexIdx];
 
             std::filesystem::path Path(S72FilePath);
-            const std::string GGXBasePath = Path.parent_path().string() + "/" + "ggx";  // TODO: make it more flexible
-            for (uint8_t j = 1; j <= 5; j++)  // TODO: make it more flexible
+            const std::string GGXBasePath = Path.parent_path().string() + "/" + GGXName;
+            for (uint8_t j = 1; j <= GGXNum; j++)
             {
                 std::string GGXPath = GGXBasePath + "_" + std::to_string(j) + ".png";
 
