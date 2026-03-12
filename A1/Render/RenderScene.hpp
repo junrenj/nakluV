@@ -109,6 +109,7 @@ public:
     void GenerateWholeVertexBuffer();
     void GenerateMeshProxy();
     void GenerateLightProxy();
+    void GenerateFallbackResource();
     void UpdateTransform();
     void UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling = true);
 

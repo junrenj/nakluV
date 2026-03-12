@@ -5,10 +5,10 @@ const float MAX_GGX_LOD = 5.0;
 
 struct Light
 {
-	uint TYPE;
-	vec4 POSITION;
-	vec4 DIRECTION;
-	vec4 COLOR;
+	vec4 Position_Type;
+	vec4 Direction_Radius;
+	vec4 Color_Falloff;
+	vec4 SpecialParams;
 };
 
 layout(push_constant) uniform PushConsts 
@@ -105,6 +105,23 @@ vec3 NormalFromTexture()
 	return nWorld;
 }
 //~END function for feature
+
+//~BEGIN function for lights
+float GetDistanceAttenuation(float dist, float lightRadius) 
+{
+    float divide = dist * dist + 1.0;
+    float falloff = pow(max(0.0, 1.0 - pow(dist / lightRadius, 4.0)), 2.0);
+    return falloff / divide;
+}
+
+float GetAngleAttenuation(vec3 L, vec3 lightDir, float innerAngle, float outerAngle)
+{
+	float cosTheta = dot(L, -lightDir);
+	float scale = 1.0 / max(0.001, cosTheta - outerAngle);
+	float offset = -outerAngle * scale;
+	return clamp(cosTheta * scale + offset, 0.0, 1.0);
+}
+//~END function for lights
 
 
 // function for different material calculation

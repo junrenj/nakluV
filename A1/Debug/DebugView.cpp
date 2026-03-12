@@ -284,17 +284,17 @@ void UDebugMessage::PrintLightProxy(const URenderScene& Scene)
 
 
         std::cout << std::left << "[" << i << "] " 
-                  << std::setw(18) << lp->Type
-                  << "[" << lp->Color.r << ", " << lp->Color.g << ", " << lp->Color.b << "]\n";
+                  << std::setw(18) << lp->Color_Falloff.w
+                  << "[" << lp->Color_Falloff.x << ", " << lp->Color_Falloff.y << ", " << lp->Color_Falloff.z << "]\n";
 
 
-        if (lp->Type == 0) { // Sun
-            std::cout << "      Dir: [" << lp->Direction.x << ", " << lp->Direction.y << ", " << lp->Direction.z << "]\n";
+        if (lp->Position_Type.w == 0) { // Sun
+            std::cout << "      Dir: [" << lp->Direction_Limit.x << ", " << lp->Direction_Limit.y << ", " << lp->Direction_Limit.z << "]\n";
         } 
-        else if (lp->Type == 1 || lp->Type == 2) {
-            std::cout << "      Pos: [" << lp->Position.x << ", " << lp->Position.y << ", " << lp->Position.z << "]\n";
-            if (lp->Type == 2) {
-                std::cout << "      Dir: [" << lp->Direction.x << ", " << lp->Direction.y << ", " << lp->Direction.z << "]\n";
+        else if (lp->Position_Type.w == 1 || lp->Position_Type.w == 2) {
+            std::cout << "      Pos: [" << lp->Position_Type.x << ", " << lp->Position_Type.y << ", " << lp->Position_Type.z << "]\n";
+            if (lp->Position_Type.w == 2) {
+                std::cout << "      Dir: [" << lp->Direction_Limit.x << ", " << lp->Direction_Limit.y << ", " << lp->Direction_Limit.z << "]\n";
             }
         }
         std::cout << "----------------------------------------------------------------------\n";

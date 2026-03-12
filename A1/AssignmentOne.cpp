@@ -908,7 +908,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 			vkCmdCopyBuffer(workspace.command_buffer, workspace.TransformsSrc.handle, workspace.Transforms.handle, 1, &CopyRegion);
 	}
-	
+
 
 	if(!Scene.LightProxyInstances.empty())
 	{
@@ -974,7 +974,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			assert(workspace.LightsSrc.size == workspace.Lights.size);
 			assert(workspace.LightsSrc.size >= NeededBytes);
 
-			// Copy Transform into TransformSrc
+			// Copy Light into LightSrc
 			{
 				assert(workspace.LightsSrc.allocation.mapped);
 				FLightRenderProxy* Out = reinterpret_cast< FLightRenderProxy * >(workspace.LightsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
@@ -1215,14 +1215,14 @@ void UAssignmentOne::update(float dt)
 		World.SKY_ENERGY.g = 0.1f;
 		World.SKY_ENERGY.b = 0.2f;
 
-		World.SUN_DIRECTION.x = Scene.SunProxy->Direction.x;
-		World.SUN_DIRECTION.y = Scene.SunProxy->Direction.y;
-		World.SUN_DIRECTION.z = Scene.SunProxy->Direction.z;
+		World.SUN_DIRECTION.x = Scene.SunProxy->Direction_Limit.x;
+		World.SUN_DIRECTION.y = Scene.SunProxy->Direction_Limit.y;
+		World.SUN_DIRECTION.z = Scene.SunProxy->Direction_Limit.z;
 
 
-		World.SUN_ENERGY.r = Scene.SunProxy->Color.x;
-		World.SUN_ENERGY.g = Scene.SunProxy->Color.y;
-		World.SUN_ENERGY.b = Scene.SunProxy->Color.z;		
+		World.SUN_ENERGY.r = Scene.SunProxy->Color_Falloff.x;
+		World.SUN_ENERGY.g = Scene.SunProxy->Color_Falloff.y;
+		World.SUN_ENERGY.b = Scene.SunProxy->Color_Falloff.z;		
 	}
 }
 
@@ -1415,10 +1415,12 @@ void UAssignmentOne::on_input(InputEvent const &evt)
 //~BEGIN Load Scene
 void UAssignmentOne::InitializeRenderScene()
 {
-	const RTG::Configuration& Configuration = rtg.configuration;
-	URenderExtractor::BuildRenderScene(Scene,
-									Configuration.FilePath, Configuration.EnvIrradianceTexName, 
-									Configuration.BrdfLutTexName, Configuration.GGXTexName, Configuration.GGXNum);
+	URenderExtractor::BuildRenderScene(Scene, rtg);
+	// Generate RenderProxy
+    Scene.GenerateMeshProxy();
+    Scene.GenerateLightProxy();
+    Scene.GenerateWholeVertexBuffer();
+	Scene.GenerateFallbackResource();
 }
 //~END Load Scene
 

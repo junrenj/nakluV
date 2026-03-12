@@ -11,10 +11,7 @@ class ULight
 {
 public:
     uint32_t shadow = 0; 
-    struct FColor
-    {
-        float r, g, b = 1.0f;
-    }Tint;
+    glm::vec3 Tint;
     ELightType LightType;
 };
 
@@ -49,8 +46,21 @@ public:
 struct FLightRenderProxy
 {
 public:
-    uint32_t Type;  // 0-Sun 1-Sphere 2-Spot
-    glm::vec3 Direction;    // WorldSpace
-    glm::vec3 Position;     // Sun don't need it
-    glm::vec3 Color;        // Tint * Strength
+    // 0. Basic Info
+    glm::vec4 Position_Type;      //  xyz -> position w->Type   ---- Sun don't need position ----
+
+    // 1. Dir and Radius
+    glm::vec4 Direction_Limit;     // xyz->Direction   ---- Sphere don't need it ----       
+                                    // w->Limit        ---- Sun don't need it ----
+
+    // 2. Color and Intensity
+    glm::vec4 Color_Falloff;        // xyz->Color = Tint * Power / Strength || w->FalloffExponent
+
+    // 3. Extra Info
+    /*
+        Sun[Angle, 0, 0, 0]
+        Sphere[SourceRadius, 0, 0, 0]
+        Spot[cosInner, cosOuter, 0, 0]
+    */
+    glm::vec4 SpecialParams;
 };

@@ -2,17 +2,17 @@
 #include "glm/glm/glm.hpp"
 #include "../Animation/AnimationPlayer.hpp"
 #include "Color.hpp"
+#include "../RTG.hpp"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb_image.h"
 
-void URenderExtractor::BuildRenderScene(URenderScene& RenderScene, 
-                                const std::string& S72Path, const std::string& EnvIrradianceName,
-                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum)
+void URenderExtractor::BuildRenderScene(URenderScene& RenderScene, const RTG& rtg)
 {
-    CurrentS72 = S72::load(S72Path);
+    const RTG::Configuration& Configuration = rtg.configuration;
+    CurrentS72 = S72::load(Configuration.FilePath);
     std::unordered_map< const S72::Texture* , UTexture* > S72Tex2UTex;
     std::unordered_map< const S72::Material* , FMaterial* > S72Mat2UMat;
     std::unordered_map< const S72::Node* , UNode* > S72Node2UNode;
@@ -30,14 +30,10 @@ void URenderExtractor::BuildRenderScene(URenderScene& RenderScene,
     BuildUNodeTree(RenderScene, S72Tex2UTex, S72Mat2UMat, S72Node2UNode, S72Mesh2UMesh);
     // 2. Build UNode BBox
     BuildUNodesBBoxIterate(RenderScene.RootNode, RenderScene.Nodes2RenderMeshes);
-    // 3. Generate RenderProxy
-    RenderScene.GenerateMeshProxy();
-    RenderScene.GenerateLightProxy();
-    RenderScene.GenerateWholeVertexBuffer();
-    // 4. Get Animation Sequence
+    // 3. Get Animation Sequence
     BuildAnimData(S72Node2UNode);
-    // 5. Get PBR Dependency
-    GetPBRDependencyTexture(RenderScene, S72Path, EnvIrradianceName, BrdfLutName, GGXName, GGXNum);
+    // 4. Get PBR Dependency
+    GetPBRDependencyTexture(RenderScene, rtg);
 }
 
 //BEGIN: UNode Data Extract
@@ -182,9 +178,9 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
         if(NewLight)
         {
             // Light data
-            NewLight->Tint.r = S72Light.tint.r;
-            NewLight->Tint.g = S72Light.tint.g;
-            NewLight->Tint.b = S72Light.tint.b;
+            NewLight->Tint.x = S72Light.tint.r;
+            NewLight->Tint.y = S72Light.tint.g;
+            NewLight->Tint.z = S72Light.tint.b;
             NewLight->shadow = S72Light.shadow;
             NewNode->Light = NewLight;
             RenderScene.Lights[NewLight] = NewNode;
@@ -725,15 +721,21 @@ void URenderExtractor::CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInst
 //END: Animation
 
 //BEGIN: Get PBR Texture Dependency - ggx and irradiance
-void URenderExtractor::GetPBRDependencyTexture(URenderScene& RenderScene, 
-                                const std::string& S72FilePath, const std::string& EnvIrradianceName,
-                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum)
+void URenderExtractor::GetPBRDependencyTexture(URenderScene& RenderScene, const RTG& rtg)
 {
+    const RTG::Configuration& Configuration = rtg.configuration;
+    const std::string& S72FilePath = Configuration.FilePath;
+    const std::string& EnvIrradianceName = Configuration.EnvIrradianceTexName;
+    const std::string& BrdfLutName = Configuration.BrdfLutTexName;
+    const std::string& GGXName = Configuration.GGXTexName; 
+    const uint8_t GGXNum = Configuration.GGXNum;
+
+    const std::string& FallBackPath = Configuration.FallbackFolderPath;
+
     // 0. irradiance
     {
         stbi_set_flip_vertically_on_load(false);
-        std::filesystem::path Path(S72FilePath);
-        std::string IrradiancePath = Path.parent_path().string() + "/" + EnvIrradianceName + ".png";
+        std::string IrradiancePath = ResolveTexturePath(S72FilePath, EnvIrradianceName + ".png", FallBackPath);
 
         UTexture* NewTexture = new UTexture();
         NewTexture->Type = UTexture::EType::Cube;
@@ -784,7 +786,7 @@ void URenderExtractor::GetPBRDependencyTexture(URenderScene& RenderScene,
         stbi_set_flip_vertically_on_load(true);
 
         std::filesystem::path Path(S72FilePath);
-        std::string LutPath = Path.parent_path().string() + "/" + BrdfLutName + ".hdr";
+        std::string LutPath = ResolveTexturePath(S72FilePath, BrdfLutName + ".hdr", FallBackPath);
 
         UTexture* NewTexture = new UTexture();
         NewTexture->Type = UTexture::EType::Flat;
@@ -832,11 +834,9 @@ void URenderExtractor::GetPBRDependencyTexture(URenderScene& RenderScene,
             uint32_t EnvTexIdx = RenderScene.Environments[0]->EnvTexture;
             UTexture* EnvTex = RenderScene.Textures[EnvTexIdx];
 
-            std::filesystem::path Path(S72FilePath);
-            const std::string GGXBasePath = Path.parent_path().string() + "/" + GGXName;
             for (uint8_t j = 1; j <= GGXNum; j++)
             {
-                std::string GGXPath = GGXBasePath + "_" + std::to_string(j) + ".png";
+                std::string GGXPath = ResolveTexturePath(S72FilePath, GGXName + "_" + std::to_string(j) + ".png", FallBackPath);
 
                 int Width, Height, Channels;
                 uint8_t* Pixels = stbi_load(GGXPath.c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
@@ -878,3 +878,29 @@ void URenderExtractor::GetPBRDependencyTexture(URenderScene& RenderScene,
     }
 }
 //END: Get PBR Texture Dependency
+
+//BEGIN: File Path Validation
+std::string URenderExtractor::ResolveTexturePath(const std::string& S72FilePath, const std::string& FileName, const std::string& FallbackPath)
+{
+    std::filesystem::path SceneDir = std::filesystem::path(S72FilePath).parent_path();
+    std::filesystem::path Primary = SceneDir / FileName;
+    
+    if(std::filesystem::exists(Primary))
+    {
+        return Primary.generic_string();
+    }
+    else
+    {
+        std::filesystem::path Fallback = std::filesystem::path(FallbackPath) / FileName;
+        
+        if (std::filesystem::exists(Fallback))
+        {
+            return Fallback.generic_string();
+        }
+        std::cerr << "Texture missing: " << Fallback << std::endl;
+        throw std::runtime_error("Fallback File can not be found!");
+
+        return "";
+    }
+}
+//END: File Path Validation

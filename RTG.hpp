@@ -87,6 +87,8 @@ struct RTG {
 		// name of BrdfLut texture
 		std::string GGXTexName = "ggx";
 		uint8_t GGXNum = 5;
+		// PBRTexture Fallback Path
+		std::string FallbackFolderPath = "Resources";
 
 		// Camera to use, if user inputs a specific name for a camera
 		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.

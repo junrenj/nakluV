@@ -5,13 +5,12 @@
 #include "RenderScene.hpp"
 
 class UAnimInstance;
+struct RTG;
 
 class URenderExtractor
 {
 public:
-    static void BuildRenderScene(URenderScene& RenderScene, 
-                                const std::string& S72Path, const std::string& EnvIrradianceName,
-                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum);
+    static void BuildRenderScene(URenderScene& RenderScene, const RTG& rtg);
 
     // New Node Tree
     static void BuildUNodeTree(URenderScene& RenderScene, 
@@ -48,12 +47,11 @@ public:
     static void CloneAnimFromS72Anim(const S72::Driver& Driver, UAnimInstance& AnimInstance);
 
     // Get Irradiance、LUT、GGX Texture
-    static void GetPBRDependencyTexture(URenderScene& RenderScene, 
-                                const std::string& S72FilePath, const std::string& EnvIrradianceName,
-                                const std::string BrdfLutName, const std::string& GGXName, const uint8_t GGXNum);
+    static void GetPBRDependencyTexture(URenderScene& RenderScene, const RTG& rtg);
 
 private:
     static std::vector<uint8_t> ReadBinaryFile(const std::string& path);
+    static std::string ResolveTexturePath(const std::string& S72FilePath, const std::string& FileName, const std::string& FallbackPath);
 private:
     inline static S72 CurrentS72;
 };

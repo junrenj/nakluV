@@ -67,27 +67,57 @@ void URenderScene::GenerateLightProxy()
             case ELightType::Sun:
             {
                 const ULight_Sun* Sun = static_cast<ULight_Sun*>(Light);
-                LightProxy->Type = static_cast<uint32_t>(ELightType::Sun);
-                LightProxy->Position = vec3(0,0,0);
-                LightProxy->Color = vec3(Sun->Tint.r * Sun->Strength, Sun->Tint.g * Sun->Strength, Sun->Tint.b * Sun->Strength);
 
                 const vec4 LocalDir = vec4(0.0f, 0.0f, 1.0f, 0.0f);
-                vec4 WorldDir = UNode::GetLocal2WorldMatrix(Node) * LocalDir;
-                LightProxy->Direction = vec3(WorldDir);
+                const vec4 WorldDir = UNode::GetLocal2WorldMatrix(Node) * LocalDir;
+                const vec3 Color = Sun->Tint * Sun->Strength;
+
+                LightProxy->Position_Type = vec4(0, 0, 0, static_cast<float>(ELightType::Sun));
+                LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
+                LightProxy->Direction_Limit = vec4(WorldDir.x, WorldDir.y, WorldDir.z, 0.0f);
+
+                LightProxy->SpecialParams.x = Sun->Angle;
+
                 SunProxy = LightProxy;
                 break;
             }
             case ELightType::Sphere:
             {
-                // FLightRenderProxy* LightProxy = new FLightRenderProxy();
-                // const ULight_Sphere* Sphere = static_cast<ULight_Sphere*>(Light); 
-                // LightProxy->Type = static_cast<uint32_t>(ELightType::Sphere);
+                const ULight_Sphere* Sphere = static_cast<ULight_Sphere*>(Light);
+
+                const vec4 LocalPos = vec4(0.0f);
+                const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
+                const vec3 Color = Sphere->Tint * Sphere->Power;
+                
+                LightProxy->Position_Type = vec4(WorldPos.x, WorldPos.y, WorldPos.z, static_cast<float>(ELightType::Sphere));
+                LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
+                LightProxy->Direction_Limit = vec4(0.0f, 0.0f, 0.0f, Sphere->Limit);
+
+                const float SourceRadius = Sphere->Radius;
+                LightProxy->SpecialParams.x = SourceRadius;
+
+                LightProxyInstances.push_back(LightProxy);
                 break;
 
             }
             case ELightType::Spot:
             {
-                // LightProxy->Type = static_cast<uint32_t>(ELightType::Spot);
+                const ULight_Spot* Spot = static_cast<ULight_Spot*>(Light);
+
+                const vec4 LocalPos = vec4(0.0f);
+                const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
+                const vec3 Color = Spot->Tint * Spot->Power;
+                
+                LightProxy->Position_Type = vec4(WorldPos.x, WorldPos.y, WorldPos.z, static_cast<float>(ELightType::Spot));
+                LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
+                LightProxy->Direction_Limit = vec4(0.0f, 0.0f, 0.0f, Spot->Limit);
+
+                const float cosInner = cos(Spot->Fov * (1.0f - Spot->Blend));
+                const float cosOuter = cos(Spot->Fov);
+                LightProxy->SpecialParams.x = cosInner;
+                LightProxy->SpecialParams.y = cosOuter;
+
+                LightProxyInstances.push_back(LightProxy);
                 break;
             }
         }
@@ -98,10 +128,22 @@ void URenderScene::GenerateLightProxy()
         // give a default - dark sun
         FLightRenderProxy* LightProxy = new FLightRenderProxy();
         SunProxy = LightProxy;
-        SunProxy->Type = static_cast<uint32_t>(ELightType::Sun);
-        SunProxy->Position = vec3(0,0,0);
-        SunProxy->Color = vec3(1,1,1);
-        SunProxy->Direction = vec3(0,0.7,0.7);
+        const float Type = static_cast<uint32_t>(ELightType::Sun);
+
+        SunProxy->Position_Type = vec4(0,0,0, Type);
+        SunProxy->Color_Falloff = vec4(1,1,1,0);
+        SunProxy->Direction_Limit = vec4(0,0.7,0.7,0);
+    }
+}
+
+void URenderScene::GenerateFallbackResource()
+{
+    // 0. Give a fallback env
+    if(Environments.size() < 1)
+    {
+        UEnvironment* Env = new UEnvironment();
+        Env->EnvTexture = GetDefaultBlackTexIdx();
+        Environments.push_back(Env);
     }
 }
 
