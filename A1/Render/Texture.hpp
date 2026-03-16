@@ -60,7 +60,7 @@ public:
         static UTexture Tex = []
         {
             UTexture T;
-            T.Get1x1PixelTexture(0.3f,0.3f,1.0f);
+            T.Get1x1PixelTexture(0,0,0);
             T.Format = EFormat::Linear;
             return T;
         }();

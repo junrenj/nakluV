@@ -72,6 +72,7 @@ struct UAssignmentOne : RTG::Application
 		struct FConstant
 		{
 			int MaterialType;	// Tag for materials
+			int LightsCount;	// How many lights on the scene
 		};
 
         // types for descriptors:

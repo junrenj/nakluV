@@ -977,10 +977,10 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			// Copy Light into LightSrc
 			{
 				assert(workspace.LightsSrc.allocation.mapped);
-				FLightRenderProxy* Out = reinterpret_cast< FLightRenderProxy * >(workspace.LightsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+				FLightRenderProxy *Out = reinterpret_cast< FLightRenderProxy * >(workspace.LightsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
 				for (FLightRenderProxy* Inst : Scene.LightProxyInstances)
 				{
-					Out = Inst;
+					*Out = *Inst;
 					++Out;
 				}
 			}
@@ -993,7 +993,7 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 				.size = NeededBytes,
 			};
 
-			(workspace.command_buffer, workspace.LightsSrc.handle, workspace.Lights.handle, 1, &CopyRegion);
+			vkCmdCopyBuffer(workspace.command_buffer, workspace.LightsSrc.handle, workspace.Lights.handle, 1, &CopyRegion);
 	
 		}
 	}
@@ -1419,8 +1419,11 @@ void UAssignmentOne::InitializeRenderScene()
 	// Generate RenderProxy
     Scene.GenerateMeshProxy();
     Scene.GenerateLightProxy();
+	// Data Prepare
     Scene.GenerateWholeVertexBuffer();
 	Scene.GenerateFallbackResource();
+
+	UDebugMessage::PrintLightProxy(Scene);
 }
 //~END Load Scene
 
@@ -1726,15 +1729,17 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 		{
 			continue;
 		}
-		// Push time here
+		// Push constant here
 		{
 			const FMaterial* Material = Scene.Materials[Proxy->MaterialIdx];
 			FLambertPipeline::FConstant Constant
 			{
 				.MaterialType = (int)Material->Type,
+				.LightsCount = 	(int)Scene.Lights.size(),
 			};
 			vkCmdPushConstants(workspace.command_buffer, LambertPipeline.Layout, 
 								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Constant), &Constant);
+
 		}
 		vkCmdBindDescriptorSets
 		(

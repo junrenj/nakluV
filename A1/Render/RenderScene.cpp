@@ -79,13 +79,14 @@ void URenderScene::GenerateLightProxy()
                 LightProxy->SpecialParams.x = Sun->Angle;
 
                 SunProxy = LightProxy;
+                LightProxyInstances.push_back(LightProxy);
                 break;
             }
             case ELightType::Sphere:
             {
                 const ULight_Sphere* Sphere = static_cast<ULight_Sphere*>(Light);
 
-                const vec4 LocalPos = vec4(0.0f);
+                const vec4 LocalPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
                 const vec3 Color = Sphere->Tint * Sphere->Power;
                 
@@ -104,13 +105,15 @@ void URenderScene::GenerateLightProxy()
             {
                 const ULight_Spot* Spot = static_cast<ULight_Spot*>(Light);
 
-                const vec4 LocalPos = vec4(0.0f);
+                const vec4 LocalDir = vec4(0.0f, 0.0f, 1.0f, 0.0f);
+                const vec4 LocalPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
+                const vec4 WorldDir = UNode::GetLocal2WorldMatrix(Node) * LocalDir;
                 const vec3 Color = Spot->Tint * Spot->Power;
                 
                 LightProxy->Position_Type = vec4(WorldPos.x, WorldPos.y, WorldPos.z, static_cast<float>(ELightType::Spot));
                 LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
-                LightProxy->Direction_Limit = vec4(0.0f, 0.0f, 0.0f, Spot->Limit);
+                LightProxy->Direction_Limit = vec4(WorldDir.x, WorldDir.y, WorldDir.z, Spot->Limit);
 
                 const float cosInner = cos(Spot->Fov * (1.0f - Spot->Blend));
                 const float cosOuter = cos(Spot->Fov);

@@ -284,7 +284,7 @@ void UDebugMessage::PrintLightProxy(const URenderScene& Scene)
 
 
         std::cout << std::left << "[" << i << "] " 
-                  << std::setw(18) << lp->Color_Falloff.w
+                  << std::setw(18) << lp->Position_Type.w
                   << "[" << lp->Color_Falloff.x << ", " << lp->Color_Falloff.y << ", " << lp->Color_Falloff.z << "]\n";
 
 

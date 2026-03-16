@@ -14,6 +14,7 @@ struct Light
 layout(push_constant) uniform PushConsts 
 {
     int materialType;
+	int lightsCount;
 };
 
 layout(set=1,binding=0,std140) uniform World 
@@ -98,6 +99,11 @@ vec4 Displacement()
 vec3 NormalFromTexture()
 {
 	vec3 nTangent = texture(NORMAL_TEX, texcoord).rgb;
+	// No normal map case
+	if(nTangent == vec3(0, 0, 0))
+	{
+		return normal;
+	}
 	
 	nTangent = nTangent * 2.0 - 1.0;
 
@@ -120,6 +126,207 @@ float GetAngleAttenuation(vec3 L, vec3 lightDir, float innerAngle, float outerAn
 	float scale = 1.0 / max(0.001, cosTheta - outerAngle);
 	float offset = -outerAngle * scale;
 	return clamp(cosTheta * scale + offset, 0.0, 1.0);
+}
+
+vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float roughness, float metalness)
+{
+    vec3 H = normalize(V + L);
+
+    float NdotL = max(dot(N,L),0.0);
+    float NdotV = max(dot(N,V),0.0);
+    float NdotH = max(dot(N,H),0.0);
+    float VdotH = max(dot(V,H),0.0);
+
+    vec3 F0 = mix(vec3(0.04), albedo, metalness);
+
+    // Fresnel
+    vec3 F = F0 + (1.0-F0)*pow(1.0-VdotH,5.0);
+
+    // GGX Distribution
+    float a = roughness*roughness;
+    float a2 = a*a;
+
+    float denom = (NdotH*NdotH)*(a2-1.0)+1.0;
+    float D = a2/(3.1415926*denom*denom);
+
+    // Geometry
+    float k = (roughness+1.0);
+    k = k*k/8.0;
+
+    float Gv = NdotV/(NdotV*(1.0-k)+k);
+    float Gl = NdotL/(NdotL*(1.0-k)+k);
+
+    float G = Gv*Gl;
+
+    vec3 numerator = D*F*G;
+    float denominator = 4.0*NdotV*NdotL + 0.001;
+
+    vec3 specular = numerator/denominator;
+
+    vec3 kS = F;
+    vec3 kD = (1.0-kS)*(1.0-metalness);
+
+    vec3 diffuse = kD * albedo / 3.1415926;
+
+    return (diffuse + specular) * lightColor * NdotL;
+}
+
+vec3 CalSunLight(Light sun, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
+{
+	vec3 L = normalize(-sun.Direction_Radius.xyz);
+	vec3 color = sun.Color_Falloff.xyz;
+
+	return PBRLighting(N, V, L, color, albedo, rough, metal);
+}
+
+vec3 CalSphereLight(Light sphere, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
+{
+    vec3 lightPos = sphere.Position_Type.xyz;
+
+    vec3 L = lightPos - worldPos;
+    float dist = length(L);
+    L /= dist;
+
+    float attenuation = 1.0/(dist * dist);
+
+    vec3 color = sphere.Color_Falloff.xyz * attenuation;
+
+    return PBRLighting(N, V, L, color, albedo, rough, metal);
+}
+
+vec3 CalSpotLight(Light spot, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
+{
+    vec3 lightPos = spot.Position_Type.xyz;
+    vec3 dir = normalize(spot.Direction_Radius.xyz);
+
+    vec3 L = lightPos - worldPos;
+    float dist = length(L);
+    L /= dist;
+
+    float attenuation = 1.0/(dist * dist);
+
+    float theta = dot(L, -dir);
+
+    float cosInner = spot.SpecialParams.x;
+    float cosOuter = spot.SpecialParams.y;
+
+    float result = clamp((theta - cosOuter)/(cosInner - cosOuter),0.0,1.0);
+
+    vec3 color = spot.Color_Falloff.xyz * attenuation * result;
+
+    return PBRLighting(N,V,L,color,albedo,rough,metal);
+}
+
+vec3 CalDirectLightings(vec3 position, vec3 nWorld, vec3 v, vec3 albedo, float rough, float metal)
+{
+	vec3 result = vec3(0);
+	for(int i = 0 ; i < lightsCount ; i++)
+	{
+		Light light = LIGHTS[i];
+
+		int type = int(light.Position_Type.w);
+
+		if(type == 0)
+		{
+			result += CalSunLight(light, nWorld, v, albedo, rough, metal);
+		}
+		else if(type == 1)
+		{
+			result += CalSphereLight(light, position, nWorld, v, albedo, rough, metal);
+		}
+		else if(type == 2)
+		{
+			result += CalSpotLight(light, position, nWorld, v, albedo, rough, metal);
+		}
+	}
+
+	return result;
+}
+
+vec3 LambertLighting(vec3 N, vec3 L, vec3 lightColor, vec3 albedo)
+{
+    float NdotL = max(dot(N,L),0.0);
+
+    vec3 diffuse = albedo / 3.1415926;
+
+    return diffuse * lightColor * NdotL;
+}
+
+vec3 CalSun_Lambert(Light sun, vec3 N, vec3 albedo)
+{
+    vec3 L = normalize(sun.Direction_Radius.xyz);
+
+    vec3 color = sun.Color_Falloff.xyz;
+
+    return LambertLighting(N,L,color,albedo);
+}
+
+vec3 CalSphere_Lambert(Light sphere, vec3 worldPos, vec3 N, vec3 albedo)
+{
+    vec3 lightPos = sphere.Position_Type.xyz;
+
+    vec3 L = lightPos - worldPos;
+    float dist = length(L);
+    L /= dist;
+
+    float attenuation = 1.0 / (dist * dist);
+
+    vec3 color = sphere.Color_Falloff.xyz * attenuation;
+
+    return LambertLighting(N,L,color,albedo);
+}
+
+vec3 CalSpot_Lambert(Light spot, vec3 worldPos, vec3 N, vec3 albedo)
+{
+    vec3 lightPos = spot.Position_Type.xyz;
+    vec3 dir = normalize(spot.Direction_Radius.xyz);
+
+    vec3 L = lightPos - worldPos;
+
+    float dist = length(L);
+    L /= dist;
+
+    float attenuation = 1.0/(dist*dist);
+
+    float theta = dot(L,-dir);
+
+    float cosInner = spot.SpecialParams.x;
+    float cosOuter = spot.SpecialParams.y;
+
+    float result = clamp((theta - cosOuter)/(cosInner - cosOuter),0.0,1.0);
+
+    vec3 color = spot.Color_Falloff.xyz * attenuation * result;
+
+    return LambertLighting(N,L,color,albedo);
+}
+
+vec3 CalDirectLightings_Lambert(vec3 pos, vec3 nWorld, vec3 albedo)
+{
+	vec3 result = vec3(0, 0, 0);
+
+    for(int i = 0 ; i < lightsCount ; i++)
+    {
+        Light light = LIGHTS[i];
+
+        int type = int(light.Position_Type.w);
+
+        if(type == 0)
+		{
+            result = vec3(1,0,0);
+		}
+        else if(type == 1)
+		{
+			// result += CalSphere_Lambert(light,pos,nWorld,albedo);
+			result = vec3(0,0,1);
+		}
+        else if(type == 2)
+		{
+			// result += CalSpot_Lambert(light,pos,nWorld,albedo);
+			result = vec3(0,1,0);
+		}
+    }
+
+	return result;
 }
 //~END function for lights
 
@@ -193,11 +400,13 @@ vec4 Lambertian(vec2 uv)
 
 	vec3 irradiance = texture(IRRADIANCE_TEX, nWorld).rgb;
 
-	// hemisphere sky + directional sun:
-	vec3 e = SKY_ENERGY * (dot(nWorld, SKY_DIRECTION) * 0.5 + 0.5)
-		+ SUN_ENERGY * max(dot(nWorld, SUN_DIRECTION), 0.0);
+	vec3 direct = CalDirectLightings_Lambert(position, nWorld, albedo);
 
-	return vec4(albedo / 3.1415926 * e + irradiance * albedo , 1.0);
+	vec3 ibl = irradiance * albedo;
+
+	vec3 color = direct + ibl; 
+
+	return vec4(direct , 1.0);
 }
 
 vec4 ACESFilm(vec4 inColor)
