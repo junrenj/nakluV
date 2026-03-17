@@ -1203,27 +1203,6 @@ void UAssignmentOne::update(float dt)
 	}
 	UpdateCamera();
     DrawDebugLines();
-
-	assert(Scene.SunProxy);
-	// static sun and sky
-	{
-		World.SKY_DIRECTION.x = 0.0f;
-		World.SKY_DIRECTION.y = 0.0f;
-		World.SKY_DIRECTION.z = 1.0f;
-
-		World.SKY_ENERGY.r = 0.1f;
-		World.SKY_ENERGY.g = 0.1f;
-		World.SKY_ENERGY.b = 0.2f;
-
-		World.SUN_DIRECTION.x = Scene.SunProxy->Direction_Limit.x;
-		World.SUN_DIRECTION.y = Scene.SunProxy->Direction_Limit.y;
-		World.SUN_DIRECTION.z = Scene.SunProxy->Direction_Limit.z;
-
-
-		World.SUN_ENERGY.r = Scene.SunProxy->Color_Falloff.x;
-		World.SUN_ENERGY.g = Scene.SunProxy->Color_Falloff.y;
-		World.SUN_ENERGY.b = Scene.SunProxy->Color_Falloff.z;		
-	}
 }
 
 void UAssignmentOne::on_input(InputEvent const &evt)

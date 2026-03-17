@@ -93,7 +93,6 @@ public:
 
     // Light Data
     std::unordered_map<ULight*, UNode*> Lights;
-    FLightRenderProxy* SunProxy = nullptr;
     std::vector<UEnvironment*> Environments;
 
     // VertexBuffer

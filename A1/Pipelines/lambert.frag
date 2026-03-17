@@ -5,10 +5,10 @@ const float MAX_GGX_LOD = 5.0;
 
 struct Light
 {
-	vec4 Position_Type;
-	vec4 Direction_Radius;
-	vec4 Color_Falloff;
-	vec4 SpecialParams;
+	vec4 POSITION_TYPE;
+	vec4 DIRECTION_RADIUS;
+	vec4 COLOR_FALLOFF;
+	vec4 SPECIALPARAMS;
 };
 
 layout(push_constant) uniform PushConsts 
@@ -19,10 +19,6 @@ layout(push_constant) uniform PushConsts
 
 layout(set=1,binding=0,std140) uniform World 
 {
-	vec3 SKY_DIRECTION;
-	vec3 SKY_ENERGY; 	// energy supplied by sky to a surface patch with normal = SKY_DIRECTION
-	vec3 SUN_DIRECTION;
-	vec3 SUN_ENERGY; 	// energy supplied by sun to a surface patch with normal = SUN_DIRECTION
 	vec3 EYE;
 	vec2 AJUST_VAR;
 };
@@ -132,39 +128,39 @@ vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float rou
 {
     vec3 H = normalize(V + L);
 
-    float NdotL = max(dot(N,L),0.0);
-    float NdotV = max(dot(N,V),0.0);
-    float NdotH = max(dot(N,H),0.0);
-    float VdotH = max(dot(V,H),0.0);
+    float NdotL = max(dot(N, L),0.0);
+    float NdotV = max(dot(N, V),0.0);
+    float NdotH = max(dot(N, H),0.0);
+    float VdotH = max(dot(V, H),0.0);
 
     vec3 F0 = mix(vec3(0.04), albedo, metalness);
 
     // Fresnel
-    vec3 F = F0 + (1.0-F0)*pow(1.0-VdotH,5.0);
+    vec3 F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
 
     // GGX Distribution
-    float a = roughness*roughness;
-    float a2 = a*a;
+    float a = roughness * roughness;
+    float a2 = a * a;
 
-    float denom = (NdotH*NdotH)*(a2-1.0)+1.0;
-    float D = a2/(3.1415926*denom*denom);
+    float denom = (NdotH * NdotH) * (a2 - 1.0)+1.0;
+    float D = a2/(3.1415926 * denom * denom);
 
     // Geometry
-    float k = (roughness+1.0);
-    k = k*k/8.0;
+    float k = (roughness + 1.0);
+    k = k * k / 8.0;
 
-    float Gv = NdotV/(NdotV*(1.0-k)+k);
-    float Gl = NdotL/(NdotL*(1.0-k)+k);
+    float Gv = NdotV / (NdotV * (1.0 - k) + k);
+    float Gl = NdotL / (NdotL * (1.0 - k) + k );
 
     float G = Gv*Gl;
 
-    vec3 numerator = D*F*G;
-    float denominator = 4.0*NdotV*NdotL + 0.001;
+    vec3 numerator = D * F * G;
+    float denominator = 4.0 * NdotV * NdotL + 0.001;
 
-    vec3 specular = numerator/denominator;
+    vec3 specular = numerator / denominator;
 
     vec3 kS = F;
-    vec3 kD = (1.0-kS)*(1.0-metalness);
+    vec3 kD = (1.0 - kS) * (1.0 - metalness);
 
     vec3 diffuse = kD * albedo / 3.1415926;
 
@@ -173,31 +169,31 @@ vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float rou
 
 vec3 CalSunLight(Light sun, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
 {
-	vec3 L = normalize(-sun.Direction_Radius.xyz);
-	vec3 color = sun.Color_Falloff.xyz;
+	vec3 L = normalize(-sun.DIRECTION_RADIUS.xyz);
+	vec3 color = sun.COLOR_FALLOFF.xyz;
 
 	return PBRLighting(N, V, L, color, albedo, rough, metal);
 }
 
 vec3 CalSphereLight(Light sphere, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
 {
-    vec3 lightPos = sphere.Position_Type.xyz;
+    vec3 lightPos = sphere.POSITION_TYPE.xyz;
 
     vec3 L = lightPos - worldPos;
     float dist = length(L);
     L /= dist;
 
-    float attenuation = 1.0/(dist * dist);
+    float attenuation = 1.0 / (dist * dist);
 
-    vec3 color = sphere.Color_Falloff.xyz * attenuation;
+    vec3 color = sphere.COLOR_FALLOFF.xyz * attenuation;
 
     return PBRLighting(N, V, L, color, albedo, rough, metal);
 }
 
 vec3 CalSpotLight(Light spot, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
 {
-    vec3 lightPos = spot.Position_Type.xyz;
-    vec3 dir = normalize(spot.Direction_Radius.xyz);
+    vec3 lightPos = spot.POSITION_TYPE.xyz;
+    vec3 dir = normalize(spot.DIRECTION_RADIUS.xyz);
 
     vec3 L = lightPos - worldPos;
     float dist = length(L);
@@ -207,14 +203,14 @@ vec3 CalSpotLight(Light spot, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float 
 
     float theta = dot(L, -dir);
 
-    float cosInner = spot.SpecialParams.x;
-    float cosOuter = spot.SpecialParams.y;
+    float cosInner = spot.SPECIALPARAMS.x;
+    float cosOuter = spot.SPECIALPARAMS.y;
 
-    float result = clamp((theta - cosOuter)/(cosInner - cosOuter),0.0,1.0);
+    float result = clamp((theta - cosOuter)/(cosInner - cosOuter), 0.0, 1.0);
 
-    vec3 color = spot.Color_Falloff.xyz * attenuation * result;
+    vec3 color = spot.COLOR_FALLOFF.xyz * attenuation * result;
 
-    return PBRLighting(N,V,L,color,albedo,rough,metal);
+    return PBRLighting(N, V, L, color, albedo, rough, metal);
 }
 
 vec3 CalDirectLightings(vec3 position, vec3 nWorld, vec3 v, vec3 albedo, float rough, float metal)
@@ -224,7 +220,7 @@ vec3 CalDirectLightings(vec3 position, vec3 nWorld, vec3 v, vec3 albedo, float r
 	{
 		Light light = LIGHTS[i];
 
-		int type = int(light.Position_Type.w);
+		int type = int(light.POSITION_TYPE.w);
 
 		if(type == 0)
 		{
@@ -254,16 +250,16 @@ vec3 LambertLighting(vec3 N, vec3 L, vec3 lightColor, vec3 albedo)
 
 vec3 CalSun_Lambert(Light sun, vec3 N, vec3 albedo)
 {
-    vec3 L = normalize(sun.Direction_Radius.xyz);
+    vec3 L = normalize(sun.DIRECTION_RADIUS.xyz);
 
-    vec3 color = sun.Color_Falloff.xyz;
+    vec3 color = sun.COLOR_FALLOFF.xyz;
 
     return LambertLighting(N,L,color,albedo);
 }
 
 vec3 CalSphere_Lambert(Light sphere, vec3 worldPos, vec3 N, vec3 albedo)
 {
-    vec3 lightPos = sphere.Position_Type.xyz;
+    vec3 lightPos = sphere.POSITION_TYPE.xyz;
 
     vec3 L = lightPos - worldPos;
     float dist = length(L);
@@ -271,15 +267,15 @@ vec3 CalSphere_Lambert(Light sphere, vec3 worldPos, vec3 N, vec3 albedo)
 
     float attenuation = 1.0 / (dist * dist);
 
-    vec3 color = sphere.Color_Falloff.xyz * attenuation;
+    vec3 color = sphere.COLOR_FALLOFF.xyz * attenuation;
 
     return LambertLighting(N,L,color,albedo);
 }
 
 vec3 CalSpot_Lambert(Light spot, vec3 worldPos, vec3 N, vec3 albedo)
 {
-    vec3 lightPos = spot.Position_Type.xyz;
-    vec3 dir = normalize(spot.Direction_Radius.xyz);
+    vec3 lightPos = spot.POSITION_TYPE.xyz;
+    vec3 dir = normalize(spot.DIRECTION_RADIUS.xyz);
 
     vec3 L = lightPos - worldPos;
 
@@ -290,14 +286,14 @@ vec3 CalSpot_Lambert(Light spot, vec3 worldPos, vec3 N, vec3 albedo)
 
     float theta = dot(L,-dir);
 
-    float cosInner = spot.SpecialParams.x;
-    float cosOuter = spot.SpecialParams.y;
+    float cosInner = spot.SPECIALPARAMS.x;
+    float cosOuter = spot.SPECIALPARAMS.y;
 
     float result = clamp((theta - cosOuter)/(cosInner - cosOuter),0.0,1.0);
 
-    vec3 color = spot.Color_Falloff.xyz * attenuation * result;
+    vec3 color = spot.COLOR_FALLOFF.xyz * attenuation * result;
 
-    return LambertLighting(N,L,color,albedo);
+    return LambertLighting(N, L, color, albedo);
 }
 
 vec3 CalDirectLightings_Lambert(vec3 pos, vec3 nWorld, vec3 albedo)
@@ -308,21 +304,19 @@ vec3 CalDirectLightings_Lambert(vec3 pos, vec3 nWorld, vec3 albedo)
     {
         Light light = LIGHTS[i];
 
-        int type = int(light.Position_Type.w);
+        int type = int(light.POSITION_TYPE.w);
 
         if(type == 0)
 		{
-            result = vec3(1,0,0);
+            result += CalSun_Lambert(light,nWorld,albedo);
 		}
         else if(type == 1)
 		{
-			// result += CalSphere_Lambert(light,pos,nWorld,albedo);
-			result = vec3(0,0,1);
+			result += CalSphere_Lambert(light,pos,nWorld,albedo);
 		}
         else if(type == 2)
 		{
-			// result += CalSpot_Lambert(light,pos,nWorld,albedo);
-			result = vec3(0,1,0);
+			result += CalSpot_Lambert(light,pos,nWorld,albedo);
 		}
     }
 

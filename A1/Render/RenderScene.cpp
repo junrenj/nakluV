@@ -77,8 +77,6 @@ void URenderScene::GenerateLightProxy()
                 LightProxy->Direction_Limit = vec4(WorldDir.x, WorldDir.y, WorldDir.z, 0.0f);
 
                 LightProxy->SpecialParams.x = Sun->Angle;
-
-                SunProxy = LightProxy;
                 LightProxyInstances.push_back(LightProxy);
                 break;
             }
@@ -124,18 +122,6 @@ void URenderScene::GenerateLightProxy()
                 break;
             }
         }
-    }
-
-    if(SunProxy == nullptr)
-    {
-        // give a default - dark sun
-        FLightRenderProxy* LightProxy = new FLightRenderProxy();
-        SunProxy = LightProxy;
-        const float Type = static_cast<uint32_t>(ELightType::Sun);
-
-        SunProxy->Position_Type = vec4(0,0,0, Type);
-        SunProxy->Color_Falloff = vec4(1,1,1,0);
-        SunProxy->Direction_Limit = vec4(0,0.7,0.7,0);
     }
 }
 

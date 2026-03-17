@@ -1,0 +1,250 @@
+["s72-v2",
+{
+	"type":"MATERIAL",
+	"name":"lambertian::white",
+	"lambertian":{
+		"albedo":[ 0.8, 0.8, 0.8 ]
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"LightTest.Cube.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightTest.Cube.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightTest.Cube.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightTest.Cube.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube_1",
+	"translation":[0,-16.6831,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera00",
+	"translation":[21.2255,7.18121,13.1584],
+	"rotation":[0.201973,0.528345,0.770292,0.294465],
+	"scale":[1,1,1],
+	"camera":"Camera"
+},
+{
+	"type":"MESH",
+	"name":"Plane",
+	"topology":"TRIANGLE_LIST",
+	"count":6,
+	"attributes":{
+		"POSITION":{ "src":"LightTest.Plane.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightTest.Plane.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightTest.Plane.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightTest.Plane.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Plane_1",
+	"translation":[0,-16.6831,0],
+	"rotation":[0,0,0,1],
+	"scale":[10,10,10],
+	"mesh":"Plane"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Point",
+	"tint":[1, 0.00199661, 0],
+	"sphere":{
+		"radius":0,
+		"power":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Point",
+	"translation":[-4.37107,-16.6831,5.35837],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Point.001",
+	"tint":[0.00674876, 0, 1],
+	"sphere":{
+		"radius":0,
+		"power":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Point.001",
+	"translation":[3.22932,-20.896,5.35837],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Point.002",
+	"tint":[0, 1, 0.000500665],
+	"sphere":{
+		"radius":0,
+		"power":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Point.002",
+	"translation":[2.88206,-12.5749,5.35837],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.002"
+},
+{
+	"type":"MESH",
+	"name":"Cube.001",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"LightTest.Cube.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightTest.Cube.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightTest.Cube.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightTest.Cube.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube_1.001",
+	"translation":[0,15.594,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+	"type":"MESH",
+	"name":"Plane.001",
+	"topology":"TRIANGLE_LIST",
+	"count":6,
+	"attributes":{
+		"POSITION":{ "src":"LightTest.Plane.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightTest.Plane.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightTest.Plane.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightTest.Plane.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Plane_1.001",
+	"translation":[0,15.594,0],
+	"rotation":[0,0,0,1],
+	"scale":[10,10,10],
+	"mesh":"Plane.001"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.001",
+	"tint":[1, 0.00168868, 0],
+	"spot":{
+		"radius":0,
+		"power":250,
+		"fov":0.523599,
+		"blend":0.284375
+	}
+},
+{
+	"type":"NODE",
+	"name":"Spot.001",
+	"translation":[-0.0730734,7.40217,6.40911],
+	"rotation":[0.282883,0.282577,-0.648475,0.647771],
+	"scale":[1,1,1],
+	"light":"Spot.001"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.002",
+	"tint":[0, 0.0243241, 1],
+	"spot":{
+		"radius":0,
+		"power":250,
+		"fov":0.523599,
+		"blend":0.284375
+	}
+},
+{
+	"type":"NODE",
+	"name":"Spot.002",
+	"translation":[-6.74225,20.5119,6.40911],
+	"rotation":[-0.378298,0.129474,0.8672,0.296802],
+	"scale":[1,1,1],
+	"light":"Spot.002"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.003",
+	"tint":[0.0242436, 1, 0],
+	"spot":{
+		"radius":0,
+		"power":250,
+		"fov":0.523599,
+		"blend":0.284375
+	}
+},
+{
+	"type":"NODE",
+	"name":"Spot.003",
+	"translation":[6.88373,20.5147,6.40911],
+	"rotation":[-0.127757,0.378881,0.292867,0.868537],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera.001",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera00.001",
+	"translation":[12.371,3.33232,13.1401],
+	"rotation":[0.426642,0.177124,0.340062,0.819122],
+	"scale":[1,1,1],
+	"camera":"Camera.001"
+},
+{
+	"type":"SCENE",
+	"name":"C:\\Users\\junrenj\\Desktop\\RealTimeGraphic\\nakluV\\A3\\Scene\\LightTest\\LightTest.blend",
+	"roots":["Cube_1", "Camera00", "Plane_1", "Point", "Point.001", "Point.002", "Cube_1.001", "Plane_1.001", "Spot.001", "Spot.002", "Spot.003", "Camera00.001"]
+}
+]
