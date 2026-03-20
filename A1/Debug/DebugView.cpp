@@ -7,10 +7,11 @@
 #include "glm/glm/gtc/type_ptr.hpp"
 
 // Debug Scene Class
-void UDebugScene::Update(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx, const std::vector< UNode * >& Nodes)
+void UDebugScene::Update(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx, const std::vector< UNode * >& Nodes, const std::vector<FLightRenderProxy *>& Lights)
 {
     UpdateBBoxVertices(Nodes);
     UpdateFrustumVertices(Cameras, ActiveIdx);
+    UpdateLightProxyVertices(Lights);
 }
 
 void UDebugScene::GenerateBBoxVertices(const FAABB& BBox, const glm::mat4& Transform, const bool bCanSee)
@@ -93,6 +94,62 @@ void UDebugScene::GenerateFrustumVertices(const UCamera& Camera, bool bIsActive)
     }
 }
 
+void UDebugScene::GenerateLightsVertices(const FLightRenderProxy& Proxy)
+{
+    const uint8_t Segments = 32;
+    const float PI = (float)M_PI;
+    const ELightType Type = static_cast<ELightType>((int)Proxy.Position_Type.w);
+    const vec3 Pos = vec3(Proxy.Position_Type);
+
+    auto DrawCircle = [&](vec3 Center, vec3 Up, vec3 Right, float Radius) 
+    {
+        for (int i = 0; i < Segments; ++i) 
+        {
+            float Angle1 = (float)i / Segments * 2.0f * PI;
+            float Angle2 = (float)(i + 1) / Segments * 2.0f * PI;
+            
+            LightsVertices.push_back(FDebugColVertex( Center + (cos(Angle1) * Right + sin(Angle1) * Up) * Radius, LightDebugColor));
+            LightsVertices.push_back(FDebugColVertex(Center + (cos(Angle2) * Right + sin(Angle2) * Up) * Radius, LightDebugColor));
+        }
+    };
+
+    if(Type == ELightType::Sphere)
+    {
+        float Radius = Proxy.SpecialParams.x;
+        DrawCircle(Pos, {0, 1, 0}, {1, 0, 0}, Radius); // XY
+        DrawCircle(Pos, {0, 0, 1}, {1, 0, 0}, Radius); // XZ
+        DrawCircle(Pos, {0, 0, 1}, {0, 1, 0}, Radius); // YZ
+    }
+    else if(Type == ELightType::Spot)
+    {
+        vec3 Dir = glm::normalize(vec3(Proxy.Direction_Limit));
+        float Limit = 5.0f;//Proxy.Direction_Limit.w;
+        float CosOuter = Proxy.SpecialParams.y;
+        
+        float SinOuter = sqrt(1.0f - CosOuter * CosOuter);
+        float ConeRadius = (SinOuter / CosOuter) * Limit;
+
+        vec3 Up = (abs(Dir.z) < 0.999f) ? vec3(0, 0, 1) : vec3(1, 0, 0);
+        vec3 Right = glm::normalize(glm::cross(Up, Dir));
+        Up = glm::cross(Dir, Right);
+
+        vec3 BottomCenter = Pos + Dir * Limit;
+
+        DrawCircle(BottomCenter, Up, Right, ConeRadius);
+
+        for (int j = 0; j < 4; ++j) 
+        {
+            float Angle = j * PI * 0.5f;
+            vec3 EdgePoint = BottomCenter + (cos(Angle) * Right + sin(Angle) * Up) * ConeRadius;
+            LightsVertices.push_back(FDebugColVertex(Pos, LightDebugColor));
+            LightsVertices.push_back(FDebugColVertex(EdgePoint, LightDebugColor));
+        }
+
+        LightsVertices.push_back(FDebugColVertex(Pos, LightDebugColor));
+        LightsVertices.push_back(FDebugColVertex(BottomCenter, LightDebugColor));
+    }
+}
+
 void UDebugScene::UpdateBBoxVertices(const std::vector< UNode * >& Nodes)
 {
     BBoxVertices.clear();
@@ -117,11 +174,22 @@ void UDebugScene::UpdateFrustumVertices(const std::vector< UCamera* >& Cameras, 
     }
 }
 
+void UDebugScene::UpdateLightProxyVertices(const std::vector<FLightRenderProxy *>& Lights)
+{
+    LightsVertices.clear();
+    for (size_t i = 0; i < Lights.size(); i++)
+    {
+        GenerateLightsVertices(*Lights[i]);
+    }
+    
+}
+
 void UDebugScene::GetAllVerticesData(std::vector<FDebugColVertex>& LineVertices)
 {
-    LineVertices.reserve(BBoxVertices.size() + FrustumVertices.size());
+    LineVertices.reserve(BBoxVertices.size() + FrustumVertices.size() + LightsVertices.size());
     LineVertices.insert(LineVertices.end(), BBoxVertices.begin(), BBoxVertices.end());
     LineVertices.insert(LineVertices.end(), FrustumVertices.begin(), FrustumVertices.end());
+    LineVertices.insert(LineVertices.end(), LightsVertices.begin(), LightsVertices.end());
 }
 
 // Debug Message Class

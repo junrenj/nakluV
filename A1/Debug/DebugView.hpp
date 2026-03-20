@@ -9,19 +9,24 @@ class UDebugScene
 private:
     std::vector< FDebugColVertex > FrustumVertices;
     std::vector< FDebugColVertex > BBoxVertices;
+    std::vector< FDebugColVertex > LightsVertices;
+
     uint8_t FrustumColorActive[4] = {255, 255 ,0 ,255};	// Yellow
     uint8_t FrustumColorInActive[4] = {64, 64 ,64 ,255};	// Dark Grey
     uint8_t BBoxColorVisible[4] = {0, 255, 0, 255};		    // Green
     uint8_t BBoxColorCull[4] = {255, 0, 0, 255};            // Red
+    uint8_t LightDebugColor[4] = {255, 0, 255, 255};        // Purple
 
 public:
-    void Update(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx, const std::vector< UNode * >& Nodes);
+    void Update(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx, const std::vector< UNode * >& Nodes, const std::vector<FLightRenderProxy *>& Lights);
     void UpdateFrustumVertices(const std::vector< UCamera* >& Cameras, uint8_t ActiveIdx);
     void UpdateBBoxVertices(const std::vector< UNode * >& Nodes);
+    void UpdateLightProxyVertices(const std::vector<FLightRenderProxy *>& Lights);
     void GetAllVerticesData(std::vector<FDebugColVertex>& LineVertices);
 private:
     void GenerateBBoxVertices(const FAABB& BBox, const glm::mat4& Transform, const bool bCanSee);
     void GenerateFrustumVertices(const UCamera& Camera, bool bIsActive);
+    void GenerateLightsVertices(const FLightRenderProxy& Proxy);
 };
 
 // This is the class that print message

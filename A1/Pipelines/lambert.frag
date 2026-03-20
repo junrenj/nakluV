@@ -6,7 +6,7 @@ const float MAX_GGX_LOD = 5.0;
 struct Light
 {
 	vec4 POSITION_TYPE;
-	vec4 DIRECTION_RADIUS;
+	vec4 DIRECTION_LIMIT;
 	vec4 COLOR_FALLOFF;
 	vec4 SPECIALPARAMS;
 };
@@ -142,7 +142,7 @@ vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float rou
     float a = roughness * roughness;
     float a2 = a * a;
 
-    float denom = (NdotH * NdotH) * (a2 - 1.0)+1.0;
+    float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
     float D = a2/(3.1415926 * denom * denom);
 
     // Geometry
@@ -167,53 +167,84 @@ vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float rou
     return (diffuse + specular) * lightColor * NdotL;
 }
 
+vec3 LambertLighting(vec3 N, vec3 L, vec3 lightColor, vec3 albedo)
+{
+    float NdotL = max(dot(N,L),0.0);
+
+    vec3 diffuse = albedo / 3.1415926;
+
+    return diffuse * lightColor * NdotL;
+}
+
 vec3 CalSunLight(Light sun, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
 {
-	vec3 L = normalize(-sun.DIRECTION_RADIUS.xyz);
+	vec3 L = normalize(-sun.DIRECTION_LIMIT.xyz);
 	vec3 color = sun.COLOR_FALLOFF.xyz;
 
 	return PBRLighting(N, V, L, color, albedo, rough, metal);
 }
 
-vec3 CalSphereLight(Light sphere, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
+vec3 CalSphereLight(Light sphere, vec3 N, vec3 V, vec3 R, vec3 albedo, float rough, float metal)
 {
     vec3 lightPos = sphere.POSITION_TYPE.xyz;
+	float radius = sphere.SPECIALPARAMS.x;
 
-    vec3 L = lightPos - worldPos;
-    float dist = length(L);
-    L /= dist;
+    vec3 Ld = lightPos - position;
+    float dist = length(Ld);
+    Ld /= dist;
 
-    float attenuation = 1.0 / (dist * dist);
+	vec3 closestPos = lightPos + R * radius;
+	vec3 Ls = normalize(closestPos - position);
 
+    float attenuation = GetDistanceAttenuation(dist, radius);
     vec3 color = sphere.COLOR_FALLOFF.xyz * attenuation;
 
-    return PBRLighting(N, V, L, color, albedo, rough, metal);
+	vec3 diffuse = LambertLighting(N, Ld, color, albedo);
+	vec3 specular = PBRLighting(N, V, Ls, color, albedo, rough, metal);
+
+    return diffuse + specular;
 }
 
-vec3 CalSpotLight(Light spot, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float rough, float metal)
+vec3 CalSpotLight(Light spot, vec3 N, vec3 V, vec3 R, vec3 albedo, float rough, float metal)
 {
     vec3 lightPos = spot.POSITION_TYPE.xyz;
-    vec3 dir = normalize(spot.DIRECTION_RADIUS.xyz);
-
-    vec3 L = lightPos - worldPos;
-    float dist = length(L);
-    L /= dist;
-
-    float attenuation = 1.0/(dist * dist);
-
-    float theta = dot(L, -dir);
-
+    vec3 dir = normalize(spot.DIRECTION_LIMIT.xyz);
     float cosInner = spot.SPECIALPARAMS.x;
     float cosOuter = spot.SPECIALPARAMS.y;
+	float blend = spot.SPECIALPARAMS.z;
+	float radius = spot.SPECIALPARAMS.w;
+
+    vec3 Ld = lightPos - position;
+    float dist = length(Ld);
+    Ld /= dist;
+
+	vec3 closestPos = lightPos + R * radius;
+	vec3 toPoint = normalize(closestPos - lightPos);
+    float cosAngle = dot(toPoint, dir);
+
+    if (cosAngle < cosOuter)
+    {
+        float t = cosOuter / max(0.001, dot(R, dir));
+        closestPos = lightPos + R * radius * t;
+    }
+	vec3 Ls = normalize(closestPos - position);
+
+    float attenuation = GetDistanceAttenuation(dist, radius);
+
+    float theta = dot(Ld, -dir);
 
     float result = clamp((theta - cosOuter)/(cosInner - cosOuter), 0.0, 1.0);
+	result = pow(result, blend);
 
     vec3 color = spot.COLOR_FALLOFF.xyz * attenuation * result;
 
-    return PBRLighting(N, V, L, color, albedo, rough, metal);
+	vec3 diffuse = LambertLighting(N, Ld, color, albedo);
+	vec3 specular = PBRLighting(N, V, Ls, color, albedo, rough, metal);
+
+    return diffuse + specular;
 }
 
-vec3 CalDirectLightings(vec3 position, vec3 nWorld, vec3 v, vec3 albedo, float rough, float metal)
+vec3 CalDirectLightings(vec3 nWorld, vec3 v, vec3 r, vec3 albedo, float rough, float metal)
 {
 	vec3 result = vec3(0);
 	for(int i = 0 ; i < lightsCount ; i++)
@@ -228,33 +259,24 @@ vec3 CalDirectLightings(vec3 position, vec3 nWorld, vec3 v, vec3 albedo, float r
 		}
 		else if(type == 1)
 		{
-			result += CalSphereLight(light, position, nWorld, v, albedo, rough, metal);
+			result += CalSphereLight(light, nWorld, v, r, albedo, rough, metal);
 		}
 		else if(type == 2)
 		{
-			result += CalSpotLight(light, position, nWorld, v, albedo, rough, metal);
+			result += CalSpotLight(light, nWorld, v, r, albedo, rough, metal);
 		}
 	}
 
 	return result;
 }
 
-vec3 LambertLighting(vec3 N, vec3 L, vec3 lightColor, vec3 albedo)
-{
-    float NdotL = max(dot(N,L),0.0);
-
-    vec3 diffuse = albedo / 3.1415926;
-
-    return diffuse * lightColor * NdotL;
-}
-
 vec3 CalSun_Lambert(Light sun, vec3 N, vec3 albedo)
 {
-    vec3 L = normalize(sun.DIRECTION_RADIUS.xyz);
+    vec3 L = normalize(sun.DIRECTION_LIMIT.xyz);
 
     vec3 color = sun.COLOR_FALLOFF.xyz;
 
-    return LambertLighting(N,L,color,albedo);
+    return LambertLighting(N, L, color, albedo);
 }
 
 vec3 CalSphere_Lambert(Light sphere, vec3 worldPos, vec3 N, vec3 albedo)
@@ -275,21 +297,23 @@ vec3 CalSphere_Lambert(Light sphere, vec3 worldPos, vec3 N, vec3 albedo)
 vec3 CalSpot_Lambert(Light spot, vec3 worldPos, vec3 N, vec3 albedo)
 {
     vec3 lightPos = spot.POSITION_TYPE.xyz;
-    vec3 dir = normalize(spot.DIRECTION_RADIUS.xyz);
+    vec3 dir = normalize(spot.DIRECTION_LIMIT.xyz);
 
     vec3 L = lightPos - worldPos;
 
     float dist = length(L);
     L /= dist;
 
-    float attenuation = 1.0/(dist*dist);
+    float attenuation = 1.0 / (dist * dist);
 
-    float theta = dot(L,-dir);
+    float theta = dot(L, -dir);
 
     float cosInner = spot.SPECIALPARAMS.x;
     float cosOuter = spot.SPECIALPARAMS.y;
+	float blend = spot.SPECIALPARAMS.z;
 
     float result = clamp((theta - cosOuter)/(cosInner - cosOuter),0.0,1.0);
+	result = pow(result, blend);
 
     vec3 color = spot.COLOR_FALLOFF.xyz * attenuation * result;
 
@@ -360,27 +384,29 @@ vec4 PBR(vec2 uv)
     vec3 F0 = mix(vec3(0.04), albedo, metal);
 
     // 3. Diffuse
+	vec3 direct = CalDirectLightings(nWorld, v, r, albedo, rough, metal);
+
+	// 4. Diffuse IBL
     vec3 irradiance = textureLod(IRRADIANCE_TEX, nWorld, 0.0).rgb;
-    vec3 diffAlbedo = albedo * (1.0 - metal);
-    vec3 diffuse = irradiance * diffAlbedo;
+    vec3 diffuseIBL = irradiance * albedo / 3.1415926;
 
-    // 4. Specular
-    float maxMip = MAX_GGX_LOD;
-    float mipLevel = rough * maxMip;
-
+    // 4. Specular IBL
+    float mipLevel = rough * MAX_GGX_LOD;
     vec3 prefilteredColor = textureLod(ENV_TEX, r, mipLevel).rgb;
-
     vec2 brdf = texture(LUT_TEX, vec2(NdotV, rough)).rg;
 
     vec3 specular = prefilteredColor * (F0 * brdf.x + brdf.y);
 
-    // Energy Conservation
+    // 5. Energy Conservation
     vec3 kS = F0;
     vec3 kD = (1.0 - kS) * (1.0 - metal);
 
-    vec3 color = kD * diffuse + specular;
+	// Combine IBL
+    vec3 ibl = kD * diffuseIBL + specular;
 
-    return vec4(color, 1.0);
+	vec3 color = direct + ibl;
+
+    return vec4(direct, 1.0);	//TODO: fix it 
 }
 
 vec4 Lambertian(vec2 uv)
@@ -400,7 +426,7 @@ vec4 Lambertian(vec2 uv)
 
 	vec3 color = direct + ibl; 
 
-	return vec4(direct , 1.0);
+	return vec4(direct , 1.0);	//TODO: fix it 
 }
 
 vec4 ACESFilm(vec4 inColor)

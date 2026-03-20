@@ -1196,7 +1196,7 @@ void UAssignmentOne::update(float dt)
 	}
 	if(rtg.configuration.debug)
 	{
-		DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes);
+		DebugScene.Update(Scene.Cameras, ActiveCameraIdx, Scene.Nodes, Scene.LightProxyInstances);
 	}
 	{
 		Scene.Update(ActiveCameraIdx, rtg.configuration.CullMode == RTG::Configuration::ECullingMode::Normal);

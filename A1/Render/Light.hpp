@@ -60,7 +60,7 @@ public:
     /*
         Sun[Angle, 0, 0, 0]
         Sphere[SourceRadius, 0, 0, 0]
-        Spot[cosInner, cosOuter, 0, 0]
+        Spot[cosInner, cosOuter, blend, SourceRadius]
     */
     glm::vec4 SpecialParams;
 };

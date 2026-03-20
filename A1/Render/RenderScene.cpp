@@ -84,7 +84,7 @@ void URenderScene::GenerateLightProxy()
             {
                 const ULight_Sphere* Sphere = static_cast<ULight_Sphere*>(Light);
 
-                const vec4 LocalPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                const vec4 LocalPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
                 const vec3 Color = Sphere->Tint * Sphere->Power;
                 
@@ -102,21 +102,24 @@ void URenderScene::GenerateLightProxy()
             case ELightType::Spot:
             {
                 const ULight_Spot* Spot = static_cast<ULight_Spot*>(Light);
+                const mat4 Local2World = UNode::GetLocal2WorldMatrix(Node);
 
-                const vec4 LocalDir = vec4(0.0f, 0.0f, 1.0f, 0.0f);
-                const vec4 LocalPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-                const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
-                const vec4 WorldDir = UNode::GetLocal2WorldMatrix(Node) * LocalDir;
+                const vec3 LocalForward = vec3(0.0f, 0.0f, -1.0f);
+                const vec3 WorldPos = vec3(Local2World[3]);
+                const vec3 WorldDir = glm::normalize(glm::mat3(Local2World) * LocalForward);
                 const vec3 Color = Spot->Tint * Spot->Power;
                 
-                LightProxy->Position_Type = vec4(WorldPos.x, WorldPos.y, WorldPos.z, static_cast<float>(ELightType::Spot));
+                LightProxy->Position_Type = vec4(WorldPos, static_cast<float>(ELightType::Spot));
                 LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
-                LightProxy->Direction_Limit = vec4(WorldDir.x, WorldDir.y, WorldDir.z, Spot->Limit);
+                LightProxy->Direction_Limit = vec4(WorldDir, Spot->Limit);
 
-                const float cosInner = cos(Spot->Fov * (1.0f - Spot->Blend));
-                const float cosOuter = cos(Spot->Fov);
+                const float HalfFov = Spot->Fov * 0.5f;
+                const float cosInner = cos(HalfFov * (1.0f - Spot->Blend));
+                const float cosOuter = cos(HalfFov);
                 LightProxy->SpecialParams.x = cosInner;
                 LightProxy->SpecialParams.y = cosOuter;
+                LightProxy->SpecialParams.z = Spot->Blend;
+                LightProxy->SpecialParams.w = Spot->Radius;
 
                 LightProxyInstances.push_back(LightProxy);
                 break;
