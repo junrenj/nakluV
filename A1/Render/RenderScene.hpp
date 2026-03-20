@@ -92,7 +92,8 @@ public:
     std::vector<UCamera*> Cameras;
 
     // Light Data
-    std::unordered_map<ULight*, UNode*> Lights;
+    std::unordered_map<ULight*, UNode*> Lights2Nodes;
+    std::vector<ULight*> Lights;
     std::vector<UEnvironment*> Environments;
 
     // VertexBuffer

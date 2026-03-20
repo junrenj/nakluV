@@ -59,8 +59,14 @@ void URenderScene::GenerateMeshProxy()
 
 void URenderScene::GenerateLightProxy()
 {
-    for (auto const& [Light, Node] : Lights)
+    for (auto const& [Light, Node] : Lights2Nodes)
     {
+        Lights.push_back(Light);
+    }
+    
+    for (auto& Light : Lights)
+    {
+        const UNode* Node = Lights2Nodes[Light];
         FLightRenderProxy* LightProxy = new FLightRenderProxy();
         switch (Light->LightType)
         {

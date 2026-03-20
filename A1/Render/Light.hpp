@@ -10,7 +10,7 @@ enum class ELightType
 class ULight
 {
 public:
-    uint32_t shadow = 0; 
+    uint32_t Shadow = 0; 
     glm::vec3 Tint;
     ELightType LightType;
 };

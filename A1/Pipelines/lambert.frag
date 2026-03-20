@@ -152,7 +152,7 @@ vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float rou
     float Gv = NdotV / (NdotV * (1.0 - k) + k);
     float Gl = NdotL / (NdotL * (1.0 - k) + k );
 
-    float G = Gv*Gl;
+    float G = Gv * Gl;
 
     vec3 numerator = D * F * G;
     float denominator = 4.0 * NdotV * NdotL + 0.001;
@@ -167,9 +167,49 @@ vec3 PBRLighting(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float rou
     return (diffuse + specular) * lightColor * NdotL;
 }
 
+vec3 PBRLighting_Sphere(vec3 N, vec3 V, vec3 L, vec3 lightColor, vec3 albedo, float a, float aPrime, float metalness)
+{
+    vec3 H = normalize(V + L);
+
+    float NdotL = max(dot(N, L),0.0);
+    float NdotV = max(dot(N, V),0.0);
+    float NdotH = max(dot(N, H),0.0);
+    float VdotH = max(dot(V, H),0.0);
+
+    vec3 F0 = mix(vec3(0.04), albedo, metalness);
+
+    vec3 F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+
+    float a2 = a * a;
+	float aPrime2 = aPrime * aPrime;
+
+    float denom = (NdotH * NdotH) * (aPrime2 - 1.0) + 1.0;
+    float D = aPrime2 / (3.1415926 * denom * denom);
+
+	float sphereNormalization = (a2 / aPrime2);
+
+	D *= sphereNormalization;
+
+    float k = (sqrt(aPrime) + 1.0);
+    k = k * k / 8.0;
+
+    float Gv = NdotV / (NdotV * (1.0 - k) + k);
+    float Gl = NdotL / (NdotL * (1.0 - k) + k );
+
+    float G = Gv * Gl;
+
+    vec3 specular = (D * F * G) / (4.0 * NdotV * NdotL + 0.001);
+
+    vec3 kS = F;
+    vec3 kD = (1.0 - kS) * (1.0 - metalness);
+    vec3 diffuse = kD * albedo / 3.1415926;
+
+    return (diffuse + specular) * lightColor * NdotL;
+}
+
 vec3 LambertLighting(vec3 N, vec3 L, vec3 lightColor, vec3 albedo)
 {
-    float NdotL = max(dot(N,L),0.0);
+    float NdotL = max(dot(N, L),0.0);
 
     vec3 diffuse = albedo / 3.1415926;
 
@@ -189,18 +229,32 @@ vec3 CalSphereLight(Light sphere, vec3 N, vec3 V, vec3 R, vec3 albedo, float rou
     vec3 lightPos = sphere.POSITION_TYPE.xyz;
 	float radius = sphere.SPECIALPARAMS.x;
 
-    vec3 Ld = lightPos - position;
-    float dist = length(Ld);
-    Ld /= dist;
+    vec3 L = lightPos - position;
+	float dist = length(L);
+	vec3 Ld = L / dist;
 
-	vec3 closestPos = lightPos + R * radius;
-	vec3 Ls = normalize(closestPos - position);
+	// Representative point
+	float LdotR = dot(L, R);
+	vec3 centerToRay = LdotR * R - L;
+    float distToRay = length(centerToRay);
 
+	float t = radius / max(distToRay, 1e-4);
+	t = clamp(t, 0.0, 1.0);
+
+	vec3 closestPos = L + centerToRay * t;
+	vec3 Ls = normalize(closestPos);
+
+	// attenuation
     float attenuation = GetDistanceAttenuation(dist, radius);
     vec3 color = sphere.COLOR_FALLOFF.xyz * attenuation;
 
+	// disffuse
 	vec3 diffuse = LambertLighting(N, Ld, color, albedo);
-	vec3 specular = PBRLighting(N, V, Ls, color, albedo, rough, metal);
+	// specular
+	float a = rough * rough;
+	float alphaPrime = clamp(a + radius / (2.0 * dist), 0.0, 1.0);
+
+	vec3 specular = PBRLighting_Sphere(N, V, Ls, color, albedo, a, alphaPrime, metal);
 
     return diffuse + specular;
 }
@@ -263,7 +317,7 @@ vec3 CalDirectLightings(vec3 nWorld, vec3 v, vec3 r, vec3 albedo, float rough, f
 		}
 		else if(type == 2)
 		{
-			result += CalSpotLight(light, nWorld, v, r, albedo, rough, metal);
+			// result += CalSpotLight(light, nWorld, v, r, albedo, rough, metal);
 		}
 	}
 

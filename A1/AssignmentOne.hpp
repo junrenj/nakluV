@@ -23,6 +23,22 @@ struct UAssignmentOne : RTG::Application
 	//Render passes describe how pipelines write to images:
 	VkRenderPass RenderPass = VK_NULL_HANDLE;
 
+	//Render pass for shadowmap
+	struct FShadowResource
+	{
+		Helpers::AllocatedImage Image;
+		VkImageView ImageView;
+		VkDescriptorSet DescriptorSet;
+	};
+	std::vector<FShadowResource> SpotLightShadows;
+	VkRenderPass ShadowPass;
+
+	// Sampler
+	VkSampler TextureSamplerNearest = VK_NULL_HANDLE;
+	VkSampler TextureSamplerLinear = VK_NULL_HANDLE;
+	VkSampler ShadowSamplerPCF;
+
+
     // Background Pipeline
     struct FBackgroundPipeline
     {
@@ -148,13 +164,10 @@ struct UAssignmentOne : RTG::Application
 
 	std::vector< Helpers::AllocatedImage > Textures;
 	std::vector< VkImageView > TextureViews;
-	VkSampler TextureSamplerNearest = VK_NULL_HANDLE;
 	VkDescriptorPool TextureDescriptorPool = VK_NULL_HANDLE;
 	std::vector< VkDescriptorSet > MaterialDescriptors;
 	VkDescriptorPool EnvTexDescriptorPool = VK_NULL_HANDLE;
 	std::vector< VkDescriptorSet > EnvTexDescriptors;
-
-	VkSampler TextureSamplerLinear = VK_NULL_HANDLE;
 
 	//--------------------------------------------------------------------
 	//Resources that change when the swapchain is resized:

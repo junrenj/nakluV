@@ -122,6 +122,37 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		VK( vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &RenderPass));
     }
 
+	// Create Shadow Pass
+	{
+		VkAttachmentDescription DepthAttachment 
+		{
+			.format = DepthFormat,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		};
+
+		VkAttachmentReference DepthRef { .attachment = 0, .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+
+		VkSubpassDescription Subpass 
+		{
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.pDepthStencilAttachment = &DepthRef,
+		};
+
+		VkRenderPassCreateInfo CreateInfo 
+		{
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = 1,
+			.pAttachments = &DepthAttachment,
+			.subpassCount = 1,
+			.pSubpasses = &Subpass,
+		};
+		VK(vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &ShadowPass));
+	}
+
     // Create Command pool
 	{
 		VkCommandPoolCreateInfo CreateInfo
@@ -387,6 +418,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSamplerNearest) );
 	}
 
+	// make a linear sampler
 	{
 		VkSamplerCreateInfo CreateInfo
 		{
@@ -409,6 +441,22 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.unnormalizedCoordinates = VK_FALSE,
 		};
 		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSamplerLinear) );
+	}
+
+	// make a sampler for shadow map
+	{
+		VkSamplerCreateInfo CreateInfo 
+		{
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.magFilter = VK_FILTER_LINEAR,
+			.minFilter = VK_FILTER_LINEAR,
+			.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+			.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+			.compareEnable = VK_TRUE,
+			.compareOp = VK_COMPARE_OP_LESS,
+			.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+		};
+		VK(vkCreateSampler(rtg.device, &CreateInfo, nullptr, &ShadowSamplerPCF));
 	}
 
 	// create the texture descriptor pool	
@@ -577,6 +625,36 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				};
 			}
 			vkUpdateDescriptorSets(rtg.device,uint32_t(Writes.size()),Writes.data(),0,nullptr);
+		}
+	}
+
+	// dispatch lights' shadow map
+	{
+		for (auto* Light : Scene.Lights) 
+		{
+			if (Light->LightType == ELightType::Spot)
+			{
+				FShadowResource ShadowRes;
+				ShadowRes.Image = rtg.helpers.create_image
+				(
+					VkExtent2D{ .width = (uint32_t)Light->Shadow,  .height = (uint32_t)Light->Shadow},
+					DepthFormat,
+					VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+				);
+				
+				VkImageViewCreateInfo ViewInfo 
+				{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+					.image = ShadowRes.Image.handle,
+					.viewType = VK_IMAGE_VIEW_TYPE_2D,
+					.format = DepthFormat,
+					.subresourceRange = { .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1, .layerCount = 1 },
+				};
+				VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &ShadowRes.ImageView));
+				SpotLightShadows.push_back(std::move(ShadowRes));
+			}
 		}
 	}
 }
@@ -1714,7 +1792,7 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 			FLambertPipeline::FConstant Constant
 			{
 				.MaterialType = (int)Material->Type,
-				.LightsCount = 	(int)Scene.Lights.size(),
+				.LightsCount = 	(int)Scene.Lights2Nodes.size(),
 			};
 			vkCmdPushConstants(workspace.command_buffer, LambertPipeline.Layout, 
 								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Constant), &Constant);
