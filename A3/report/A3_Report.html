@@ -187,6 +187,8 @@ Credit + cite your sources for textures and models, if you did not create them y
 <h3>Loading light objects <span class="atag">A3-load</span></h3> 
 
 <p class="placeholder">
+	Light data is loaded from the S72 file as S72::Light, then converted by URenderExtractor into engine-side objects (ULight). These are collected in URenderScene and transformed into FLightProxy for rendering. For lights that cast shadows, additional resources (FShadowResource) are created. 
+	Finally, the data is uploaded to the GPU as structured buffers and shadow maps.
 <img src="Images/LightStrcuture.png" alt="LightStructure" style="max-width: 100%; height: auto;">
 </p>
 
@@ -261,19 +263,27 @@ window.addEventListener('load', () => {
 <h3>Adding Shadows for Spot Lights <span class="atag">A3-shadows</span></h3>
 
 <p class="placeholder">
-Cover, at least:
-how (and when) your viewer renders shadow maps;
-how your viewer works to avoid shadow map artifacts (e.g., rendering backfaces; using bias/offset; ...);
-how cube map textures are provided to materials;
-how many PCF samples your code takes and how it weights them.
+Shadow maps are rendered in the render function before the Lambert pipeline. 
+I use a dedicated shadow pipeline with a shadow.vert shader to render depth information from the light's point of view.
+<br>
+To reduce shadow artifacts, 
+I apply both depth bias and normal bias to mitigate self-shadowing issues (shadow acne) on lit surfaces.
+<br>
+Cube map textures are provided to materials through a descriptor set, 
+allowing shaders to directly sample the data.
+<br>
+For PCF filtering, I use a 2×2 sampling pattern with uniform weights to smooth shadow edges.
 </p>
 
 
 <p class="placeholder">
 Include output images showing that spot light shadows are working correctly for both lambertian and pbr materials.
+<br>
+<img src="Images/shadow_example.png" alt="ShadowExample" style="max-width: 100%; height: auto;">
 </p>
 <p class="placeholder">
 Include output images showing that "shadow" light parameter does actually change the shadow map resolution.
+<img src="Images/shadow_resolution.png" alt="ShadowResolution" style="max-width: 100%; height: auto;">
 </p>
 
 <p class="placeholder">

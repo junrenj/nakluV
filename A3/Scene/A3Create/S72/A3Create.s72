@@ -149,7 +149,7 @@
 {
 	"type":"NODE",
 	"name":"piano",
-	"translation":[41.3316,212.827,9.50087],
+	"translation":[38.4613,212.827,9.02982],
 	"rotation":[-0.32317,-0.944512,-0.0190358,0.0556349],
 	"scale":[-0.206115,-0.0686993,-0.0253281],
 	"mesh":"Cube.125"
@@ -213,13 +213,14 @@
 	"tint":[1, 1, 1],
 	"sphere":{
 		"radius":5,
-		"power":200
+		"power":300,
+		"limit":1000
 	}
 },
 {
 	"type":"NODE",
 	"name":"point.001",
-	"translation":[-5.10354,134.205,11.6281],
+	"translation":[-5.10354,134.205,78.336],
 	"rotation":[-2.48696e-06,0,0,1],
 	"scale":[5.31738,1,131.756],
 	"light":"Point.002"
@@ -299,7 +300,7 @@
 		"fov":0.785398,
 		"blend":0.15
 	},
-	"shadow":512.0
+	"shadow":2048.0
 },
 {
 	"type":"NODE",
@@ -357,9 +358,12 @@
 },
 {
 	"type":"MATERIAL",
-	"name":"lambertian::balck",
-	"lambertian":{
-		"albedo":[ 0.0121244, 0.0121244, 0.0121244 ]
+	"name":"pbr::blackmarble",
+	"normalMap":{ "src":"..\\Poliigon_MetalPaintedMatte_7037_Normal.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\Poliigon_MetalPaintedMatte_7037_BaseColor.png", "format":"srgb" },
+		"roughness":{ "src":"..\\Poliigon_MetalPaintedMatte_7037_Roughness.png", "format":"srgb" },
+		"metalness":{ "src":"..\\Poliigon_MetalPaintedMatte_7037_Metallic.png", "format":"srgb" }
 	}
 },
 {
@@ -373,7 +377,7 @@
 		"TANGENT":{ "src":"A3Create.Cube.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
 		"TEXCOORD":{ "src":"A3Create.Cube.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
 	},
-	"material":"lambertian::balck"
+	"material":"pbr::blackmarble"
 },
 {
 	"type":"NODE",
@@ -385,9 +389,12 @@
 },
 {
 	"type":"MATERIAL",
-	"name":"lambertian::white",
-	"lambertian":{
-		"albedo":[ 0.8, 0.8, 0.8 ]
+	"name":"pbr::whitemarble",
+	"normalMap":{ "src":"..\\Poliigon_StoneQuartzite_8060_Normal.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\Poliigon_StoneQuartzite_8060_BaseColor.png", "format":"srgb" },
+		"roughness":{ "src":"..\\Poliigon_StoneQuartzite_8060_Roughness.jpg", "format":"srgb" },
+		"metalness":0
 	}
 },
 {
@@ -401,7 +408,7 @@
 		"TANGENT":{ "src":"A3Create.Cube.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
 		"TEXCOORD":{ "src":"A3Create.Cube.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
 	},
-	"material":"lambertian::white"
+	"material":"pbr::whitemarble"
 },
 {
 	"type":"NODE",
@@ -422,7 +429,7 @@
 		"TANGENT":{ "src":"A3Create.Cube.006.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
 		"TEXCOORD":{ "src":"A3Create.Cube.006.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
 	},
-	"material":"lambertian::white"
+	"material":"pbr::whitemarble"
 },
 {
 	"type":"NODE",
@@ -443,7 +450,7 @@
 		"TANGENT":{ "src":"A3Create.Cube.007.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
 		"TEXCOORD":{ "src":"A3Create.Cube.007.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
 	},
-	"material":"lambertian::white"
+	"material":"pbr::whitemarble"
 },
 {
 	"type":"NODE",
@@ -617,21 +624,21 @@
 
 	"type":"LIGHT",
 	"name":"Spot.005",
-	"tint":[1, 1, 1],
+	"tint":[1, 0.791446, 0.548617],
 	"spot":{
 		"radius":0.1,
-		"power":1500,
+		"power":8000,
 		"limit":128,
-		"fov":0.523599,
-		"blend":0.025
+		"fov":1.0472,
+		"blend":0.751444
 	},
 	"shadow":1024.0
 },
 {
 	"type":"NODE",
 	"name":"Spot.001",
-	"translation":[36.2664,222.119,9.46301],
-	"rotation":[0.998415,4.74683e-08,4.6957e-09,0.0562782],
+	"translation":[36.2664,213.641,28.6021],
+	"rotation":[0.000116467,7.36518e-09,-4.71279e-08,1],
 	"scale":[1,1,1],
 	"light":"Spot.005"
 },
@@ -641,7 +648,7 @@
 	"name":"Camera",
 	"perspective":{
 		"aspect":1.77778,
-		"vfov":0.660595,
+		"vfov":0.89504,
 		"near":0.1,
 		"far":1000
 	}
@@ -649,15 +656,15 @@
 {
 	"type":"NODE",
 	"name":"Camera",
-	"translation":[35.0286,57.7141,4.29392],
-	"rotation":[0.684549,7.4568e-08,-1.42026e-07,0.728967],
+	"translation":[35.1711,54.233,33.7738],
+	"rotation":[0.617489,0.00287402,0.00366072,0.786565],
 	"scale":[1,1,1],
 	"camera":"Camera"
 },
 {
 	"type":"NODE",
 	"name":"point.005",
-	"translation":[75.1789,134.205,11.6281],
+	"translation":[75.1789,134.205,78.336],
 	"rotation":[-2.48696e-06,0,0,1],
 	"scale":[5.31738,1,131.756],
 	"light":"Point.002"
@@ -832,37 +839,20 @@
 {
 	"type":"NODE",
 	"name":"Cube",
-	"translation":[38.4129,221.006,-3.62091],
-	"rotation":[1,-0,-0,0],
-	"scale":[-57.7305,-18.9946,-12.7124],
+	"translation":[0,0,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
 	"mesh":"Cube.002"
 },
 {
 
 	"type":"LIGHT",
-	"name":"Point",
-	"tint":[1, 0.8034, 0.514622],
-	"sphere":{
-		"radius":2,
-		"power":5000
-	}
-},
-{
-	"type":"NODE",
-	"name":"Point",
-	"translation":[35.8334,215.799,15.4203],
-	"rotation":[0,0,0,1],
-	"scale":[1,1,1],
-	"light":"Point"
-},
-{
-
-	"type":"LIGHT",
 	"name":"Point.001",
-	"tint":[1, 1, 1],
+	"tint":[1, 0.671799, 0.445194],
 	"sphere":{
 		"radius":1,
-		"power":500
+		"power":600,
+		"limit":5000
 	}
 },
 {
@@ -1010,8 +1000,88 @@
 	"light":"Point.002"
 },
 {
+	"type":"NODE",
+	"name":"Point.003",
+	"translation":[36.2605,215.799,19.8635],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.004",
+	"translation":[15.1854,215.799,42.8726],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.005",
+	"translation":[57.3482,215.799,42.8726],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.006",
+	"translation":[36.2605,215.799,42.8726],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.007",
+	"translation":[15.1854,215.799,65.3279],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.008",
+	"translation":[57.3482,215.799,65.3279],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.009",
+	"translation":[36.2605,215.799,65.3279],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.010",
+	"translation":[15.1854,215.799,87.4582],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.011",
+	"translation":[57.3482,215.799,87.4582],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.012",
+	"translation":[36.2605,215.799,87.4582],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
 	"type":"SCENE",
-	"name":"D:\\CMU\\CMU2026\\RealTimeGraphic\\nakluV\\A3\\Scene\\A3Create\\A3Create.blend",
-	"roots":["bridge.001", "rage", "wall", "door", "door.001", "piano", "pillars", "wall.002", "point.001", "wall.001", "ceiling.001", "Spot.003", "Spot.004", "Spot.013", "Spot.014", "Spot.002", "Spot.007", "Cube.001", "Cube.002", "Cube.005", "Cube.006", "Cube.003", "Cube.004", "Cube.007", "Cube.008", "Cube.009", "Cube.010", "Cube.011", "Cube.012", "Cube.013", "Cube.014", "Cube.015", "Cube.016", "Cube.017", "Cube.018", "Cube.019", "Cube.020", "Cube.021", "Cube.022", "Cube.023", "Cube.024", "Spot.001", "Camera", "point.005", "Spot.005", "Spot.006", "Spot.008", "Spot.009", "Spot.010", "Spot.011", "Spot.012", "Spot.015", "Spot.016", "Spot.017", "Spot.018", "Spot.019", "Spot.020", "Spot.021", "Spot.022", "Spot.023", "Spot.024", "Spot.025", "Cube", "Point", "Point.001", "Point.002", "point.002", "point.003", "point.004", "point.006", "point.007", "point.008", "point.009", "point.010", "point.011", "point.012", "point.013", "point.014", "point.015", "point.016", "point.017", "point.018"]
+	"name":"C:\\Users\\junrenj\\Desktop\\RealTimeGraphic\\nakluV\\A3\\Scene\\A3Create\\A3Create.blend",
+	"roots":["bridge.001", "rage", "wall", "door", "door.001", "piano", "pillars", "wall.002", "point.001", "wall.001", "ceiling.001", "Spot.003", "Spot.004", "Spot.013", "Spot.014", "Spot.002", "Spot.007", "Cube.001", "Cube.002", "Cube.005", "Cube.006", "Cube.003", "Cube.004", "Cube.007", "Cube.008", "Cube.009", "Cube.010", "Cube.011", "Cube.012", "Cube.013", "Cube.014", "Cube.015", "Cube.016", "Cube.017", "Cube.018", "Cube.019", "Cube.020", "Cube.021", "Cube.022", "Cube.023", "Cube.024", "Spot.001", "Camera", "point.005", "Spot.005", "Spot.006", "Spot.008", "Spot.009", "Spot.010", "Spot.011", "Spot.012", "Spot.015", "Spot.016", "Spot.017", "Spot.018", "Spot.019", "Spot.020", "Spot.021", "Spot.022", "Spot.023", "Spot.024", "Spot.025", "Cube", "Point.001", "Point.002", "point.002", "point.003", "point.004", "point.006", "point.007", "point.008", "point.009", "point.010", "point.011", "point.012", "point.013", "point.014", "point.015", "point.016", "point.017", "point.018", "Point.003", "Point.004", "Point.005", "Point.006", "Point.007", "Point.008", "Point.009", "Point.010", "Point.011", "Point.012"]
 }
 ]

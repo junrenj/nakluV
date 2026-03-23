@@ -4,6 +4,7 @@ const int DISPLACE_MAX_STEP = 32;
 const float MAX_GGX_LOD = 5.0;
 const float PI = 3.1415926;
 const int MAX_SPOT_SHADOWS = 64;
+const int MAX_SPHERE_SHADOWS = 64;
 
 struct Light
 {
@@ -50,6 +51,7 @@ layout(set=5,binding=1) uniform samplerCube IRRADIANCE_TEX;
 layout(set=5,binding=2) uniform sampler2D LUT_TEX;
 
 layout(set=6, binding=0) uniform sampler2DShadow SpotShadowMaps[MAX_SPOT_SHADOWS];
+layout(set=6, binding=1) uniform samplerCubeShadow SphereShadowMaps[MAX_SPHERE_SHADOWS];
 
 layout(location=0) in vec3 position;
 layout(location=1) in vec3 normal;

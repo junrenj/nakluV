@@ -4,6 +4,8 @@
 #include "Render/RenderScene.hpp"
 #include "Debug/DebugView.hpp"
 
+struct FShadowResource;
+struct FCubeShadowResource;
 
 struct UAssignmentOne : RTG::Application
 {
@@ -23,17 +25,9 @@ struct UAssignmentOne : RTG::Application
 	VkRenderPass RenderPass = VK_NULL_HANDLE;
 
 	//Render pass for shadowmap
-	struct FShadowResource
-	{
-		Helpers::AllocatedImage Image;
-		VkImageView ImageView;
-		VkFramebuffer Framebuffer = VK_NULL_HANDLE;
-		VkDescriptorSet DescriptorSet;
-
-		uint32_t Resolutions = 0;
-	};
 	const uint32_t MAX_SPOT_SHADOWS = 64;
 	std::vector<FShadowResource> SpotLightShadows;
+	std::vector<FCubeShadowResource> SphereLightShadows;
 	VkRenderPass ShadowPass;
 
 	// Sampler
@@ -262,6 +256,7 @@ struct UAssignmentOne : RTG::Application
 	void RenderLinesPipeline(FWorkspace &workspace);		// for debug
 	void RenderLambertPipeline(FWorkspace &workspace);		// the major Pipeline to pass
 	void RenderShadowMaps(FWorkspace& Workspace);			// the pipeline for shadow map
+	void RenderCubeShadowMaps(FWorkspace& Workspace);			// the pipeline for cube shadow map
 
 	// Texture Loader
 	void ReserveTextures();		// Reserve Texture to gpu
@@ -276,6 +271,10 @@ struct UAssignmentOne : RTG::Application
 
 	// Animation
 	bool bIsPlay = true;
+
+	// Shadow
+	void GenerateShadowRes(const ULight* Light);
+	void GenerateCubeShadowRes(const ULight* Light);
 
 	// for debug
 	UDebugScene DebugScene;

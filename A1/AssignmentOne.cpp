@@ -10,11 +10,31 @@
 #include <iostream>
 #include "../A1/Render/RenderScene.hpp"
 #include "../A1/Render/RenderExtractor.hpp"
+#include "../A1/Render/Shadow.hpp"
 #include "../A1/Animation/AnimationPlayer.hpp"
 #include "../mat4.hpp"
 #include "glm/glm/gtc/type_ptr.hpp"
 #include "Debug/Profile.hpp"
 
+static const vec3 dirs[6] = 
+{
+    vec3( 1, 0, 0),
+    vec3(-1, 0, 0),
+    vec3( 0, 1, 0),
+    vec3( 0,-1, 0),
+    vec3( 0, 0, 1),
+    vec3( 0, 0,-1),
+};
+
+static const vec3 ups[6] = 
+{
+    vec3(0,-1, 0),
+    vec3(0,-1, 0),
+    vec3(0, 0, 1),
+    vec3(0, 0,-1),
+    vec3(0,-1, 0),
+    vec3(0,-1, 0),
+};
 
 UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 {
@@ -628,6 +648,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.minFilter = VK_FILTER_LINEAR,
 			.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
 			.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+			.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,	// used by sphere light cube shadow
 			.compareEnable = VK_TRUE,
 			.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
 			.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
@@ -635,48 +656,17 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		VK(vkCreateSampler(rtg.device, &CreateInfo, nullptr, &ShadowSamplerPCF));
 	}
 
-	// dispatch spotlights' shadow map
+	// dispatch shadow map
 	{
 		for (auto* Light : Scene.Lights) 
 		{
 			if (Light->LightType == ELightType::Spot && Light->ShadowResolution > 0)
 			{
-				FShadowResource ShadowRes;
-				const uint32_t ShadowResolution = (uint32_t)Light->ShadowResolution;
-				ShadowRes.Resolutions = ShadowResolution;
-
-				ShadowRes.Image = rtg.helpers.create_image
-				(
-					VkExtent2D{ .width = ShadowResolution,  .height = ShadowResolution},
-					DepthFormat,
-					VK_IMAGE_TILING_OPTIMAL,
-					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-				);
-				
-				VkImageViewCreateInfo ViewInfo 
-				{
-					.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-					.image = ShadowRes.Image.handle,
-					.viewType = VK_IMAGE_VIEW_TYPE_2D,
-					.format = DepthFormat,
-					.subresourceRange = { .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1, .layerCount = 1 },
-				};
-				VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &ShadowRes.ImageView));
-
-				VkFramebufferCreateInfo FrameBufferInfo
-				{
-					.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-					.renderPass = ShadowPass,
-					.attachmentCount = 1,
-					.pAttachments = &ShadowRes.ImageView,
-					.width = ShadowResolution,
-					.height = ShadowResolution,
-					.layers = 1,
-				};
-				VK(vkCreateFramebuffer(rtg.device, &FrameBufferInfo, nullptr, &ShadowRes.Framebuffer));
-
-				SpotLightShadows.push_back(std::move(ShadowRes));
+				GenerateShadowRes(Light);
+			}
+			else if(Light->LightType == ELightType::Sphere && Light->ShadowResolution > 0)
+			{
+				GenerateCubeShadowRes(Light);
 			}
 		}
 	}
@@ -1952,14 +1942,9 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 
 }
 
-void UAssignmentOne::RenderShadowMaps(FWorkspace & workspace)
+void UAssignmentOne::RenderShadowMaps(FWorkspace& Workspace)
 {
-	if(SpotLightShadows.empty())
-	{
-		return;
-	}
-
-	if(Scene.MeshProxyInstances.empty())
+	if(SpotLightShadows.empty() || Scene.MeshProxyInstances.empty())
 	{
 		return;
 	}
@@ -1996,20 +1981,20 @@ void UAssignmentOne::RenderShadowMaps(FWorkspace & workspace)
             .pClearValues = &ClearValue,
         };
 
-        vkCmdBeginRenderPass(workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(Workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 		
-		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Handle);
+		vkCmdBindPipeline(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Handle);
 
 		{
 			std::array<VkBuffer, 1> VertexBuffers{ ObjectVertices.handle };
 			std::array<VkDeviceSize, 1> Offsets{ 0 };
-			vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
+			vkCmdBindVertexBuffers(Workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
 		}
 
 		// transforms descriptor
 		{
-			vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Layout, 
-									0, 1, &workspace.TransformDescriptors, 0, nullptr);
+			vkCmdBindDescriptorSets(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Layout, 
+									0, 1, &Workspace.TransformDescriptors, 0, nullptr);
 		}
 
         VkViewport Viewport
@@ -2021,22 +2006,23 @@ void UAssignmentOne::RenderShadowMaps(FWorkspace & workspace)
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
         };
-        vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
+        vkCmdSetViewport(Workspace.command_buffer, 0, 1, &Viewport);
 
         VkRect2D Scissor
         {
             .offset = {0, 0},
             .extent = { Shadow.Resolutions, Shadow.Resolutions },
         };
-        vkCmdSetScissor(workspace.command_buffer, 0, 1, &Scissor);
+        vkCmdSetScissor(Workspace.command_buffer, 0, 1, &Scissor);
 
         FShadowPipeline::FPush Push
         {
             .SHADOW_CLIP_FROM_WORLD = LightProxy->LIGHT_FROM_WORLD
         };
 
-        vkCmdPushConstants(
-            workspace.command_buffer,
+        vkCmdPushConstants
+		(
+            Workspace.command_buffer,
             ShadowPipeline.Layout,
             VK_SHADER_STAGE_VERTEX_BIT,
             0,
@@ -2047,13 +2033,10 @@ void UAssignmentOne::RenderShadowMaps(FWorkspace & workspace)
         for (uint32_t meshIdx = 0; meshIdx < Scene.MeshProxyInstances.size(); ++meshIdx)
         {
             const FMeshRenderProxy* Proxy = Scene.MeshProxyInstances[meshIdx];
-            // if (!Proxy->bCanSee)
-			// {
-			// 	continue;
-			// }
 
-            vkCmdDraw(
-                workspace.command_buffer,
+            vkCmdDraw
+			(
+                Workspace.command_buffer,
                 Proxy->VertexNum,
                 1,
                 Proxy->FirstVertexIdx,
@@ -2061,9 +2044,106 @@ void UAssignmentOne::RenderShadowMaps(FWorkspace & workspace)
             );
         }
 
-        vkCmdEndRenderPass(workspace.command_buffer);
+        vkCmdEndRenderPass(Workspace.command_buffer);
 	}
 
+}
+
+void UAssignmentOne::RenderCubeShadowMaps(FWorkspace& Workspace)
+{
+	if(SphereLightShadows.empty() || Scene.MeshProxyInstances.empty())
+	{
+		return;
+	}
+
+	for (size_t lightIdx = 0; lightIdx < SphereLightShadows.size(); ++lightIdx)
+    {
+        const FCubeShadowResource& Shadow = SphereLightShadows[lightIdx];
+
+        for (uint32_t FaceIdx = 0; FaceIdx < 6; ++FaceIdx)
+        {
+            VkClearValue ClearValue{};
+            ClearValue.depthStencil.depth = 1.0f;
+
+            VkRenderPassBeginInfo BeginInfo
+			{
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .renderPass = ShadowPass,
+                .framebuffer = Shadow.FaceFramebuffers[FaceIdx],
+                .renderArea = 
+				{
+                    .offset = {0, 0},
+                    .extent = {Shadow.Resolution, Shadow.Resolution}
+                },
+                .clearValueCount = 1,
+                .pClearValues = &ClearValue,
+            };
+
+            vkCmdBeginRenderPass(Workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Handle);
+
+            std::array<VkBuffer, 1> VertexBuffers{ ObjectVertices.handle };
+            std::array<VkDeviceSize, 1> Offsets{ 0 };
+            vkCmdBindVertexBuffers(Workspace.command_buffer, 0, 1, VertexBuffers.data(), Offsets.data());
+
+            vkCmdBindDescriptorSets
+			(
+                Workspace.command_buffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                ShadowPipeline.Layout,
+                0, 1, &Workspace.TransformDescriptors,
+                0, nullptr
+            );
+
+            VkViewport Viewport
+			{
+                .x = 0.0f,
+                .y = 0.0f,
+                .width = float(Shadow.Resolution),
+                .height = float(Shadow.Resolution),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f,
+            };
+            vkCmdSetViewport(Workspace.command_buffer, 0, 1, &Viewport);
+
+            VkRect2D Scissor
+			{
+                .offset = {0, 0},
+                .extent = {Shadow.Resolution, Shadow.Resolution},
+            };
+            vkCmdSetScissor(Workspace.command_buffer, 0, 1, &Scissor);
+
+            FShadowPipeline::FPush Push
+			{
+                .SHADOW_CLIP_FROM_WORLD = Shadow.ShadowClipFromWorld[FaceIdx]
+            };
+            vkCmdPushConstants
+			(
+                Workspace.command_buffer,
+                ShadowPipeline.Layout,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                0,
+                sizeof(Push),
+                &Push
+            );
+
+            for (uint32_t meshIdx = 0; meshIdx < Scene.MeshProxyInstances.size(); ++meshIdx)
+            {
+                const FMeshRenderProxy* proxy = Scene.MeshProxyInstances[meshIdx];
+                vkCmdDraw
+				(
+                    Workspace.command_buffer,
+                    proxy->VertexNum,
+                    1,
+                    proxy->FirstVertexIdx,
+                    meshIdx
+                );
+            }
+
+            vkCmdEndRenderPass(Workspace.command_buffer);
+        }
+    }
 }
 //~END Render Pipeline
 
@@ -2092,3 +2172,115 @@ void UAssignmentOne::InitializeCommandLineSettings()
 	World.AJUST_VAR.tonemappingMode = (float)rtg.configuration.TonemappingMode;
 	
 }
+//~END CommandLine Settings
+
+//~BEGIN Shadow
+void UAssignmentOne::GenerateShadowRes(const ULight* Light)
+{
+	FShadowResource ShadowRes;
+	const uint32_t ShadowResolution = (uint32_t)Light->ShadowResolution;
+	ShadowRes.Resolutions = ShadowResolution;
+
+	ShadowRes.Image = rtg.helpers.create_image
+	(
+		VkExtent2D{ .width = ShadowResolution,  .height = ShadowResolution},
+		DepthFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+	);
+	
+	VkImageViewCreateInfo ViewInfo 
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.image = ShadowRes.Image.handle,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = DepthFormat,
+		.subresourceRange = { .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1, .layerCount = 1 },
+	};
+	VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &ShadowRes.ImageView));
+
+	VkFramebufferCreateInfo FrameBufferInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = ShadowPass,
+		.attachmentCount = 1,
+		.pAttachments = &ShadowRes.ImageView,
+		.width = ShadowResolution,
+		.height = ShadowResolution,
+		.layers = 1,
+	};
+	VK(vkCreateFramebuffer(rtg.device, &FrameBufferInfo, nullptr, &ShadowRes.Framebuffer));
+
+	SpotLightShadows.push_back(std::move(ShadowRes));
+}
+
+void UAssignmentOne::GenerateCubeShadowRes(const ULight* Light)
+{
+	FCubeShadowResource CubeShadowRes;
+	const uint32_t ShadowResolution = (uint32_t)Light->ShadowResolution;
+	CubeShadowRes.Resolution = ShadowResolution;
+
+	CubeShadowRes.Image = rtg.helpers.create_image
+	(
+		VkExtent2D{ .width = ShadowResolution, .height = ShadowResolution },
+		DepthFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		Helpers::Unmapped,
+		6, // layers
+		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+		1  // mipLevels
+	);
+	
+	VkImageViewCreateInfo CubeViewInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.image = CubeShadowRes.Image.handle,
+		.viewType = VK_IMAGE_VIEW_TYPE_CUBE,
+		.format = DepthFormat,
+		.subresourceRange{
+			.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 6,
+		},
+	};
+
+	for (uint8_t i = 0; i < 6; i++)
+	{
+		VkImageViewCreateInfo FaceViewInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = CubeShadowRes.Image.handle,
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = DepthFormat,
+			.subresourceRange
+			{
+				.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = i,
+				.layerCount = 1,
+			},
+		};
+		VK(vkCreateImageView(rtg.device, &FaceViewInfo, nullptr, &CubeShadowRes.FaceViews[i]));
+
+		VkFramebufferCreateInfo FrameBufferInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = ShadowPass,
+			.attachmentCount = 1,
+			.pAttachments = &CubeShadowRes.FaceViews[i],
+			.width = ShadowResolution,
+			.height = ShadowResolution,
+			.layers = 1,
+		};
+		VK(vkCreateFramebuffer(rtg.device, &FrameBufferInfo, nullptr, &CubeShadowRes.FaceFramebuffers[i]));
+	}
+
+	SphereLightShadows.push_back(std::move(CubeShadowRes));
+}
+//~END Shadow
