@@ -196,8 +196,9 @@ Credit + cite your sources for textures and models, if you did not create them y
 <h3>Adding Direct Lighting to Materials <span class="atag">A3-materials</span></h3>
 
 <p class="placeholder">
-Cover, at least:
-the structures used to pass light lists to materials.
+I directly upload an array of Lights to the shader, 
+where it is mapped to a corresponding struct and used by the material for lighting calculations.
+<img src="Images/lightcode.png" alt="light code" style="max-width: 100%; height: auto;">
 </p>
 
 <p class="placeholder">
@@ -272,7 +273,7 @@ I apply both depth bias and normal bias to mitigate self-shadowing issues (shado
 Cube map textures are provided to materials through a descriptor set, 
 allowing shaders to directly sample the data.
 <br>
-For PCF filtering, I use a 2×2 sampling pattern with uniform weights to smooth shadow edges.
+For PCF filtering, I use a 2x2 sampling pattern with uniform weights to smooth shadow edges.
 </p>
 
 
