@@ -114,6 +114,12 @@ const A1_lambert_shaders = [
 ];
 main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-LambertPipeline.cpp', undefined, { depends:[...A1_lambert_shaders] } ) );
 
+// A3
+const A3_shadow_shaders = [
+	maek.GLSLC('A1/Pipelines/shadow.vert'),
+	maek.GLSLC('A1/Pipelines/shadow.frag'),
+];
+main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-ShadowPipeline.cpp', undefined, { depends:[...A3_shadow_shaders] } ) );
 
 const main_exe = maek.LINK([...main_objs], 'bin/main');
 

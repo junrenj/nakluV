@@ -1,5 +1,6 @@
 #include "RenderScene.hpp"
 #include "CullingUtils.hpp"
+#include "../../mat4.hpp"
 #include "glm/glm/gtc/matrix_transform.hpp"
 
 void URenderScene::GenerateWholeVertexBuffer()
@@ -64,10 +65,12 @@ void URenderScene::GenerateLightProxy()
         Lights.push_back(Light);
     }
     
+    uint32_t shadowmapIdx = 0;
     for (auto& Light : Lights)
     {
         const UNode* Node = Lights2Nodes[Light];
         FLightRenderProxy* LightProxy = new FLightRenderProxy();
+
         switch (Light->LightType)
         {
             case ELightType::Sun:
@@ -92,7 +95,8 @@ void URenderScene::GenerateLightProxy()
 
                 const vec4 LocalPos = vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 const vec4 WorldPos = UNode::GetLocal2WorldMatrix(Node) * LocalPos;
-                const vec3 Color = Sphere->Tint * Sphere->Power;
+                const float Intensity  = Sphere->Power / (4.0f * (float)M_PI);
+                const vec3 Color = Sphere->Tint * Intensity;
                 
                 LightProxy->Position_Type = vec4(WorldPos.x, WorldPos.y, WorldPos.z, static_cast<float>(ELightType::Sphere));
                 LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
@@ -109,23 +113,34 @@ void URenderScene::GenerateLightProxy()
             {
                 const ULight_Spot* Spot = static_cast<ULight_Spot*>(Light);
                 const mat4 Local2World = UNode::GetLocal2WorldMatrix(Node);
+                const float HalfFov = Spot->Fov * 0.5f;
 
                 const vec3 LocalForward = vec3(0.0f, 0.0f, -1.0f);
                 const vec3 WorldPos = vec3(Local2World[3]);
                 const vec3 WorldDir = glm::normalize(glm::mat3(Local2World) * LocalForward);
-                const vec3 Color = Spot->Tint * Spot->Power;
+                const float Intensity  = Spot->Power / (4.0f * (float)M_PI);
+                const vec3 Color = Spot->Tint * Intensity;
                 
                 LightProxy->Position_Type = vec4(WorldPos, static_cast<float>(ELightType::Spot));
                 LightProxy->Color_Falloff = vec4(Color.x, Color.y, Color.z, 0);
                 LightProxy->Direction_Limit = vec4(WorldDir, Spot->Limit);
 
-                const float HalfFov = Spot->Fov * 0.5f;
                 const float cosInner = cos(HalfFov * (1.0f - Spot->Blend));
                 const float cosOuter = cos(HalfFov);
-                LightProxy->SpecialParams.x = cosInner;
-                LightProxy->SpecialParams.y = cosOuter;
-                LightProxy->SpecialParams.z = Spot->Blend;
-                LightProxy->SpecialParams.w = Spot->Radius;
+                LightProxy->SpecialParams.x = Spot->Radius;
+                LightProxy->SpecialParams.y = cosInner;
+                LightProxy->SpecialParams.z = cosOuter;
+                
+                if(Spot->ShadowResolution > 0)
+                {
+                    // Shadow
+                    LightProxy->ShadowInfo.x = (float)shadowmapIdx;
+                    LightProxy->ShadowInfo.y = 1.0;
+                    LightProxy->LIGHT_FROM_WORLD = ComputeLightClipFromWorld(*LightProxy);
+                    SpotLightsMapProxyInstances.push_back(LightProxy);
+
+                    shadowmapIdx ++;
+                }
 
                 LightProxyInstances.push_back(LightProxy);
                 break;
@@ -240,6 +255,31 @@ void URenderScene::UpdateTransform()
             }
         }
     }
+}
+
+mat4 URenderScene::ComputeLightClipFromWorld(const FLightRenderProxy& light)
+{
+    vec3 lightPos = vec3(light.Position_Type.x, light.Position_Type.y, light.Position_Type.z);
+    vec3 lightDir = glm::normalize(vec3(light.Direction_Limit.x, light.Direction_Limit.y, light.Direction_Limit.z));
+
+    // float lightRange = light.Direction_Limit.w;
+    float cosOuter = light.SpecialParams.z;
+    float outerAngle = std::acos(glm::clamp(cosOuter, -1.0f, 1.0f));
+
+    vec3 up = (std::abs(lightDir.z) > 0.99f) ? vec3(0.0f, 1.0f, 0.0f) : vec3(0.0f, 0.0f, 1.0f);
+    
+    float nearPlane = 0.05f;
+    float farPlane = light.Direction_Limit.w;
+    if (!std::isfinite(farPlane) || farPlane <= nearPlane)
+    {
+        farPlane = 30.0f;
+    }
+    farPlane = std::max(farPlane, nearPlane + 0.1f);
+
+    mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up);
+    mat4 proj = Perspective(2.0f * outerAngle, 1.0f, nearPlane, farPlane);
+
+    return proj * view;
 }
 
 void UNode::SetDirty()

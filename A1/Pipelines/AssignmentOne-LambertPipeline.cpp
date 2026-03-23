@@ -206,15 +206,38 @@ void UAssignmentOne::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pass
 
         VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set5_EnvTex));
     }
+    
+    {//the Set6_Shadowmap layout has a single descriptor for a samplerShadow2D used in the fragment shader:
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings
+        {
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = MAX_SPOT_SHADOWS,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .pImmutableSamplers = nullptr,
+            },
+        };
+        VkDescriptorSetLayoutCreateInfo CreateInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &CreateInfo, nullptr, &Set6_Shadowmap));
+    }
 
     { //create pipeline layout:
-        std::array<VkDescriptorSetLayout, 6> layouts {
+        std::array<VkDescriptorSetLayout, 7> layouts {
             Set0_Camera,
             Set1_World,
             Set2_Transforms,
             Set3_TEXTURE,
             Set4_Lights,
             Set5_EnvTex,
+            Set6_Shadowmap,
         };
 
         VkPipelineLayoutCreateInfo create_info {

@@ -104,6 +104,8 @@ public:
     std::vector<FMeshRenderProxy*> MeshProxyInstances;
     std::vector<FLightRenderProxy*> LightProxyInstances;
 
+    std::vector<FLightRenderProxy*> SpotLightsMapProxyInstances;
+
     void Update(uint8_t ActiveIdx, bool bEnableCull = true);
 
     void GenerateWholeVertexBuffer();
@@ -112,6 +114,9 @@ public:
     void GenerateFallbackResource();
     void UpdateTransform();
     void UpdateVisibleMesh(uint8_t ActiveIdx, bool bEnableCulling = true);
+
+    // Light
+	mat4 ComputeLightClipFromWorld(const FLightRenderProxy& Light);
 
     uint32_t GetMaterialIdx(const FMaterial* InMaterial) const;
 

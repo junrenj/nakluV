@@ -10,7 +10,7 @@ enum class ELightType
 class ULight
 {
 public:
-    uint32_t Shadow = 0; 
+    uint32_t ShadowResolution = 0; 
     glm::vec3 Tint;
     ELightType LightType;
 };
@@ -60,7 +60,11 @@ public:
     /*
         Sun[Angle, 0, 0, 0]
         Sphere[SourceRadius, 0, 0, 0]
-        Spot[cosInner, cosOuter, blend, SourceRadius]
+        Spot[SourceRadius, cosInner, cosOuter, 0]
     */
     glm::vec4 SpecialParams;
+
+    // 4. shadow
+    glm::mat4 LIGHT_FROM_WORLD;   // Matrix for shadow computation
+    glm::vec4 ShadowInfo = glm::vec4(-1, 0, 0, 0);         // x -> shadowmap Idx
 };

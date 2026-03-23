@@ -11,6 +11,7 @@
 #include "../A1/Render/RenderScene.hpp"
 #include "../A1/Render/RenderExtractor.hpp"
 #include "../A1/Animation/AnimationPlayer.hpp"
+#include "../mat4.hpp"
 #include "glm/glm/gtc/type_ptr.hpp"
 #include "Debug/Profile.hpp"
 
@@ -130,8 +131,10 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 		};
 
 		VkAttachmentReference DepthRef { .attachment = 0, .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
@@ -163,9 +166,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		};
 		VK( vkCreateCommandPool(rtg.device, &CreateInfo, nullptr, &CommandPool) );
 	}
-	LinesPipeline.Create(rtg, RenderPass, 0);
-    LambertPipeline.Create(rtg, RenderPass, 0);
-
+	
     // create descriptor pool:
 	{
 		uint32_t PerWorkspace = uint32_t(rtg.workspaces.size());	// for easier-to-read counting
@@ -180,7 +181,7 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-				.descriptorCount = 1 * PerWorkspace,	// one descriptor per set, one set per workspace
+				.descriptorCount = 3 * PerWorkspace,	// one descriptor per set, one set per workspace
 			},
 		};
 
@@ -188,13 +189,18 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.flags = 0, // because CREATE_FREE_DESCRIPTOR_SET_BIT isn't included, *can't* free individual descriptors allocated from this pool
-			.maxSets = 4 * PerWorkspace, // three set per workspace
+			.maxSets = 5 * PerWorkspace, // five set per workspace
 			.poolSizeCount = uint32_t(PoolSizes.size()),
 			.pPoolSizes = PoolSizes.data(),
 		};
 
 		VK( vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &DescriptorPool));
 	}
+
+	LinesPipeline.Create(rtg, RenderPass, 0);
+    LambertPipeline.Create(rtg, RenderPass, 0);
+	ShadowPipeline.Create(rtg, ShadowPass, 0, LambertPipeline.Set2_Transforms);
+
     workspaces.resize(rtg.workspaces.size());
 	for (FWorkspace &workspace : workspaces)
 	{
@@ -295,7 +301,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				.pSetLayouts = &LambertPipeline.Set4_Lights,
 			};
 			VK( vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.LightsDescriptors));
-
 		}
 
 		 // point descriptor to Camera buffer:
@@ -345,18 +350,19 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 				nullptr 					// pDescriptorCopies
 			);
 		}
-		// Create Object Vertices
-		{
-			ObjectVertices = rtg.helpers.create_buffer
-			(
-				Scene.TotalBytes,
-				VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				Helpers::Unmapped
-			);
-			assert(Scene.AllVertexData.size() == Scene.TotalBytes);
-			rtg.helpers.transfer_to_buffer(Scene.AllVertexData.data(), Scene.TotalBytes, ObjectVertices);
-		}
+	}
+	
+	// Create Object Vertices
+	{
+		ObjectVertices = rtg.helpers.create_buffer
+		(
+			Scene.TotalBytes,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			Helpers::Unmapped
+		);
+		assert(Scene.AllVertexData.size() == Scene.TotalBytes);
+		rtg.helpers.transfer_to_buffer(Scene.AllVertexData.data(), Scene.TotalBytes, ObjectVertices);
 	}
 
     // make some Textures
@@ -441,22 +447,6 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 			.unnormalizedCoordinates = VK_FALSE,
 		};
 		VK( vkCreateSampler(rtg.device, &CreateInfo, nullptr, &TextureSamplerLinear) );
-	}
-
-	// make a sampler for shadow map
-	{
-		VkSamplerCreateInfo CreateInfo 
-		{
-			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-			.magFilter = VK_FILTER_LINEAR,
-			.minFilter = VK_FILTER_LINEAR,
-			.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-			.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-			.compareEnable = VK_TRUE,
-			.compareOp = VK_COMPARE_OP_LESS,
-			.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-		};
-		VK(vkCreateSampler(rtg.device, &CreateInfo, nullptr, &ShadowSamplerPCF));
 	}
 
 	// create the texture descriptor pool	
@@ -628,16 +618,36 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 		}
 	}
 
-	// dispatch lights' shadow map
+	// SHADOW PASS
+	// make a sampler for shadow map
+	{
+		VkSamplerCreateInfo CreateInfo 
+		{
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.magFilter = VK_FILTER_LINEAR,
+			.minFilter = VK_FILTER_LINEAR,
+			.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+			.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+			.compareEnable = VK_TRUE,
+			.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+		};
+		VK(vkCreateSampler(rtg.device, &CreateInfo, nullptr, &ShadowSamplerPCF));
+	}
+
+	// dispatch spotlights' shadow map
 	{
 		for (auto* Light : Scene.Lights) 
 		{
-			if (Light->LightType == ELightType::Spot)
+			if (Light->LightType == ELightType::Spot && Light->ShadowResolution > 0)
 			{
 				FShadowResource ShadowRes;
+				const uint32_t ShadowResolution = (uint32_t)Light->ShadowResolution;
+				ShadowRes.Resolutions = ShadowResolution;
+
 				ShadowRes.Image = rtg.helpers.create_image
 				(
-					VkExtent2D{ .width = (uint32_t)Light->Shadow,  .height = (uint32_t)Light->Shadow},
+					VkExtent2D{ .width = ShadowResolution,  .height = ShadowResolution},
 					DepthFormat,
 					VK_IMAGE_TILING_OPTIMAL,
 					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -653,9 +663,95 @@ UAssignmentOne::UAssignmentOne(RTG &rtg_) : rtg(rtg_)
 					.subresourceRange = { .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1, .layerCount = 1 },
 				};
 				VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &ShadowRes.ImageView));
+
+				VkFramebufferCreateInfo FrameBufferInfo
+				{
+					.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+					.renderPass = ShadowPass,
+					.attachmentCount = 1,
+					.pAttachments = &ShadowRes.ImageView,
+					.width = ShadowResolution,
+					.height = ShadowResolution,
+					.layers = 1,
+				};
+				VK(vkCreateFramebuffer(rtg.device, &FrameBufferInfo, nullptr, &ShadowRes.Framebuffer));
+
 				SpotLightShadows.push_back(std::move(ShadowRes));
 			}
 		}
+	}
+	// create descriptor pool for shadow map
+	{
+		VkDescriptorPoolSize PoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = MAX_SPOT_SHADOWS,
+		};
+
+		VkDescriptorPoolCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = 1,
+			.poolSizeCount = 1,
+			.pPoolSizes = &PoolSize,
+		};
+
+		VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &ShadowDescriptorPool));
+	}
+	
+	// allocate descriptor set for Shadowmap descriptor
+	{
+		VkDescriptorSetAllocateInfo AllocInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = ShadowDescriptorPool,
+			.descriptorSetCount = 1,
+			.pSetLayouts = &LambertPipeline.Set6_Shadowmap,
+		};
+		VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &ShadowDescriptors));
+	}
+	// write shadow map into descriptor
+	{
+		if(SpotLightShadows.empty())
+		{
+			return;
+		}
+		
+		std::vector<VkDescriptorImageInfo> Infos(MAX_SPOT_SHADOWS);
+		for (uint32_t i = 0; i < MAX_SPOT_SHADOWS; ++i)
+		{
+			if (i < SpotLightShadows.size())
+			{
+				Infos[i] = VkDescriptorImageInfo
+				{
+					.sampler = ShadowSamplerPCF,
+					.imageView = SpotLightShadows[i].ImageView,
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+				};
+			}
+			else
+			{
+				Infos[i] = VkDescriptorImageInfo
+				{
+					.sampler = ShadowSamplerPCF,
+					.imageView = SpotLightShadows[0].ImageView,
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+				};
+			}
+		}
+
+		VkWriteDescriptorSet Write
+		{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = ShadowDescriptors,
+			.dstBinding = 0,
+			.dstArrayElement = 0,
+			.descriptorCount = MAX_SPOT_SHADOWS,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = Infos.data(),
+		};
+
+		vkUpdateDescriptorSets(rtg.device, 1, &Write, 0, nullptr);
 	}
 }
 
@@ -686,6 +782,12 @@ UAssignmentOne::~UAssignmentOne()
 		EnvTexDescriptors.clear();
 	}
 
+	if(ShadowDescriptorPool)
+	{
+		vkDestroyDescriptorPool(rtg.device, ShadowDescriptorPool, nullptr);
+		ShadowDescriptorPool = nullptr;
+	}
+
 	if(TextureSamplerNearest)
 	{
 		vkDestroySampler(rtg.device, TextureSamplerNearest, nullptr);
@@ -711,6 +813,30 @@ UAssignmentOne::~UAssignmentOne()
 	{
 		DestroyFramebuffers();
 	}
+	if (ShadowSamplerPCF != VK_NULL_HANDLE) 
+	{
+    	vkDestroySampler(rtg.device, ShadowSamplerPCF, nullptr);
+    	ShadowSamplerPCF = VK_NULL_HANDLE;
+	}
+
+	for (auto& shadow : SpotLightShadows) 
+	{
+		if (shadow.Framebuffer != VK_NULL_HANDLE) 
+		{
+			vkDestroyFramebuffer(rtg.device, shadow.Framebuffer, nullptr);
+			shadow.Framebuffer = VK_NULL_HANDLE;
+		}
+		if (shadow.ImageView != VK_NULL_HANDLE) 
+		{
+			vkDestroyImageView(rtg.device, shadow.ImageView, nullptr);
+			shadow.ImageView = VK_NULL_HANDLE;
+		}
+		if (shadow.Image.handle != VK_NULL_HANDLE) 
+		{
+			rtg.helpers.destroy_image(std::move(shadow.Image));
+		}
+	}
+	SpotLightShadows.clear();
 
 	for (FWorkspace &workspace : workspaces) 
 	{
@@ -778,6 +904,8 @@ UAssignmentOne::~UAssignmentOne()
 	}
 
 	BackgroundPipeline.Destroy(rtg);
+	LinesPipeline.Destroy(rtg);
+	ShadowPipeline.Destroy(rtg);
     LambertPipeline.Destroy(rtg);
 
 
@@ -792,6 +920,12 @@ UAssignmentOne::~UAssignmentOne()
 	{
 		vkDestroyRenderPass(rtg.device, RenderPass, nullptr);
 		RenderPass = VK_NULL_HANDLE;
+	}
+
+	if(ShadowPass != VK_NULL_HANDLE)
+	{
+		vkDestroyRenderPass(rtg.device, ShadowPass, nullptr);
+		ShadowPass= VK_NULL_HANDLE;
 	}
 }
 
@@ -987,7 +1121,6 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			vkCmdCopyBuffer(workspace.command_buffer, workspace.TransformsSrc.handle, workspace.Transforms.handle, 1, &CopyRegion);
 	}
 
-
 	if(!Scene.LightProxyInstances.empty())
 	{
 		// upload object transforms:
@@ -1051,29 +1184,28 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 			assert(workspace.LightsSrc.size == workspace.Lights.size);
 			assert(workspace.LightsSrc.size >= NeededBytes);
-
-			// Copy Light into LightSrc
-			{
-				assert(workspace.LightsSrc.allocation.mapped);
-				FLightRenderProxy *Out = reinterpret_cast< FLightRenderProxy * >(workspace.LightsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
-				for (FLightRenderProxy* Inst : Scene.LightProxyInstances)
-				{
-					*Out = *Inst;
-					++Out;
-				}
-			}
-
-			// device-side copy from Transforms_src -> Transforms:
-			VkBufferCopy CopyRegion
-			{
-				.srcOffset = 0,
-				.dstOffset = 0,
-				.size = NeededBytes,
-			};
-
-			vkCmdCopyBuffer(workspace.command_buffer, workspace.LightsSrc.handle, workspace.Lights.handle, 1, &CopyRegion);
-	
 		}
+
+		// Copy Light into LightSrc
+		{
+			assert(workspace.LightsSrc.allocation.mapped);
+			FLightRenderProxy *Out = reinterpret_cast< FLightRenderProxy * >(workspace.LightsSrc.allocation.data()); // Strict aliasing violation, but it doesn't matter
+			for (FLightRenderProxy* Inst : Scene.LightProxyInstances)
+			{
+				*Out = *Inst;
+				++Out;
+			}
+		}
+
+		// device-side copy from Transforms_src -> Transforms:
+		VkBufferCopy CopyRegion
+		{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = NeededBytes,
+		};
+
+		vkCmdCopyBuffer(workspace.command_buffer, workspace.LightsSrc.handle, workspace.Lights.handle, 1, &CopyRegion);
 	}
 
 	// Line Render Pipeline
@@ -1187,13 +1319,16 @@ void UAssignmentOne::render(RTG &rtg_, RTG::RenderParams const &render_params)
 		(
 			workspace.command_buffer,
 			VK_PIPELINE_STAGE_TRANSFER_BIT,  // srcStageMask
-			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, // dstStageMask
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // dstStageMask
 			0, 					// dependencyFlags
 			1, &MemoryBarrier,  // memoryBarriers (count, data)
 			0, nullptr,  		// bufferMemoryBarriers (count, data)
 			0, nullptr			// imageMemoryBarriers (count, data)
 		);
 	}
+
+	// Shadow map render
+	RenderShadowMaps(workspace);
 
 	// Render Pass
 	{
@@ -1479,8 +1614,6 @@ void UAssignmentOne::InitializeRenderScene()
 	// Data Prepare
     Scene.GenerateWholeVertexBuffer();
 	Scene.GenerateFallbackResource();
-
-	UDebugMessage::PrintLightProxy(Scene);
 }
 //~END Load Scene
 
@@ -1768,16 +1901,23 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 			0, nullptr // DynamicOffsets Count, ptr
 		);
 	}
+	// Set4_Light
 	{
     	vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                             LambertPipeline.Layout, 4, 1, &workspace.LightsDescriptors, 0, nullptr);
 	}
+	// Set5_EnvTex
 	{
     	vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
                             LambertPipeline.Layout, 5, 1, &EnvTexDescriptors[0], 0, nullptr);
 	}
+	// Set6_Shadowmap
+	{
+		vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        						LambertPipeline.Layout, 6, 1, &ShadowDescriptors, 0, nullptr);
+	}
 
-	// Use UMeshRenderProxy as ObjectInstance
+	// Set3_Material Set
 	const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
 	for (uint32_t i = 0; i < ProxyList.size(); i++)
 	{
@@ -1809,6 +1949,121 @@ void UAssignmentOne::RenderLambertPipeline(FWorkspace &workspace)
 		);
 		vkCmdDraw(workspace.command_buffer, Proxy->VertexNum, 1, Proxy->FirstVertexIdx, i);
 	}
+
+}
+
+void UAssignmentOne::RenderShadowMaps(FWorkspace & workspace)
+{
+	if(SpotLightShadows.empty())
+	{
+		return;
+	}
+
+	if(Scene.MeshProxyInstances.empty())
+	{
+		return;
+	}
+
+	for (size_t i = 0; i < SpotLightShadows.size(); ++i)
+	{
+		const FShadowResource& Shadow = SpotLightShadows[i];
+
+        if (i >= Scene.SpotLightsMapProxyInstances.size())
+		{
+			break;
+		}
+
+        FLightRenderProxy* LightProxy = Scene.SpotLightsMapProxyInstances[i];
+        if (!LightProxy)
+		{
+			continue;
+		}
+
+        VkClearValue ClearValue{};
+        ClearValue.depthStencil.depth = 1.0f;
+        ClearValue.depthStencil.stencil = 0;
+
+        VkRenderPassBeginInfo BeginInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = ShadowPass,
+            .framebuffer = Shadow.Framebuffer,
+            .renderArea = {
+                .offset = {0, 0},
+                .extent = { Shadow.Resolutions, Shadow.Resolutions }
+            },
+            .clearValueCount = 1,
+            .pClearValues = &ClearValue,
+        };
+
+        vkCmdBeginRenderPass(workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		
+		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Handle);
+
+		{
+			std::array<VkBuffer, 1> VertexBuffers{ ObjectVertices.handle };
+			std::array<VkDeviceSize, 1> Offsets{ 0 };
+			vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
+		}
+
+		// transforms descriptor
+		{
+			vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ShadowPipeline.Layout, 
+									0, 1, &workspace.TransformDescriptors, 0, nullptr);
+		}
+
+        VkViewport Viewport
+        {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = float(Shadow.Resolutions),
+            .height = float(Shadow.Resolutions),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+        };
+        vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
+
+        VkRect2D Scissor
+        {
+            .offset = {0, 0},
+            .extent = { Shadow.Resolutions, Shadow.Resolutions },
+        };
+        vkCmdSetScissor(workspace.command_buffer, 0, 1, &Scissor);
+
+        FShadowPipeline::FPush Push
+        {
+            .SHADOW_CLIP_FROM_WORLD = LightProxy->LIGHT_FROM_WORLD
+        };
+
+        vkCmdPushConstants(
+            workspace.command_buffer,
+            ShadowPipeline.Layout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0,
+            sizeof(Push),
+            &Push
+        );
+
+        for (uint32_t meshIdx = 0; meshIdx < Scene.MeshProxyInstances.size(); ++meshIdx)
+        {
+            const FMeshRenderProxy* Proxy = Scene.MeshProxyInstances[meshIdx];
+            // if (!Proxy->bCanSee)
+			// {
+			// 	continue;
+			// }
+
+            vkCmdDraw(
+                workspace.command_buffer,
+                Proxy->VertexNum,
+                1,
+                Proxy->FirstVertexIdx,
+                meshIdx
+            );
+        }
+
+        vkCmdEndRenderPass(workspace.command_buffer);
+	}
+
 }
 //~END Render Pipeline
 

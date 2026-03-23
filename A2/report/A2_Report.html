@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<!-- saved from url=(0070)https://graphics.cs.cmu.edu/courses/15-472-s26/A2/report-template.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>15-472-s26: A2 - Materials</title>
+<style>
+/* feel free to style your report in a fancier way! */
+
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;700&Anonymous+Pro&display=swap');
+
+html {
+	background:#505055;
+}
+
+body {
+	font-family: 'Quicksand', sans-serif;
+	color:#000;
+	background:#eeeee8;
+	font-size:15px;
+	margin: 1em auto 50vh auto;
+	padding: 1em 2em 1em 2em;
+	max-width:45em;
+	border-radius:4px;
+	box-shadow:0 0 10px #0008;
+}
+
+h1 { font-size: 20px; font-weight: 700; }
+h2 { font-size: 16px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 400; }
+h4 { font-size: 14px; font-weight: 400; }
+
+h1, h2, h3, h4 {
+	margin: 15px 0 0 -10px;
+}
+
+p {
+	margin: 5px 0 0 0;
+}
+
+figure {
+	margin: 10px -2em;
+	padding: 10px 2em;
+	width:100%;
+	background:#e8e8e8;
+}
+
+figcaption {
+	font-size:14px;
+	font-style:italic;
+}
+
+.subtitle {
+	display:block;
+	font-size:16px;
+	font-weight:400;
+}
+
+.placeholder {
+	color:#800;
+	font-style:italic;
+}
+
+kbd {
+	display:inline-block;
+	background:#ccc;
+	color:#444;
+	font-style:normal;
+	font-weight:700;
+	border-radius:8px;
+	padding:1px 6px;
+	margin:1px;
+	border:1.5px solid #aaa;
+}
+
+code {
+	font-family: 'Anonymous Pro', monospace;
+	background: #222;
+	color:#fff;
+	border-radius:4px;
+	padding:2px 4px;
+	margin:1px;
+}
+
+code var {
+	color:#ef5;
+	font-style:italic;
+}
+
+.atag {
+	font-family: 'Calistoga', serif;
+	font-size:90%;
+	color:#000;
+	background:#e17dcd;
+
+	display:inline-block;
+	padding:1px 4px;
+	border-radius: 4px;
+	line-height:120%;
+}
+.atag:before {
+	content:'»';
+}
+.atag.extra {
+	background:#c6aff8;
+}
+.atag.creative {
+	background:linear-gradient(0.35turn, #fcacff, #f9ab93, #76a1e4, #20953d);
+}
+
+</style>
+<!-- Load Chart.js for creating charts (documentation https://www.chartjs.org/docs/latest/ ) -->
+<script src="./A2_Report_files/chart.js.下载"></script>
+</head>
+<body>
+<h1>A2: Materials
+<span class="subtitle">by <span class="placeholder">Jimmy Jian (junrenj)</span></span>
+</h1>
+
+<!-- of course, delete these class="placeholder" notes in your report: -->
+
+<p class="placeholder">
+In this system, a Material is essentially the equivalent of a Material Instance in Unreal Engine 5. I have already pre-configured the data within the Urenderextractor. 
+To prevent null material issues, the library includes fallback materials such as pure white, pure black, default normals, and a specific 'bug warning' material. 
+Material classification is handled by passing an integer value to the shader, which then triggers the corresponding logic branch. 
+This approach avoids the code bloat associated with creating excessive pipelines and streamlines management.
+<br><br>
+I spent a significant amount of time refactoring Professor Jim's code for Compute Shader image processing. 
+Specifically, I transitioned the system from Image2D to Cubemap support and integrated a workflow to generate and upload mipmaps via Vulkan Blit operations.
+<br><br>
+Current pending task: The pre-processed roughness maps still exhibit significant noise, particularly when generating low-resolution outputs.
+</p>
+
+<h2>My Model <span class="atag creative">A2-create</span></h2>
+
+<p class="placeholder">
+Man, coding is so freaking draining. I feel like my brain is literally jumping and squirming around... AHHHHHHHH!<br>
+The model on the left consists of 690 triangles, the middle one has 4,608 faces, and the far right one exceeds 70,000 triangles. However, when viewed from a distance, the perceived level of detail is virtually identical.
+</p>
+
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_Create_Brain.mp4" type="video/mp4">
+</video>
+
+<p class="placeholder">
+I primarily used Blender's Sculpt Mode to create the brain. 
+I started by blocking out the basic shape with a cube, then added a Mirror Modifier and a level-one Subdivision Surface before I began sculpting. 
+As the sculpt progressed, I increased the vertex count by subdividing it a few more times and eventually applied the Mirror Modifier. 
+I kept several intermediate meshes throughout the process. 
+After finishing the high-poly model and unwrapping the UVs for the low-poly version, I baked the high-poly normal maps directly onto two different low-poly meshes.
+</p>
+
+<h2>Using the Cube Utility</h2>
+
+<p class="placeholder">
+The system provides three core functionalities for IBL pre-processing:<br>
+1. Irradiance Map Generation: Processes an input cubemap to generate a diffuse irradiance map.<br>
+2. Pre-filtered Specular Mipmaps: Generates pre-computed specular environment maps (currently hard-coded to 5 mip levels).<br>
+3. BRDF LUT Generation: Directly generates a 2D Lookup Table (LUT) for specular integration.
+</p>
+
+<h3>Command-line Arguments (Cube Utility)</h3>
+
+<p class="placeholder">
+Document the command-line arguments that can be used to control your cube utility.
+Include both the command-line arguments required by the assignment statement and any additional arguments or functions you decided to add.
+</p>
+
+<ul>
+<li class="placeholder"><code>--irradiance <var>input.png</var> <var>outputFilePath</var></code> -- compute lambertian cube map and store as RGBE8 in <code><var>outputFilePath.png</var></code></li>
+<li class="placeholder"><code>--ggx <var>input.png</var> <var>outputFilePath</var></code> -- compute 5 IBL precomputed cube maps and store as RGBE8 in <code><var>outputFilePath.png</var></code></li>
+<li class="placeholder"><code>-lut <var>outputFileName</var> </code> -- compute Look up table texture and store as RGB32 in <code><var>outputFileName.hdr</var></code></li>
+</ul>
+
+<h3>Command-line Arguments (Viewer)</h3>
+
+<p class="placeholder">
+<li class="placeholder"><code>--debug, --no-debug</code>  -- required -- Turn on/off debug and validation layers.</code></li>
+<li class="placeholder"><code>--physical-device <var>name</var></code> -- required -- Run on the named physical device</li>
+<li class="placeholder"><code>--drawing-size <var>w h</var></code> -- required -- Set the size of the windows of <code><var>w h</var></code></li>
+<li class="placeholder"><code>--scene <var>scene.s72</var></code> -- required -- load scene from <code><var>scene.s72</var></code></li>
+<li class="placeholder"><code>--camera <var>camera001</var></code> -- required -- active camera is <code><var>camera001</var></code></li>
+<li class="placeholder"><code>--headless </code> -- required -- start exe with headless mode </li>
+<li class="placeholder"><code>--cull <var>CULLMODE</var></code> -- required -- choose your cull mode, now only has <code><var>NONE | NORMAL<var></code></li>
+<li class="placeholder"><code>--exposure <var>EXPOSURE</var></code> -- required -- Select Exposure Compensation Value</li>
+<li class="placeholder"><code>--tonemap <var>MODE</var></code> -- required -- replace MODE with tonemap mode you want to use, for now only support:<code><var>linear, gamma, reinhard, aces<var></code></li>
+</p>
+
+<h2>Evidence</h2>
+
+<p class="placeholder">
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_CubeUtility.mp4" type="video/mp4">
+</video>
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_CubeUtility_Image.mp4" type="video/mp4">
+</video>
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_CubeUtility_Lut.mp4" type="video/mp4">
+</video>
+</p>
+
+
+<h3>Environment Loading and Display <span class="atag">A2-env</span></h3>
+
+<p class="placeholder">
+Format: I chose RGBA32F (32-bit float) for GPU storage to ensure maximum precision for HDR lighting and pre-processing.
+<br><br>
+Implementation:
+The loading process is integrated into my UTexture pipeline using stb_image (specifically stbi_loadf for HDR data). 
+When submitting to the GPU, the system dynamically maps my internal EFormat to the corresponding VkFormat (e.g., VK_FORMAT_R32G32B32A32_SFLOAT). 
+The conversion from RGBE8 to float occurs on the CPU during the loading phase.
+</p>
+
+<p class="placeholder">
+Provide evidence that your code can load environment maps and display <code>"environment"</code> and <code>"mirror"</code> materials.
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_Mirror_Env.mp4" type="video/mp4">
+</video>
+</p>
+
+<h3>Tone Mapping <span class="atag">A2-tone</span></h3>
+
+<p class="placeholder">
+I also pass an integer value as a Tone Mapping mode parameter to the fragment shader to drive different logic branches.
+</p>
+
+<p class="placeholder">
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_tonemap.mp4" type="video/mp4">
+</video>
+</p>
+
+<p class="placeholder">
+Plot your tone-mapping curve:
+</p>
+
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A2-tone-curve" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
+<figcaption>
+The result of (my tone-mapping curve) applied to a color of increasing intensity.
+</figcaption>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	//in a real workload these arrays would be a lot longer:
+	// you might even want to write a for() loop in javascript to make them
+	const intensity  = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6];
+	const outR       = [0.0, 0.3, 0.56, 0.7, 0.76, 0.81, 0.84, 0.86, 0.87];
+	const outG       = [0.0, 0.16, 0.3, 0.42, 0.55, 0.62, 0.67, 0.7, 0.77];
+	const outB       = [0.0,0.01,0.04,0.07,0.08, 0.11,0.15,0.19,0.23];
+	//if your tone mapping handles color channels separately
+
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	new Chart("A2-tone-curve", {
+		type: "line",
+		data: {
+			labels: intensity,
+			datasets: [
+				{ label: "red", data: outR, backgroundColor:'#f00', borderColor:'#f00' },
+				{ label: "green", data: outG, backgroundColor:'#0f0', borderColor:'#0f0' },
+				{ label: "blue", data: outB, backgroundColor:'#00f', borderColor:'#00f' },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "Tone Mapping intenisty FilmACES" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"output intensity" },
+				},
+				x:{
+					title: { display:true, text:"intensity" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
+</figure>
+
+
+
+
+<h3>Lambertian Diffuse <span class="atag">A2-diffuse</span></h3>
+
+<p class="placeholder">
+When loading a scene via URenderExtractor, I generate new UMaterial instances, each containing a tag that identifies the material type. 
+This tag is then passed to the GPU to drive the branching logic within the shader.
+The specific implementation can be traced through references to EMaterialType Type within the UMaterial class.
+</p>
+
+<p class="placeholder">
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_Lambertian_Cube.mp4" type="video/mp4">
+</video>
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_Lambertian.mp4" type="video/mp4">
+</video>
+</p>
+
+<p class="placeholder">
+
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A2-cubemap" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
+<figcaption>
+The time consumed for calculating pre-filter irradiance texture.
+</figcaption>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	//in a real workload these arrays would be a lot longer:
+	// you might even want to write a for() loop in javascript to make them
+	const intensity  = [8, 16, 32, 64, 128, 256, ];
+	const outR       = [1, 3, 12, 20, 35, 80];
+	//if your tone mapping handles color channels separately
+
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	new Chart("A2-cubemap", {
+		type: "line",
+		data: {
+			labels: intensity,
+			datasets: [
+				{ label: "time", data: outR, backgroundColor:'#f00', borderColor:'#f00' },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "Cubemap Prefilter Time Consume" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"Consume Time / s" },
+				},
+				x:{
+					title: { display:true, text:"Cubemap Resolution" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
+</figure>
+
+
+</p>
+
+<h3>Normal Mapping <span class="atag">A2-normal</span></h3>
+
+<p class="placeholder">
+The vertex buffer already contains tangent data, which I use to construct the TBN matrix in lambert.vert. 
+In lambert.frag, I then combine the sampled values from the NormalTexture with this TBN matrix to derive the final world-space normal.
+Following the same material instance logic, URenderScene stores all the textures, while UMaterial holds the corresponding texture indices. 
+To specify which normal map an object uses, I simply select the appropriate MaterialDescriptorSet during the draw call.
+</p>
+
+<p class="placeholder">
+Provide evidence that your normal mapping works properly.
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_Normal.mp4" type="video/mp4">
+</video>
+</p>
+
+<p class="placeholder">
+What, if any, is the performance impact of normal mapping in your viewer?
+Can you make normal mapping a bottleneck? (I'm not actually sure if you can! Asking this one out of curiosity to see what you try.) If so, please include the scene.
+</p>
+
+<h3>Physically-Based Material <span class="atag">A2-pbr</span></h3>
+
+<p class="placeholder">
+Where and how does your code implement the <code>"pbr"</code> material?
+My PBR implementation is primarily encapsulated within the pbr() function in lambert.frag, 
+while the pre-computation logic is located in the Compute Shaders (.comp) under the Utils/ directory."
+</p>
+
+<p class="placeholder">
+Provide evidence that your <code>"pbr"</code> material works properly.
+<video controls playsinline style="width: 100%; height: auto;">
+<source src="Videos/A2_PBR.mp4" type="video/mp4">
+</video>
+</p>
+
+<p class="placeholder">
+Provide evidence that your cube utility is able to correctly pre-filter cube maps with the cosine-weighted GGX normal distribution function.
+You may wish to, e.g., show that no energy is lost.
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_CubeUtility_Image.mp4" type="video/mp4">
+</video>
+</p>
+
+<p class="placeholder">
+Provide evidence that your cube utility is able to correctly pre-integrate the environment BRDF part of the split sum.
+<img src="Image/LUT.png" alt="Difference of LUT" style="max-width: 100%; height: auto;">
+</p>
+
+<p class="placeholder">
+Provide charts of timings characterizing the performance of your cube utility.
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A2-CubeUtility" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
+<figcaption>
+The result of different CubeUtility's functions' time consuming.
+</figcaption>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	//in a real workload these arrays would be a lot longer:
+	// you might even want to write a for() loop in javascript to make them
+	const resolution  = [16, 32, 64, 128, 256, ];
+	const outLUT       = [0.3, 0.5, 0.6, 0.8, 1.2];
+	const outIrr       = [1, 3, 12, 20, 35];
+	const outIBL      = [0.4,0.6,1,1.5,3];
+	//if your tone mapping handles color channels separately
+
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	new Chart("A2-CubeUtility", {
+		type: "line",
+		data: {
+			labels: resolution,
+			datasets: [
+				{ label: "LUT", data: outLUT, backgroundColor:'#f00', borderColor:'#f00' },
+				{ label: "Prefilter Irradiance", data: outIrr, backgroundColor:'#0f0', borderColor:'#0f0' },
+				{ label: "Prefilter IBL", data: outIBL, backgroundColor:'#00f', borderColor:'#00f' },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "CubeUtility Time Consume" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"time consume" },
+				},
+				x:{
+					title: { display:true, text:"resolution" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
+</figure>
+
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A2-CubeUtility_1" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
+<figcaption>
+The result of different CubeUtility's functions' time consuming.
+</figcaption>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	//in a real workload these arrays would be a lot longer:
+	// you might even want to write a for() loop in javascript to make them
+	const resolution  = [16, 32, 64, 128, 256, 512, 1024];
+	const outLUT       = [0.1, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75];
+	const outIrr       = [0.6, 0.7, 1.0, 1.2, 2, 3, 5];
+	const outIBL      = [0.2,0.3,0.3,0.5,0.6, 0.8, 0.9, 1];
+	//if your tone mapping handles color channels separately
+
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	new Chart("A2-CubeUtility_1", {
+		type: "line",
+		data: {
+			labels: resolution,
+			datasets: [
+				{ label: "LUT", data: outLUT, backgroundColor:'#f00', borderColor:'#f00' },
+				{ label: "Prefilter Irradiance", data: outIrr, backgroundColor:'#0f0', borderColor:'#0f0' },
+				{ label: "Prefilter IBL", data: outIBL, backgroundColor:'#00f', borderColor:'#00f' },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "CubeUtility Time Consume" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"time consume" },
+				},
+				x:{
+					title: { display:true, text:"sampleCounts" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
+</figure>
+</p>
+
+<h3>Displacement Mapping <span class="atag">A2x-displacement</span></h3>
+
+<p class="placeholder">
+<video controls playsinline style="width: 100%; height: auto;">
+    <source src="Videos/A2_Displacement.mp4" type="video/mp4">
+</video>
+Same as other material. I've implemented a displacement shader based on the POM (Parallax Occlusion Mapping) node from UE5, but it still has some visual artifacts. The primary performance bottleneck is the high step count, which requires multiple texture samples per pixel. 
+This creates a GPU bottleneck similar to the one I encountered in A1, where 10,000 texture samples caused a major performance hit.
+</p>
+
+<p class="placeholder">
+I've implemented a displacement shader based on the POM (Parallax Occlusion Mapping) node from UE5, but it still has some visual artifacts. 
+The primary performance bottleneck is the high step count, which requires multiple texture samples per pixel. 
+This creates a GPU bottleneck similar to the one I encountered in A1, where 10,000 texture samples caused a major performance hit.
+</p>
+
+<h2>Feedback</h2>
+<p class="placeholder">
+This is the end of the structured report. Feel free to add feedback about A1 to this section.
+</p>
+
+
+
+</body></html>

@@ -1,7 +1,6 @@
 #pragma once
 #include "AssignmentOne-Vertex.hpp"
 #include "../RTG.hpp"
-#include "../mat4.hpp"
 #include "Render/RenderScene.hpp"
 #include "Debug/DebugView.hpp"
 
@@ -28,8 +27,12 @@ struct UAssignmentOne : RTG::Application
 	{
 		Helpers::AllocatedImage Image;
 		VkImageView ImageView;
+		VkFramebuffer Framebuffer = VK_NULL_HANDLE;
 		VkDescriptorSet DescriptorSet;
+
+		uint32_t Resolutions = 0;
 	};
+	const uint32_t MAX_SPOT_SHADOWS = 64;
 	std::vector<FShadowResource> SpotLightShadows;
 	VkRenderPass ShadowPass;
 
@@ -72,7 +75,6 @@ struct UAssignmentOne : RTG::Application
 		void Create(RTG &, VkRenderPass RenderPass, uint32_t Subpass);
 		void Destroy(RTG &);
 	}LinesPipeline;
-
 	std::vector< FDebugColVertex > LinesVertices;	// for debug
 
     struct FLambertPipeline
@@ -84,6 +86,7 @@ struct UAssignmentOne : RTG::Application
 		VkDescriptorSetLayout Set3_TEXTURE = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set4_Lights = VK_NULL_HANDLE;
 		VkDescriptorSetLayout Set5_EnvTex = VK_NULL_HANDLE;
+		VkDescriptorSetLayout Set6_Shadowmap = VK_NULL_HANDLE;
 
 		struct FConstant
 		{
@@ -122,7 +125,24 @@ struct UAssignmentOne : RTG::Application
 		void Create(RTG &, VkRenderPass Render_pass, uint32_t Subpass);
 		void Destroy(RTG &);
 		
+		const uint32_t MAX_SPOT_SHADOWS = 32;	//TODO: replace it
 	}LambertPipeline;
+
+	// Shadow map
+	struct FShadowPipeline
+	{
+		VkDescriptorSetLayout Set0_Transform = VK_NULL_HANDLE;
+		VkPipelineLayout Layout = VK_NULL_HANDLE;
+		struct FPush
+		{
+			mat4 SHADOW_CLIP_FROM_WORLD;
+		};
+
+		VkPipeline Handle = VK_NULL_HANDLE;
+
+		void Create(RTG &, VkRenderPass RenderPass, uint32_t Subpass, VkDescriptorSetLayout TransformsLayout);
+		void Destroy(RTG &);
+	}ShadowPipeline;
 	
 	VkCommandPool CommandPool = VK_NULL_HANDLE;
 	VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
@@ -155,6 +175,11 @@ struct UAssignmentOne : RTG::Application
 		Helpers::AllocatedBuffer LightsSrc;		// host coherent; mapped
 		Helpers::AllocatedBuffer Lights;		// device-local
 		VkDescriptorSet LightsDescriptors;		// references Lights
+
+		// location for ShadowPipeline::Transforms data: (streamed to GPU per-frame)
+		Helpers::AllocatedBuffer ShadowTransformsSrc;	// host coherent; mapped
+		Helpers::AllocatedBuffer ShadowTransforms;	// device-local
+		VkDescriptorSet ShadowTransformDescriptors;	// references Transforms
 	};
 	std::vector< FWorkspace > workspaces;
 
@@ -168,6 +193,9 @@ struct UAssignmentOne : RTG::Application
 	std::vector< VkDescriptorSet > MaterialDescriptors;
 	VkDescriptorPool EnvTexDescriptorPool = VK_NULL_HANDLE;
 	std::vector< VkDescriptorSet > EnvTexDescriptors;
+
+	VkDescriptorPool ShadowDescriptorPool = VK_NULL_HANDLE;
+	VkDescriptorSet ShadowDescriptors = VK_NULL_HANDLE;
 
 	//--------------------------------------------------------------------
 	//Resources that change when the swapchain is resized:
@@ -233,6 +261,7 @@ struct UAssignmentOne : RTG::Application
 	void RenderBackgroundPipeline(FWorkspace &workspace);	// maybe abandoned, because it is no use now
 	void RenderLinesPipeline(FWorkspace &workspace);		// for debug
 	void RenderLambertPipeline(FWorkspace &workspace);		// the major Pipeline to pass
+	void RenderShadowMaps(FWorkspace& Workspace);			// the pipeline for shadow map
 
 	// Texture Loader
 	void ReserveTextures();		// Reserve Texture to gpu

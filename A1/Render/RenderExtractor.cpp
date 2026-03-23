@@ -181,7 +181,7 @@ UNode* URenderExtractor::BuildUNodeTreeIterate(const S72::Node& InS72Node,
             NewLight->Tint.x = S72Light.tint.r;
             NewLight->Tint.y = S72Light.tint.g;
             NewLight->Tint.z = S72Light.tint.b;
-            NewLight->Shadow = S72Light.shadow;
+            NewLight->ShadowResolution = S72Light.shadow;
             NewNode->Light = NewLight;
             RenderScene.Lights2Nodes[NewLight] = NewNode;
         }

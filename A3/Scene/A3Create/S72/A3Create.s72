@@ -1,0 +1,1017 @@
+["s72-v2",
+{
+	"type":"MATERIAL",
+	"name":"pbr::concreteWorn",
+	"normalMap":{ "src":"..\\gravel_concrete_03_nor_gl_1k.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\gravel_concrete_03_diff_1k.png", "format":"srgb" },
+		"roughness":{ "src":"..\\gravel_concrete_03_rough_1k.png", "format":"srgb" },
+		"metalness":0
+	}
+},
+{
+	"type":"MESH",
+	"name":"cube.016",
+	"topology":"TRIANGLE_LIST",
+	"count":324,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.016.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.016.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.016.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.016.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWorn"
+},
+{
+	"type":"NODE",
+	"name":"bridge.001",
+	"translation":[-2.45712,70.7746,88.584],
+	"rotation":[-8.14603e-08,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"cube.016"
+},
+{
+	"type":"MESH",
+	"name":"cube.019",
+	"topology":"TRIANGLE_LIST",
+	"count":60,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.019.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.019.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.019.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.019.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWorn"
+},
+{
+	"type":"NODE",
+	"name":"rage",
+	"translation":[0,0,0],
+	"rotation":[-8.14603e-08,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"cube.019"
+},
+{
+	"type":"MESH",
+	"name":"plane.023",
+	"topology":"TRIANGLE_LIST",
+	"count":1404,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.plane.023.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.plane.023.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.plane.023.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.plane.023.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWorn"
+},
+{
+	"type":"NODE",
+	"name":"wall",
+	"translation":[34.4849,227.948,55.0279],
+	"rotation":[0.707107,0,0,0.707107],
+	"scale":[1,1,1],
+	"mesh":"plane.023"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr::whitemetal",
+	"pbr":{
+		"albedo":[ 1, 1, 1 ],
+		"roughness":0.5,
+		"metalness":1
+	}
+},
+{
+	"type":"MESH",
+	"name":"cube.051",
+	"topology":"TRIANGLE_LIST",
+	"count":1539,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.051.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.051.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.051.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.051.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::whitemetal"
+},
+{
+	"type":"NODE",
+	"name":"door",
+	"translation":[17.1373,60.4209,61.579],
+	"rotation":[-8.14603e-08,0,0,1],
+	"scale":[3.215,0.25,3.3],
+	"mesh":"cube.051"
+},
+{
+	"type":"MESH",
+	"name":"cube.054",
+	"topology":"TRIANGLE_LIST",
+	"count":1443,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.054.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.054.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.054.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.054.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::whitemetal"
+},
+{
+	"type":"NODE",
+	"name":"door.001",
+	"translation":[17.141,62.3677,61.3737],
+	"rotation":[0.155623,0,0,0.987817],
+	"scale":[3.215,0.25,3.3],
+	"mesh":"cube.054"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr::blackmetal",
+	"normalMap":{ "src":"..\\TCom_Various_AcousticFoam_512_normal.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\TCom_Various_AcousticFoam_512_albedo.png", "format":"srgb" },
+		"roughness":{ "src":"..\\TCom_Various_AcousticFoam_512_roughness.png", "format":"srgb" },
+		"metalness":{ "src":"..\\TCom_Various_AcousticFoam_512_metallic.png", "format":"srgb" }
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube.125",
+	"topology":"TRIANGLE_LIST",
+	"count":22164,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.Cube.125.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.Cube.125.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.Cube.125.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.Cube.125.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::blackmetal"
+},
+{
+	"type":"NODE",
+	"name":"piano",
+	"translation":[41.3316,212.827,9.50087],
+	"rotation":[-0.32317,-0.944512,-0.0190358,0.0556349],
+	"scale":[-0.206115,-0.0686993,-0.0253281],
+	"mesh":"Cube.125"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr::concreteWood",
+	"normalMap":{ "src":"..\\concrete_nor_gl_1k.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\concrete_diff_1k.png", "format":"srgb" },
+		"roughness":{ "src":"..\\concrete_rough_1k.png", "format":"srgb" },
+		"metalness":0
+	}
+},
+{
+	"type":"MESH",
+	"name":"cube.015",
+	"topology":"TRIANGLE_LIST",
+	"count":1440,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.015.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.015.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.015.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.015.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWood"
+},
+{
+	"type":"NODE",
+	"name":"pillars",
+	"translation":[0,0,0],
+	"rotation":[-8.14603e-08,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"cube.015"
+},
+{
+	"type":"MESH",
+	"name":"plane.035",
+	"topology":"TRIANGLE_LIST",
+	"count":1050,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.plane.035.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.plane.035.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.plane.035.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.plane.035.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWorn"
+},
+{
+	"type":"NODE",
+	"name":"wall.002",
+	"translation":[20.136,227.748,55.0279],
+	"rotation":[0.707107,0,0,0.707107],
+	"scale":[1,1,1],
+	"mesh":"plane.035"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Point.002",
+	"tint":[1, 1, 1],
+	"sphere":{
+		"radius":5,
+		"power":200
+	}
+},
+{
+	"type":"NODE",
+	"name":"point.001",
+	"translation":[-5.10354,134.205,11.6281],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"MESH",
+	"name":"cube.035",
+	"topology":"TRIANGLE_LIST",
+	"count":5721,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.035.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.035.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.035.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.035.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWorn"
+},
+{
+	"type":"NODE",
+	"name":"wall.001",
+	"translation":[34.4848,130.975,1.40493],
+	"rotation":[-8.14603e-08,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"cube.035"
+},
+{
+	"type":"MESH",
+	"name":"cube.042",
+	"topology":"TRIANGLE_LIST",
+	"count":7104,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.cube.042.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.cube.042.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.cube.042.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.cube.042.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::concreteWorn"
+},
+{
+	"type":"NODE",
+	"name":"ceiling.001",
+	"translation":[13.2576,67.0248,89.3419],
+	"rotation":[-8.14603e-08,0,0,1],
+	"scale":[3.55,3.55,3.55],
+	"mesh":"cube.042"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.003",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":1000,
+		"limit":3000,
+		"fov":0.785398,
+		"blend":0.15
+	},
+	"shadow":512.0
+},
+{
+	"type":"NODE",
+	"name":"Spot.003",
+	"translation":[-4.96163,92.1364,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.004",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":30000,
+		"fov":0.785398,
+		"blend":0.15
+	},
+	"shadow":512.0
+},
+{
+	"type":"NODE",
+	"name":"Spot.004",
+	"translation":[-4.96163,92.1364,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.013",
+	"translation":[75.3473,92.1364,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.014",
+	"translation":[75.3473,92.1364,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.001",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":1000,
+		"limit":256,
+		"fov":2.78904,
+		"blend":0.15
+	},
+	"shadow":1024.0
+},
+{
+	"type":"NODE",
+	"name":"Spot.002",
+	"translation":[17.1588,201.934,9.86696],
+	"rotation":[0.967025,4.74491e-08,-4.88586e-09,0.254682],
+	"scale":[1,1,1],
+	"light":"Spot.001"
+},
+{
+	"type":"NODE",
+	"name":"Spot.007",
+	"translation":[54.8744,201.934,9.86696],
+	"rotation":[0.967025,4.74491e-08,-4.88586e-09,0.254682],
+	"scale":[1,1,1],
+	"light":"Spot.001"
+},
+{
+	"type":"MATERIAL",
+	"name":"lambertian::balck",
+	"lambertian":{
+		"albedo":[ 0.0121244, 0.0121244, 0.0121244 ]
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.Cube.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.Cube.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.Cube.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.Cube.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::balck"
+},
+{
+	"type":"NODE",
+	"name":"Cube.001",
+	"translation":[36.3181,84.9718,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"MATERIAL",
+	"name":"lambertian::white",
+	"lambertian":{
+		"albedo":[ 0.8, 0.8, 0.8 ]
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube.001",
+	"topology":"TRIANGLE_LIST",
+	"count":108,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.Cube.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.Cube.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.Cube.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.Cube.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube.002",
+	"translation":[34.2313,89.46,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.001"
+},
+{
+	"type":"MESH",
+	"name":"Cube.006",
+	"topology":"TRIANGLE_LIST",
+	"count":84,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.Cube.006.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.Cube.006.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.Cube.006.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.Cube.006.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube.005",
+	"translation":[34.2313,80.1765,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.006"
+},
+{
+	"type":"MESH",
+	"name":"Cube.007",
+	"topology":"TRIANGLE_LIST",
+	"count":84,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.Cube.007.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.Cube.007.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.Cube.007.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.Cube.007.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube.006",
+	"translation":[0,-4.8355,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.007"
+},
+{
+	"type":"NODE",
+	"name":"Cube.003",
+	"translation":[36.3181,94.0341,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.004",
+	"translation":[36.3181,110.268,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.007",
+	"translation":[34.2313,114.756,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.008",
+	"translation":[34.2313,105.473,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.006"
+},
+{
+	"type":"NODE",
+	"name":"Cube.009",
+	"translation":[36.3181,119.33,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.010",
+	"translation":[34.2313,124.092,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.011",
+	"translation":[36.3181,128.667,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.012",
+	"translation":[0,29.957,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.007"
+},
+{
+	"type":"NODE",
+	"name":"Cube.013",
+	"translation":[36.3181,146.263,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.014",
+	"translation":[34.2313,150.751,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.015",
+	"translation":[34.2313,141.468,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.006"
+},
+{
+	"type":"NODE",
+	"name":"Cube.016",
+	"translation":[0,56.4559,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.007"
+},
+{
+	"type":"NODE",
+	"name":"Cube.017",
+	"translation":[36.3181,155.325,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.018",
+	"translation":[36.3181,172.72,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.019",
+	"translation":[34.2313,177.208,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.020",
+	"translation":[34.2313,167.924,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.006"
+},
+{
+	"type":"NODE",
+	"name":"Cube.021",
+	"translation":[36.3181,181.782,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.022",
+	"translation":[34.2313,186.544,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[14.2083,2.19357,1.49192],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.023",
+	"translation":[36.3181,191.118,-3.15955],
+	"rotation":[0,0,0,1],
+	"scale":[12.1685,1.84691,1.49192],
+	"mesh":"Cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube.024",
+	"translation":[0,92.4084,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.007"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot.005",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0.1,
+		"power":1500,
+		"limit":128,
+		"fov":0.523599,
+		"blend":0.025
+	},
+	"shadow":1024.0
+},
+{
+	"type":"NODE",
+	"name":"Spot.001",
+	"translation":[36.2664,222.119,9.46301],
+	"rotation":[0.998415,4.74683e-08,4.6957e-09,0.0562782],
+	"scale":[1,1,1],
+	"light":"Spot.005"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.660595,
+		"near":0.1,
+		"far":1000
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera",
+	"translation":[35.0286,57.7141,4.29392],
+	"rotation":[0.684549,7.4568e-08,-1.42026e-07,0.728967],
+	"scale":[1,1,1],
+	"camera":"Camera"
+},
+{
+	"type":"NODE",
+	"name":"point.005",
+	"translation":[75.1789,134.205,11.6281],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"Spot.005",
+	"translation":[-4.96163,105.93,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.006",
+	"translation":[75.3473,105.93,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.008",
+	"translation":[75.3473,105.93,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.009",
+	"translation":[-4.96163,120.109,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.010",
+	"translation":[75.3473,120.109,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.011",
+	"translation":[75.3473,120.109,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.012",
+	"translation":[-4.96163,148.756,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.015",
+	"translation":[75.3473,148.756,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.016",
+	"translation":[75.3473,148.756,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.017",
+	"translation":[-4.96163,162.935,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.018",
+	"translation":[75.3473,162.935,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.019",
+	"translation":[75.3473,162.935,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.020",
+	"translation":[-4.96163,177.211,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.021",
+	"translation":[75.3473,177.211,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.022",
+	"translation":[75.3473,177.211,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.023",
+	"translation":[-4.96163,192.162,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"NODE",
+	"name":"Spot.024",
+	"translation":[75.3473,192.162,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.003"
+},
+{
+	"type":"NODE",
+	"name":"Spot.025",
+	"translation":[75.3473,192.162,83.0996],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Spot.004"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr::woodenfloor",
+	"normalMap":{ "src":"..\\raw_plank_wall_nor_gl_1k.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\raw_plank_wall_diff_1k.png", "format":"srgb" },
+		"roughness":{ "src":"..\\raw_plank_wall_rough_1k.png", "format":"srgb" },
+		"metalness":0
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube.002",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"A3Create.Cube.002.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"A3Create.Cube.002.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"A3Create.Cube.002.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"A3Create.Cube.002.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::woodenfloor"
+},
+{
+	"type":"NODE",
+	"name":"Cube",
+	"translation":[38.4129,221.006,-3.62091],
+	"rotation":[1,-0,-0,0],
+	"scale":[-57.7305,-18.9946,-12.7124],
+	"mesh":"Cube.002"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Point",
+	"tint":[1, 0.8034, 0.514622],
+	"sphere":{
+		"radius":2,
+		"power":5000
+	}
+},
+{
+	"type":"NODE",
+	"name":"Point",
+	"translation":[35.8334,215.799,15.4203],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Point.001",
+	"tint":[1, 1, 1],
+	"sphere":{
+		"radius":1,
+		"power":500
+	}
+},
+{
+	"type":"NODE",
+	"name":"Point.001",
+	"translation":[15.1854,215.799,19.8635],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"Point.002",
+	"translation":[57.3482,215.799,19.8635],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"light":"Point.001"
+},
+{
+	"type":"NODE",
+	"name":"point.002",
+	"translation":[14.7204,134.346,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.003",
+	"translation":[55.6102,134.346,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.004",
+	"translation":[14.7204,120.216,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.006",
+	"translation":[55.6102,120.216,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.007",
+	"translation":[14.7204,105.946,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.008",
+	"translation":[55.6102,105.946,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.009",
+	"translation":[14.7204,91.816,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.010",
+	"translation":[55.6102,91.816,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.011",
+	"translation":[14.7204,163.039,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.012",
+	"translation":[55.6102,163.039,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.013",
+	"translation":[14.7204,148.909,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.014",
+	"translation":[55.6102,148.909,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.015",
+	"translation":[14.7204,77.7031,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.016",
+	"translation":[55.6102,77.7031,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.017",
+	"translation":[14.7204,177.354,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"NODE",
+	"name":"point.018",
+	"translation":[55.6102,177.354,-14.477],
+	"rotation":[-2.48696e-06,0,0,1],
+	"scale":[5.31738,1,131.756],
+	"light":"Point.002"
+},
+{
+	"type":"SCENE",
+	"name":"D:\\CMU\\CMU2026\\RealTimeGraphic\\nakluV\\A3\\Scene\\A3Create\\A3Create.blend",
+	"roots":["bridge.001", "rage", "wall", "door", "door.001", "piano", "pillars", "wall.002", "point.001", "wall.001", "ceiling.001", "Spot.003", "Spot.004", "Spot.013", "Spot.014", "Spot.002", "Spot.007", "Cube.001", "Cube.002", "Cube.005", "Cube.006", "Cube.003", "Cube.004", "Cube.007", "Cube.008", "Cube.009", "Cube.010", "Cube.011", "Cube.012", "Cube.013", "Cube.014", "Cube.015", "Cube.016", "Cube.017", "Cube.018", "Cube.019", "Cube.020", "Cube.021", "Cube.022", "Cube.023", "Cube.024", "Spot.001", "Camera", "point.005", "Spot.005", "Spot.006", "Spot.008", "Spot.009", "Spot.010", "Spot.011", "Spot.012", "Spot.015", "Spot.016", "Spot.017", "Spot.018", "Spot.019", "Spot.020", "Spot.021", "Spot.022", "Spot.023", "Spot.024", "Spot.025", "Cube", "Point", "Point.001", "Point.002", "point.002", "point.003", "point.004", "point.006", "point.007", "point.008", "point.009", "point.010", "point.011", "point.012", "point.013", "point.014", "point.015", "point.016", "point.017", "point.018"]
+}
+]
