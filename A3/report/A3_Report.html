@@ -113,59 +113,65 @@ code var {
 </head>
 <body>
 <h1>A3: Lights
-<span class="subtitle">by <span class="placeholder">Jim McCann (jmccann)</span></span>
+<span class="subtitle">by <span>Jimmy Jian (junrej)</span></span>
 </h1>
 
 <!-- of course, delete these class="placeholder" notes in your report: -->
 
 
-<p class="placeholder">
-Summarize, in about one paragraph, your approach to the lights assignment.
-How did you structure your code?
-What's cool about it? Are there parts you weren't able to complete? 
-</p>
-<p class="placeholder">
-Remember to remove the placeholder class from your text; since (of course) your report information isn't a placeholder and shouldn't be styled as such!
-</p>
+<p>
+I did not make significant changes to the overall structure of my code; I mainly extended the data stored in the LightProxy. The most exciting part for me was working on A3Create—seeing my scene being lit up was especially rewarding.
+
+The part I was unable to complete was the extra credit section on sphere shadows. If I had finished it, I believe my created scene would have looked even more visually appealing.</p>
 
 <h2>My Lit Scene <span class="atag creative">A3-create</span></h2>
-
-<p class="placeholder">
-Describe the scene you lit, the light count and placement approach, and include a screen recording showing it running in real-time:
+A dark sewer, with piano keys dancing in motion, and a distant piano drawing your attention.
+<br>
+I used Blender to build the scene and created a flowing water effect using keyframe animation. Unfortunately, I did not have enough time to implement point light shadows; otherwise, the scene would have looked even more visually appealing.
+<p>
+<video controls playsinline style="width: 100%; height: auto;">
+		<source src="Videos/A3_Create.mp4" type="video/mp4">
+	</video>
 </p>
 
-<video>
-<!--
-  you can use the 'video' element to show your code running
-  Learn more at:
-    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video
 
-  Example: put the video file in a path near this .html
-  <source src="path/to/video" type="video/mp4" />
--->
-</video>
-
-<p class="placeholder">
-Credit + cite your sources for textures and models, if you did not create them yourself.
+<p>
+1. Poliigon https://www.poliigon.com include
+<br>Poliigon_MetalPaintedMatte_7037_BaseColor.png <br>Poliigon_MetalPaintedMatte_7037_Metallic.png
+<br>Poliigon_MetalPaintedMatte_7037_Normal.png <br> Poliigon_MetalPaintedMatte_7037_Roughness.png
+<br>Poliigon_StoneQuartzite_8060_BaseColor.png <br> Poliigon_StoneQuartzite_8060_Normal.png
+<br>Poliigon_StoneQuartzite_8060_Roughness.jpg	<br>
+2. TexturesCom https://www.textures.com/ include
+<br>TCom_Concrete_Polished_1K_albedo.png <br> TCom_Concrete_Polished_1K_normal.png 
+<br>TCom_Concrete_Polished_1K_roughness.png <br> TCom_Various_AcousticFoam_512_albedo.png
+<br>TCom_Various_AcousticFoam_512_metallic.png<br>TCom_Various_AcousticFoam_512_normal.png
+<br>TCom_Various_AcousticFoam_512_roughness.png <br>
+3. TextureHeaven https://polyhaven.com/textures include
+<br>raw_plank_wall_diff_1k.png <br>raw_plank_wall_nor_gl_1k.png
+<br>raw_plank_wall_rough_1k.png <br>concrete_diff_1k.png
+<br>concrete_floor_worn_001_diff_1k.png <br>concrete_floor_worn_001_nor_gl_1k.png
+<br>concrete_floor_worn_001_rough_1k.png <br>concrete_nor_gl_1k.png
+<br>concrete_rough_1k.png <br>gravel_concrete_03_diff_1k.png
+<br>gravel_concrete_03_nor_gl_1k.png <br> gravel_concrete_03_rough_1k.png
 </p>
 
 <h3>Command-line Arguments (Viewer)</h3>
 
-<p class="placeholder">
-<li class="placeholder"><code>--debug, --no-debug</code>  -- required -- Turn on/off debug and validation layers.</code></li>
-<li class="placeholder"><code>--physical-device <var>name</var></code> -- required -- Run on the named physical device</li>
-<li class="placeholder"><code>--drawing-size <var>w h</var></code> -- required -- Set the size of the windows of <code><var>w h</var></code></li>
-<li class="placeholder"><code>--scene <var>scene.s72</var></code> -- required -- load scene from <code><var>scene.s72</var></code></li>
-<li class="placeholder"><code>--camera <var>camera001</var></code> -- required -- active camera is <code><var>camera001</var></code></li>
-<li class="placeholder"><code>--headless </code> -- required -- start exe with headless mode </li>
-<li class="placeholder"><code>--cull <var>CULLMODE</var></code> -- required -- choose your cull mode, now only has <code><var>NONE | NORMAL<var></code></li>
-<li class="placeholder"><code>--exposure <var>EXPOSURE</var></code> -- required -- Select Exposure Compensation Value</li>
-<li class="placeholder"><code>--tonemap <var>MODE</var></code> -- required -- replace MODE with tonemap mode you want to use, for now only support:<code><var>linear, gamma, reinhard, aces<var></code></li>
+<p>
+<li ><code>--debug, --no-debug</code>  -- required -- Turn on/off debug and validation layers.</code></li>
+<li><code>--physical-device <var>name</var></code> -- required -- Run on the named physical device</li>
+<li><code>--drawing-size <var>w h</var></code> -- required -- Set the size of the windows of <code><var>w h</var></code></li>
+<li><code>--scene <var>scene.s72</var></code> -- required -- load scene from <code><var>scene.s72</var></code></li>
+<li><code>--camera <var>camera001</var></code> -- required -- active camera is <code><var>camera001</var></code></li>
+<li><code>--headless </code> -- required -- start exe with headless mode </li>
+<li><code>--cull <var>CULLMODE</var></code> -- required -- choose your cull mode, now only has <code><var>NONE | NORMAL<var></code></li>
+<li><code>--exposure <var>EXPOSURE</var></code> -- required -- Select Exposure Compensation Value</li>
+<li><code>--tonemap <var>MODE</var></code> -- required -- replace MODE with tonemap mode you want to use, for now only support:<code><var>linear, gamma, reinhard, aces<var></code></li>
 </p>
 
 <h2>Evidence</h2>
 
-<p class="placeholder">
+<p>
 
 <h3>Load lights and light-lambertian test <span class="atag">A3-load & light</span></h3>
 	<video controls playsinline style="width: 100%; height: auto;">
@@ -186,7 +192,7 @@ Credit + cite your sources for textures and models, if you did not create them y
 
 <h3>Loading light objects <span class="atag">A3-load</span></h3> 
 
-<p class="placeholder">
+<p>
 	Light data is loaded from the S72 file as S72::Light, then converted by URenderExtractor into engine-side objects (ULight). These are collected in URenderScene and transformed into FLightProxy for rendering. For lights that cast shadows, additional resources (FShadowResource) are created. 
 	Finally, the data is uploaded to the GPU as structured buffers and shadow maps.
 <img src="Images/LightStrcuture.png" alt="LightStructure" style="max-width: 100%; height: auto;">
@@ -195,22 +201,30 @@ Credit + cite your sources for textures and models, if you did not create them y
 
 <h3>Adding Direct Lighting to Materials <span class="atag">A3-materials</span></h3>
 
-<p class="placeholder">
+<p>
 I directly upload an array of Lights to the shader, 
 where it is mapped to a corresponding struct and used by the material for lighting calculations.
 <img src="Images/lightcode.png" alt="light code" style="max-width: 100%; height: auto;">
 </p>
 
-<p class="placeholder">
+<p>
 Include screenshots or recordings of your viewer showing proper behavior of lambertian and pbr materials under sphere, spot, and sun lights.
+<h3>Sun Light </h3>
+	<video controls playsinline style="width: 100%; height: auto;">
+		<source src="Videos/A3_Sun.mp4" type="video/mp4">
+	</video>
+<h3>Sphere Light and spot light </h3>
+	<video controls playsinline style="width: 100%; height: auto;">
+		<source src="Videos/A3_PBR.mp4" type="video/mp4">
+	</video>
 </p>
 
-<p class="placeholder">
-Include a graph showing the performance impact of adding additional lights to a test scene.
-Document how you made the scene and what kind of lights and camera positioning you used.
-(Disable shadows for this test.)
-We would theoretically expect a linear increase in computing time; is this borne out in practice?
-How many lights can your viewer handle at a reasonable frame rate?
+<p>
+I created several test scenes (see A3/Scene/LightNumTest). I used 5, 10, 20, 40, 60, 80, 160, 320, and 640 spotlights in the scene. 
+During testing, I set Max_Spot_Num to 0 to measure only the shader logic.
+<br>
+The results show approximately linear growth. Since the x-axis in the latter half of the plot increases exponentially, the curve also appears exponential. 
+Assuming a typical game targets at least 60 FPS, around 3000 spotlights would likely reduce the frame rate to about 60 FPS.
 </p>
 
 <figure>
@@ -225,9 +239,9 @@ The result of (my tone-mapping curve) applied to a color of increasing intensity
 <script>
 //adding an event listener so that this chart gets made *after* the document loads:
 window.addEventListener('load', () => {
-	const lights     = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
-	const frameTimeL = [16.67, 16.50, 16.81, 16.53, 15.0, 18.0, 20.1, 25.7, 25.0, 20.0, 30.0, 40.0];
-	const frameTimeP = [10, 20, 30, 30, 30, 40, 50, 60, 60, 60, 70, 80];
+	const lights     = [5, 10, 20, 40, 60, 80, 160, 320, 640];
+	const frameTimeL = [0.06, 0.07, 0.08, 0.13, 0.17, 0.19, 0.26, 0.7, 1.1];
+	const frameTimeP = [0.12, 0.14, 0.147, 0.26, 0.34, 0.4, 0.55, 1.64, 2.66];
 	//if your tone mapping handles color channels separately
 
 	// Chart.js supports many types of charts and configuration options.
@@ -263,7 +277,7 @@ window.addEventListener('load', () => {
 
 <h3>Adding Shadows for Spot Lights <span class="atag">A3-shadows</span></h3>
 
-<p class="placeholder">
+<p>
 Shadow maps are rendered in the render function before the Lambert pipeline. 
 I use a dedicated shadow pipeline with a shadow.vert shader to render depth information from the light's point of view.
 <br>
@@ -277,19 +291,80 @@ For PCF filtering, I use a 2x2 sampling pattern with uniform weights to smooth s
 </p>
 
 
-<p class="placeholder">
+<p>
 Include output images showing that spot light shadows are working correctly for both lambertian and pbr materials.
 <br>
 <img src="Images/shadow_example.png" alt="ShadowExample" style="max-width: 100%; height: auto;">
 </p>
-<p class="placeholder">
+<p>
 Include output images showing that "shadow" light parameter does actually change the shadow map resolution.
 <img src="Images/shadow_resolution.png" alt="ShadowResolution" style="max-width: 100%; height: auto;">
 </p>
 
-<p class="placeholder">
+<p>
 Include a graph showing the performance impact of adding shadowing to lights to a scene.
 Attempt to separate the performance impact of shadow map rendering and shadow map sampling (e.g., by testing the same scenes with per-frame rendered shadow maps and pre-rendered shadow maps). Which is larger?
+<br>
+<strong>Answer: </strong>
+<br>
+Clearly, generating shadow maps is more expensive. The performance cost without shadows mainly comes from iterating over lights in the shader.
+<br>
+Fixed shadows only incur a noticeable cost when the shadow maps are created; afterward, the performance increase is primarily due to sampling the shadow maps.
+<br>
+For dynamic shadows, the shadow maps must be regenerated every frame. In addition, each light has its own shadow map, and generating each one requires traversing the scene and rendering depth for all objects. As a result, the overhead is significantly higher.
+
+
+
+<figure>
+<!-- Feel free to use and duplicate the below example graph to plot data
+ 	 Edit labels and variables in script below the canvas -->
+<canvas id="A3-shadow-cost" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
+<figcaption>
+The performance of my materials on a given number of lights.
+The result of (my tone-mapping curve) applied to a color of increasing intensity.
+</figcaption>
+</figure>
+<script>
+//adding an event listener so that this chart gets made *after* the document loads:
+window.addEventListener('load', () => {
+	const lights     = [5, 10, 20, 40, 60, 80, 160, 320, 640];
+	const noShadow = [0.06, 0.07, 0.08, 0.13, 0.17, 0.19, 0.26, 0.7, 1.1];
+	const fixShadow = [0.07, 0.09, 0.13, 0.22, 0.30, 0.31, 0.35, 1.2, 2.0];
+	const dynamicShadow = [0.09, 0.16, 0.19, 0.29, 0.45, 0.7, 1.2, 5.2, 10.1];
+
+	//if your tone mapping handles color channels separately
+
+	// Chart.js supports many types of charts and configuration options.
+	//   See: https://www.chartjs.org/docs/latest/
+	new Chart("A3-shadow-cost", {
+		type: "line",
+		data: {
+			labels: lights,
+			datasets: [
+				{ label: "noShadow", data: noShadow, backgroundColor:'#f00', borderColor:'#f00' },
+				{ label: "fixShadow", data: fixShadow, backgroundColor:'#0f0', borderColor:'#0f0' },
+				{ label: "dynamicShadow", data: dynamicShadow, backgroundColor:'#00f', borderColor:'#00f' },
+			]
+		},
+		options: {
+			plugins: {
+				title: { display: true, text: "Lighting Performance" }, //show a chart title
+				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
+			},
+			scales: {
+				y:{
+					min:0, //having y-axis start at zero provides better relative view of data
+					title: { display:true, text:"frame time (ms)" },
+				},
+				x:{
+					title: { display:true, text:"number of lights" },
+				},
+			},
+			animation:false, //don't animate in the data sets
+		}
+	});
+});
+</script>
 </p>
 
 

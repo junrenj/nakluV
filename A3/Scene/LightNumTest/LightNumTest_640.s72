@@ -1,0 +1,5462 @@
+["s72-v2",
+{
+	"type":"MATERIAL",
+	"name":"lambertian:checker",
+	"lambertian":{
+		"albedo":{ "src":"checker.png", "format":"srgb" }
+	}
+},
+{
+	"type":"MESH",
+	"name":"Tile-Floor-Small",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"LightNumTest_640.Tile-Floor-Small.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightNumTest_640.Tile-Floor-Small.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightNumTest_640.Tile-Floor-Small.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightNumTest_640.Tile-Floor-Small.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian:checker"
+},
+{
+	"type":"NODE",
+	"name":"Tile-Floor.010",
+	"translation":[0,20,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Tile-Floor-Small"
+},
+{
+	"type":"NODE",
+	"name":"Tile-Floor.008",
+	"translation":[0,-12,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Tile-Floor-Small"
+},
+{
+	"type":"NODE",
+	"name":"Tile-Floor.007",
+	"translation":[0,4,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Tile-Floor-Small"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr:checker",
+	"normalMap":{ "src":"stone_tiles_nor_gl_1k.png", "format":"srgb" },
+	"displacementMap":{ "src":"stone_tiles_disp_1k.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"stone_tiles_diff_1k.png", "format":"srgb" },
+		"roughness":{ "src":"stone_tiles_rough_1k.png", "format":"srgb" },
+		"metalness":0
+	}
+},
+{
+	"type":"MESH",
+	"name":"Stone-Floor-Small",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"LightNumTest_640.Stone-Floor-Small.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightNumTest_640.Stone-Floor-Small.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightNumTest_640.Stone-Floor-Small.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightNumTest_640.Stone-Floor-Small.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr:checker"
+},
+{
+	"type":"NODE",
+	"name":"Stone-Floor.010",
+	"translation":[0,12,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Stone-Floor-Small"
+},
+{
+	"type":"NODE",
+	"name":"Stone-Floor.008",
+	"translation":[0,-20,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Stone-Floor-Small"
+},
+{
+	"type":"NODE",
+	"name":"Stone-Floor.007",
+	"translation":[0,-4,0],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Stone-Floor-Small"
+},
+{
+	"type":"MESH",
+	"name":"Sphere-Stone",
+	"topology":"TRIANGLE_LIST",
+	"count":2880,
+	"attributes":{
+		"POSITION":{ "src":"LightNumTest_640.Sphere-Stone.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightNumTest_640.Sphere-Stone.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightNumTest_640.Sphere-Stone.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightNumTest_640.Sphere-Stone.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr:checker"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.009",
+	"translation":[-0.634171,-8.6293,2.5],
+	"rotation":[0,0,0,1],
+	"scale":[0.5,0.5,0.5],
+	"mesh":"Sphere-Stone"
+},
+{
+	"type":"MESH",
+	"name":"Sphere",
+	"topology":"TRIANGLE_LIST",
+	"count":2880,
+	"attributes":{
+		"POSITION":{ "src":"LightNumTest_640.Sphere.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightNumTest_640.Sphere.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightNumTest_640.Sphere.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightNumTest_640.Sphere.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian:checker"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.008",
+	"translation":[-3,-7.34032,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.007",
+	"translation":[-0.634171,15.3707,2.5],
+	"rotation":[0,0,0,1],
+	"scale":[0.5,0.5,0.5],
+	"mesh":"Sphere-Stone"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.006",
+	"translation":[-3,16.6597,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.005",
+	"translation":[-0.634171,7.3707,2.5],
+	"rotation":[0,0,0,1],
+	"scale":[0.5,0.5,0.5],
+	"mesh":"Sphere-Stone"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.004",
+	"translation":[-3,8.65968,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.003",
+	"translation":[-0.634171,-16.6293,2.5],
+	"rotation":[0,0,0,1],
+	"scale":[0.5,0.5,0.5],
+	"mesh":"Sphere-Stone"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.002",
+	"translation":[-3,-15.3403,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.001",
+	"translation":[-0.634171,-0.629304,2.5],
+	"rotation":[0,0,0,1],
+	"scale":[0.5,0.5,0.5],
+	"mesh":"Sphere-Stone"
+},
+{
+	"type":"NODE",
+	"name":"Sphere",
+	"translation":[-3,0.659676,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere"
+},
+{
+	"type":"MESH",
+	"name":"Cube.001",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"LightNumTest_640.Cube.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"LightNumTest_640.Cube.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"LightNumTest_640.Cube.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"LightNumTest_640.Cube.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian:checker"
+},
+{
+	"type":"NODE",
+	"name":"Cube.004",
+	"translation":[-0.541634,-8.34599,1.03033],
+	"rotation":[0,0,0.241283,0.970455],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.003",
+	"translation":[-0.541634,15.654,1.03033],
+	"rotation":[0,0,0.241283,0.970455],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.002",
+	"translation":[-0.541634,7.65401,1.03033],
+	"rotation":[0,0,0.241283,0.970455],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube.001",
+	"translation":[-0.541634,-16.346,1.03033],
+	"rotation":[0,0,0.241283,0.970455],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+	"type":"NODE",
+	"name":"Cube",
+	"translation":[-0.541634,-0.345989,1.03033],
+	"rotation":[0,0,0.241283,0.970455],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera.001",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":1000
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera",
+	"translation":[-38.0421,42.9017,31.6037],
+	"rotation":[0.185865,-0.475457,-0.800862,0.313072],
+	"scale":[1,1,1],
+	"camera":"Camera.001"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot-Shadow64",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":500,
+		"fov":0.927293,
+		"blend":0.5
+	},
+	"shadow":64
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.033",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot-Shadow512",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":500,
+		"fov":0.927293,
+		"blend":0.5
+	},
+	"shadow":512
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.033",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot-Shadow32",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":500,
+		"fov":0.927293,
+		"blend":0.5
+	},
+	"shadow":32
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.033",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot-Shadow256",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":500,
+		"fov":0.927293,
+		"blend":0.5
+	},
+	"shadow":256
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.033",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Spot-Shadow128",
+	"tint":[1, 1, 1],
+	"spot":{
+		"radius":0,
+		"power":500,
+		"fov":0.927293,
+		"blend":0.5
+	},
+	"shadow":128
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.033",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.001",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.001",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.001",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.001",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.001",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.002",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.002",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.002",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.002",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.002",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.003",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.003",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.003",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.003",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.003",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.004",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.004",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.004",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.004",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.004",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.005",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.005",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.005",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.005",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.005",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.006",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.006",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.006",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.006",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.006",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.007",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.007",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.007",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.007",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.007",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.008",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.008",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.008",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.008",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.008",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.009",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.009",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.009",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.009",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.009",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.010",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.010",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.010",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.010",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.010",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.011",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.011",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.011",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.011",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.011",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.012",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.012",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.012",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.012",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.012",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.013",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.013",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.013",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.013",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.013",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.014",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.014",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.014",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.014",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.014",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.015",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.015",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.015",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.015",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.015",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.016",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.016",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.016",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.016",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.016",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.017",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.017",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.017",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.017",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.017",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.018",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.018",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.018",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.018",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.018",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.019",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.019",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.019",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.019",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.019",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.020",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.020",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.020",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.020",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.020",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.021",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.021",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.021",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.021",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.021",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.022",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.022",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.022",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.022",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.022",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.023",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.023",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.023",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.023",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.023",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.024",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.024",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.024",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.024",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.024",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.025",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.025",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.025",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.025",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.025",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.026",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.026",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.026",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.026",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.026",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.027",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.027",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.027",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.027",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.027",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.028",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.028",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.028",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.028",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.028",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.029",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.029",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.029",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.029",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.029",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.030",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.030",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.030",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.030",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.030",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.031",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.031",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.031",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.031",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.031",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.032",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.032",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.032",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.032",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.032",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.034",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.034",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.034",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.034",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.034",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.035",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.035",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.035",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.035",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.035",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.036",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.036",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.036",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.036",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.036",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.037",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.037",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.037",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.037",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.037",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.038",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.038",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.038",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.038",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.038",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.039",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.039",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.039",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.039",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.039",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.040",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.040",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.040",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.040",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.040",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.041",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.041",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.041",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.041",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.041",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.042",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.042",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.042",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.042",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.042",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.043",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.043",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.043",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.043",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.043",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.044",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.044",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.044",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.044",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.044",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.045",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.045",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.045",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.045",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.045",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.046",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.046",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.046",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.046",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.046",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.047",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.047",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.047",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.047",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.047",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.048",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.048",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.048",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.048",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.048",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.049",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.049",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.049",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.049",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.049",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.050",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.050",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.050",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.050",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.050",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.051",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.051",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.051",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.051",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.051",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.052",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.052",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.052",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.052",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.052",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.053",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.053",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.053",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.053",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.053",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.054",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.054",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.054",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.054",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.054",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.055",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.055",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.055",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.055",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.055",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.056",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.056",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.056",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.056",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.056",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.057",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.057",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.057",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.057",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.057",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.058",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.058",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.058",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.058",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.058",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.059",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.059",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.059",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.059",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.059",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.060",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.060",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.060",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.060",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.060",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.061",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.061",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.061",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.061",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.061",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.062",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.062",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.062",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.062",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.062",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.063",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.063",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.063",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.063",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.063",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.064",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.064",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.064",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.064",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.064",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.065",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.065",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.065",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.065",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.065",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.066",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.066",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.066",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.066",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.066",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.067",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.067",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.067",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.067",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.067",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.068",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.068",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.068",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.068",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.068",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.069",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.069",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.069",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.069",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.069",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.070",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.070",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.070",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.070",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.070",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.071",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.071",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.071",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.071",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.071",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.072",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.072",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.072",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.072",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.072",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.073",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.073",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.073",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.073",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.073",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.074",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.074",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.074",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.074",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.074",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.075",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.075",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.075",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.075",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.075",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.076",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.076",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.076",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.076",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.076",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.077",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.077",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.077",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.077",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.077",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.078",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.078",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.078",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.078",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.078",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.079",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.079",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.079",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.079",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.079",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.080",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.080",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.080",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.080",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.080",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.081",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.081",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.081",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.081",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.081",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.082",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.082",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.082",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.082",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.082",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.083",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.083",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.083",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.083",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.083",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.084",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.084",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.084",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.084",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.084",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.085",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.085",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.085",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.085",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.085",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.086",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.086",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.086",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.086",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.086",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.087",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.087",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.087",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.087",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.087",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.088",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.088",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.088",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.088",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.088",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.089",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.089",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.089",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.089",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.089",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.090",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.090",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.090",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.090",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.090",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.091",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.091",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.091",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.091",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.091",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.092",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.092",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.092",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.092",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.092",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.093",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.093",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.093",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.093",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.093",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.094",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.094",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.094",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.094",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.094",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.095",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.095",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.095",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.095",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.095",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.096",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.096",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.096",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.096",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.096",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.097",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.097",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.097",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.097",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.097",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.098",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.098",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.098",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.098",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.098",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.099",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.099",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.099",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.099",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.099",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.100",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.100",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.100",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.100",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.100",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.101",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.101",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.101",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.101",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.101",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.102",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.102",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.102",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.102",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.102",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.103",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.103",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.103",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.103",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.103",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.104",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.104",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.104",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.104",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.104",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.105",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.105",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.105",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.105",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.105",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.106",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.106",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.106",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.106",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.106",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.107",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.107",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.107",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.107",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.107",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.108",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.108",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.108",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.108",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.108",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.109",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.109",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.109",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.109",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.109",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.110",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.110",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.110",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.110",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.110",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.111",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.111",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.111",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.111",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.111",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.112",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.112",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.112",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.112",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.112",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.113",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.113",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.113",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.113",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.113",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.114",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.114",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.114",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.114",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.114",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.115",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.115",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.115",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.115",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.115",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.116",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.116",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.116",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.116",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.116",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.117",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.117",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.117",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.117",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.117",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.118",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.118",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.118",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.118",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.118",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.119",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.119",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.119",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.119",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.119",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.120",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.120",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.120",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.120",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.120",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.121",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.121",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.121",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.121",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.121",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.122",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.122",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.122",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.122",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.122",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.123",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.123",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.123",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.123",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.123",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.124",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.124",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.124",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.124",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.124",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.125",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.125",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.125",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.125",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.125",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.126",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.126",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.126",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.126",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.126",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.127",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.127",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.127",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.127",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.127",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow64.128",
+	"translation":[-6,8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow64"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow512.128",
+	"translation":[-6,-16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow512"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow32.128",
+	"translation":[-6,16,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow32"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow256.128",
+	"translation":[-6,-8,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow256"
+},
+{
+	"type":"NODE",
+	"name":"Spot-Shadow128.128",
+	"translation":[-6,0,7.65133],
+	"rotation":[0,-0.382683,0,0.92388],
+	"scale":[1,1,1],
+	"light":"Spot-Shadow128"
+},
+{
+	"type":"SCENE",
+	"name":"D:\\CMU\\CMU2026\\RealTimeGraphic\\nakluV\\A3\\Scene\\LightNumTest\\LightNumTest.blend",
+	"roots":["Tile-Floor.010", "Tile-Floor.008", "Tile-Floor.007", "Stone-Floor.010", "Stone-Floor.008", "Stone-Floor.007", "Sphere.009", "Sphere.008", "Sphere.007", "Sphere.006", "Sphere.005", "Sphere.004", "Sphere.003", "Sphere.002", "Sphere.001", "Sphere", "Cube.004", "Cube.003", "Cube.002", "Cube.001", "Cube", "Camera", "Spot-Shadow64.033", "Spot-Shadow512.033", "Spot-Shadow32.033", "Spot-Shadow256.033", "Spot-Shadow128.033", "Spot-Shadow64.001", "Spot-Shadow512.001", "Spot-Shadow32.001", "Spot-Shadow256.001", "Spot-Shadow128.001", "Spot-Shadow64.002", "Spot-Shadow512.002", "Spot-Shadow32.002", "Spot-Shadow256.002", "Spot-Shadow128.002", "Spot-Shadow64.003", "Spot-Shadow512.003", "Spot-Shadow32.003", "Spot-Shadow256.003", "Spot-Shadow128.003", "Spot-Shadow64.004", "Spot-Shadow512.004", "Spot-Shadow32.004", "Spot-Shadow256.004", "Spot-Shadow128.004", "Spot-Shadow64.005", "Spot-Shadow512.005", "Spot-Shadow32.005", "Spot-Shadow256.005", "Spot-Shadow128.005", "Spot-Shadow64.006", "Spot-Shadow512.006", "Spot-Shadow32.006", "Spot-Shadow256.006", "Spot-Shadow128.006", "Spot-Shadow64.007", "Spot-Shadow512.007", "Spot-Shadow32.007", "Spot-Shadow256.007", "Spot-Shadow128.007", "Spot-Shadow64.008", "Spot-Shadow512.008", "Spot-Shadow32.008", "Spot-Shadow256.008", "Spot-Shadow128.008", "Spot-Shadow64.009", "Spot-Shadow512.009", "Spot-Shadow32.009", "Spot-Shadow256.009", "Spot-Shadow128.009", "Spot-Shadow64.010", "Spot-Shadow512.010", "Spot-Shadow32.010", "Spot-Shadow256.010", "Spot-Shadow128.010", "Spot-Shadow64.011", "Spot-Shadow512.011", "Spot-Shadow32.011", "Spot-Shadow256.011", "Spot-Shadow128.011", "Spot-Shadow64.012", "Spot-Shadow512.012", "Spot-Shadow32.012", "Spot-Shadow256.012", "Spot-Shadow128.012", "Spot-Shadow64.013", "Spot-Shadow512.013", "Spot-Shadow32.013", "Spot-Shadow256.013", "Spot-Shadow128.013", "Spot-Shadow64.014", "Spot-Shadow512.014", "Spot-Shadow32.014", "Spot-Shadow256.014", "Spot-Shadow128.014", "Spot-Shadow64.015", "Spot-Shadow512.015", "Spot-Shadow32.015", "Spot-Shadow256.015", "Spot-Shadow128.015", "Spot-Shadow64.016", "Spot-Shadow512.016", "Spot-Shadow32.016", "Spot-Shadow256.016", "Spot-Shadow128.016", "Spot-Shadow64.017", "Spot-Shadow512.017", "Spot-Shadow32.017", "Spot-Shadow256.017", "Spot-Shadow128.017", "Spot-Shadow64.018", "Spot-Shadow512.018", "Spot-Shadow32.018", "Spot-Shadow256.018", "Spot-Shadow128.018", "Spot-Shadow64.019", "Spot-Shadow512.019", "Spot-Shadow32.019", "Spot-Shadow256.019", "Spot-Shadow128.019", "Spot-Shadow64.020", "Spot-Shadow512.020", "Spot-Shadow32.020", "Spot-Shadow256.020", "Spot-Shadow128.020", "Spot-Shadow64.021", "Spot-Shadow512.021", "Spot-Shadow32.021", "Spot-Shadow256.021", "Spot-Shadow128.021", "Spot-Shadow64.022", "Spot-Shadow512.022", "Spot-Shadow32.022", "Spot-Shadow256.022", "Spot-Shadow128.022", "Spot-Shadow64.023", "Spot-Shadow512.023", "Spot-Shadow32.023", "Spot-Shadow256.023", "Spot-Shadow128.023", "Spot-Shadow64.024", "Spot-Shadow512.024", "Spot-Shadow32.024", "Spot-Shadow256.024", "Spot-Shadow128.024", "Spot-Shadow64.025", "Spot-Shadow512.025", "Spot-Shadow32.025", "Spot-Shadow256.025", "Spot-Shadow128.025", "Spot-Shadow64.026", "Spot-Shadow512.026", "Spot-Shadow32.026", "Spot-Shadow256.026", "Spot-Shadow128.026", "Spot-Shadow64.027", "Spot-Shadow512.027", "Spot-Shadow32.027", "Spot-Shadow256.027", "Spot-Shadow128.027", "Spot-Shadow64.028", "Spot-Shadow512.028", "Spot-Shadow32.028", "Spot-Shadow256.028", "Spot-Shadow128.028", "Spot-Shadow64.029", "Spot-Shadow512.029", "Spot-Shadow32.029", "Spot-Shadow256.029", "Spot-Shadow128.029", "Spot-Shadow64.030", "Spot-Shadow512.030", "Spot-Shadow32.030", "Spot-Shadow256.030", "Spot-Shadow128.030", "Spot-Shadow64.031", "Spot-Shadow512.031", "Spot-Shadow32.031", "Spot-Shadow256.031", "Spot-Shadow128.031", "Spot-Shadow64.032", "Spot-Shadow512.032", "Spot-Shadow32.032", "Spot-Shadow256.032", "Spot-Shadow128.032", "Spot-Shadow64.034", "Spot-Shadow512.034", "Spot-Shadow32.034", "Spot-Shadow256.034", "Spot-Shadow128.034", "Spot-Shadow64.035", "Spot-Shadow512.035", "Spot-Shadow32.035", "Spot-Shadow256.035", "Spot-Shadow128.035", "Spot-Shadow64.036", "Spot-Shadow512.036", "Spot-Shadow32.036", "Spot-Shadow256.036", "Spot-Shadow128.036", "Spot-Shadow64.037", "Spot-Shadow512.037", "Spot-Shadow32.037", "Spot-Shadow256.037", "Spot-Shadow128.037", "Spot-Shadow64.038", "Spot-Shadow512.038", "Spot-Shadow32.038", "Spot-Shadow256.038", "Spot-Shadow128.038", "Spot-Shadow64.039", "Spot-Shadow512.039", "Spot-Shadow32.039", "Spot-Shadow256.039", "Spot-Shadow128.039", "Spot-Shadow64.040", "Spot-Shadow512.040", "Spot-Shadow32.040", "Spot-Shadow256.040", "Spot-Shadow128.040", "Spot-Shadow64.041", "Spot-Shadow512.041", "Spot-Shadow32.041", "Spot-Shadow256.041", "Spot-Shadow128.041", "Spot-Shadow64.042", "Spot-Shadow512.042", "Spot-Shadow32.042", "Spot-Shadow256.042", "Spot-Shadow128.042", "Spot-Shadow64.043", "Spot-Shadow512.043", "Spot-Shadow32.043", "Spot-Shadow256.043", "Spot-Shadow128.043", "Spot-Shadow64.044", "Spot-Shadow512.044", "Spot-Shadow32.044", "Spot-Shadow256.044", "Spot-Shadow128.044", "Spot-Shadow64.045", "Spot-Shadow512.045", "Spot-Shadow32.045", "Spot-Shadow256.045", "Spot-Shadow128.045", "Spot-Shadow64.046", "Spot-Shadow512.046", "Spot-Shadow32.046", "Spot-Shadow256.046", "Spot-Shadow128.046", "Spot-Shadow64.047", "Spot-Shadow512.047", "Spot-Shadow32.047", "Spot-Shadow256.047", "Spot-Shadow128.047", "Spot-Shadow64.048", "Spot-Shadow512.048", "Spot-Shadow32.048", "Spot-Shadow256.048", "Spot-Shadow128.048", "Spot-Shadow64.049", "Spot-Shadow512.049", "Spot-Shadow32.049", "Spot-Shadow256.049", "Spot-Shadow128.049", "Spot-Shadow64.050", "Spot-Shadow512.050", "Spot-Shadow32.050", "Spot-Shadow256.050", "Spot-Shadow128.050", "Spot-Shadow64.051", "Spot-Shadow512.051", "Spot-Shadow32.051", "Spot-Shadow256.051", "Spot-Shadow128.051", "Spot-Shadow64.052", "Spot-Shadow512.052", "Spot-Shadow32.052", "Spot-Shadow256.052", "Spot-Shadow128.052", "Spot-Shadow64.053", "Spot-Shadow512.053", "Spot-Shadow32.053", "Spot-Shadow256.053", "Spot-Shadow128.053", "Spot-Shadow64.054", "Spot-Shadow512.054", "Spot-Shadow32.054", "Spot-Shadow256.054", "Spot-Shadow128.054", "Spot-Shadow64.055", "Spot-Shadow512.055", "Spot-Shadow32.055", "Spot-Shadow256.055", "Spot-Shadow128.055", "Spot-Shadow64.056", "Spot-Shadow512.056", "Spot-Shadow32.056", "Spot-Shadow256.056", "Spot-Shadow128.056", "Spot-Shadow64.057", "Spot-Shadow512.057", "Spot-Shadow32.057", "Spot-Shadow256.057", "Spot-Shadow128.057", "Spot-Shadow64.058", "Spot-Shadow512.058", "Spot-Shadow32.058", "Spot-Shadow256.058", "Spot-Shadow128.058", "Spot-Shadow64.059", "Spot-Shadow512.059", "Spot-Shadow32.059", "Spot-Shadow256.059", "Spot-Shadow128.059", "Spot-Shadow64.060", "Spot-Shadow512.060", "Spot-Shadow32.060", "Spot-Shadow256.060", "Spot-Shadow128.060", "Spot-Shadow64.061", "Spot-Shadow512.061", "Spot-Shadow32.061", "Spot-Shadow256.061", "Spot-Shadow128.061", "Spot-Shadow64.062", "Spot-Shadow512.062", "Spot-Shadow32.062", "Spot-Shadow256.062", "Spot-Shadow128.062", "Spot-Shadow64.063", "Spot-Shadow512.063", "Spot-Shadow32.063", "Spot-Shadow256.063", "Spot-Shadow128.063", "Spot-Shadow64.064", "Spot-Shadow512.064", "Spot-Shadow32.064", "Spot-Shadow256.064", "Spot-Shadow128.064", "Spot-Shadow64.065", "Spot-Shadow512.065", "Spot-Shadow32.065", "Spot-Shadow256.065", "Spot-Shadow128.065", "Spot-Shadow64.066", "Spot-Shadow512.066", "Spot-Shadow32.066", "Spot-Shadow256.066", "Spot-Shadow128.066", "Spot-Shadow64.067", "Spot-Shadow512.067", "Spot-Shadow32.067", "Spot-Shadow256.067", "Spot-Shadow128.067", "Spot-Shadow64.068", "Spot-Shadow512.068", "Spot-Shadow32.068", "Spot-Shadow256.068", "Spot-Shadow128.068", "Spot-Shadow64.069", "Spot-Shadow512.069", "Spot-Shadow32.069", "Spot-Shadow256.069", "Spot-Shadow128.069", "Spot-Shadow64.070", "Spot-Shadow512.070", "Spot-Shadow32.070", "Spot-Shadow256.070", "Spot-Shadow128.070", "Spot-Shadow64.071", "Spot-Shadow512.071", "Spot-Shadow32.071", "Spot-Shadow256.071", "Spot-Shadow128.071", "Spot-Shadow64.072", "Spot-Shadow512.072", "Spot-Shadow32.072", "Spot-Shadow256.072", "Spot-Shadow128.072", "Spot-Shadow64.073", "Spot-Shadow512.073", "Spot-Shadow32.073", "Spot-Shadow256.073", "Spot-Shadow128.073", "Spot-Shadow64.074", "Spot-Shadow512.074", "Spot-Shadow32.074", "Spot-Shadow256.074", "Spot-Shadow128.074", "Spot-Shadow64.075", "Spot-Shadow512.075", "Spot-Shadow32.075", "Spot-Shadow256.075", "Spot-Shadow128.075", "Spot-Shadow64.076", "Spot-Shadow512.076", "Spot-Shadow32.076", "Spot-Shadow256.076", "Spot-Shadow128.076", "Spot-Shadow64.077", "Spot-Shadow512.077", "Spot-Shadow32.077", "Spot-Shadow256.077", "Spot-Shadow128.077", "Spot-Shadow64.078", "Spot-Shadow512.078", "Spot-Shadow32.078", "Spot-Shadow256.078", "Spot-Shadow128.078", "Spot-Shadow64.079", "Spot-Shadow512.079", "Spot-Shadow32.079", "Spot-Shadow256.079", "Spot-Shadow128.079", "Spot-Shadow64.080", "Spot-Shadow512.080", "Spot-Shadow32.080", "Spot-Shadow256.080", "Spot-Shadow128.080", "Spot-Shadow64.081", "Spot-Shadow512.081", "Spot-Shadow32.081", "Spot-Shadow256.081", "Spot-Shadow128.081", "Spot-Shadow64.082", "Spot-Shadow512.082", "Spot-Shadow32.082", "Spot-Shadow256.082", "Spot-Shadow128.082", "Spot-Shadow64.083", "Spot-Shadow512.083", "Spot-Shadow32.083", "Spot-Shadow256.083", "Spot-Shadow128.083", "Spot-Shadow64.084", "Spot-Shadow512.084", "Spot-Shadow32.084", "Spot-Shadow256.084", "Spot-Shadow128.084", "Spot-Shadow64.085", "Spot-Shadow512.085", "Spot-Shadow32.085", "Spot-Shadow256.085", "Spot-Shadow128.085", "Spot-Shadow64.086", "Spot-Shadow512.086", "Spot-Shadow32.086", "Spot-Shadow256.086", "Spot-Shadow128.086", "Spot-Shadow64.087", "Spot-Shadow512.087", "Spot-Shadow32.087", "Spot-Shadow256.087", "Spot-Shadow128.087", "Spot-Shadow64.088", "Spot-Shadow512.088", "Spot-Shadow32.088", "Spot-Shadow256.088", "Spot-Shadow128.088", "Spot-Shadow64.089", "Spot-Shadow512.089", "Spot-Shadow32.089", "Spot-Shadow256.089", "Spot-Shadow128.089", "Spot-Shadow64.090", "Spot-Shadow512.090", "Spot-Shadow32.090", "Spot-Shadow256.090", "Spot-Shadow128.090", "Spot-Shadow64.091", "Spot-Shadow512.091", "Spot-Shadow32.091", "Spot-Shadow256.091", "Spot-Shadow128.091", "Spot-Shadow64.092", "Spot-Shadow512.092", "Spot-Shadow32.092", "Spot-Shadow256.092", "Spot-Shadow128.092", "Spot-Shadow64.093", "Spot-Shadow512.093", "Spot-Shadow32.093", "Spot-Shadow256.093", "Spot-Shadow128.093", "Spot-Shadow64.094", "Spot-Shadow512.094", "Spot-Shadow32.094", "Spot-Shadow256.094", "Spot-Shadow128.094", "Spot-Shadow64.095", "Spot-Shadow512.095", "Spot-Shadow32.095", "Spot-Shadow256.095", "Spot-Shadow128.095", "Spot-Shadow64.096", "Spot-Shadow512.096", "Spot-Shadow32.096", "Spot-Shadow256.096", "Spot-Shadow128.096", "Spot-Shadow64.097", "Spot-Shadow512.097", "Spot-Shadow32.097", "Spot-Shadow256.097", "Spot-Shadow128.097", "Spot-Shadow64.098", "Spot-Shadow512.098", "Spot-Shadow32.098", "Spot-Shadow256.098", "Spot-Shadow128.098", "Spot-Shadow64.099", "Spot-Shadow512.099", "Spot-Shadow32.099", "Spot-Shadow256.099", "Spot-Shadow128.099", "Spot-Shadow64.100", "Spot-Shadow512.100", "Spot-Shadow32.100", "Spot-Shadow256.100", "Spot-Shadow128.100", "Spot-Shadow64.101", "Spot-Shadow512.101", "Spot-Shadow32.101", "Spot-Shadow256.101", "Spot-Shadow128.101", "Spot-Shadow64.102", "Spot-Shadow512.102", "Spot-Shadow32.102", "Spot-Shadow256.102", "Spot-Shadow128.102", "Spot-Shadow64.103", "Spot-Shadow512.103", "Spot-Shadow32.103", "Spot-Shadow256.103", "Spot-Shadow128.103", "Spot-Shadow64.104", "Spot-Shadow512.104", "Spot-Shadow32.104", "Spot-Shadow256.104", "Spot-Shadow128.104", "Spot-Shadow64.105", "Spot-Shadow512.105", "Spot-Shadow32.105", "Spot-Shadow256.105", "Spot-Shadow128.105", "Spot-Shadow64.106", "Spot-Shadow512.106", "Spot-Shadow32.106", "Spot-Shadow256.106", "Spot-Shadow128.106", "Spot-Shadow64.107", "Spot-Shadow512.107", "Spot-Shadow32.107", "Spot-Shadow256.107", "Spot-Shadow128.107", "Spot-Shadow64.108", "Spot-Shadow512.108", "Spot-Shadow32.108", "Spot-Shadow256.108", "Spot-Shadow128.108", "Spot-Shadow64.109", "Spot-Shadow512.109", "Spot-Shadow32.109", "Spot-Shadow256.109", "Spot-Shadow128.109", "Spot-Shadow64.110", "Spot-Shadow512.110", "Spot-Shadow32.110", "Spot-Shadow256.110", "Spot-Shadow128.110", "Spot-Shadow64.111", "Spot-Shadow512.111", "Spot-Shadow32.111", "Spot-Shadow256.111", "Spot-Shadow128.111", "Spot-Shadow64.112", "Spot-Shadow512.112", "Spot-Shadow32.112", "Spot-Shadow256.112", "Spot-Shadow128.112", "Spot-Shadow64.113", "Spot-Shadow512.113", "Spot-Shadow32.113", "Spot-Shadow256.113", "Spot-Shadow128.113", "Spot-Shadow64.114", "Spot-Shadow512.114", "Spot-Shadow32.114", "Spot-Shadow256.114", "Spot-Shadow128.114", "Spot-Shadow64.115", "Spot-Shadow512.115", "Spot-Shadow32.115", "Spot-Shadow256.115", "Spot-Shadow128.115", "Spot-Shadow64.116", "Spot-Shadow512.116", "Spot-Shadow32.116", "Spot-Shadow256.116", "Spot-Shadow128.116", "Spot-Shadow64.117", "Spot-Shadow512.117", "Spot-Shadow32.117", "Spot-Shadow256.117", "Spot-Shadow128.117", "Spot-Shadow64.118", "Spot-Shadow512.118", "Spot-Shadow32.118", "Spot-Shadow256.118", "Spot-Shadow128.118", "Spot-Shadow64.119", "Spot-Shadow512.119", "Spot-Shadow32.119", "Spot-Shadow256.119", "Spot-Shadow128.119", "Spot-Shadow64.120", "Spot-Shadow512.120", "Spot-Shadow32.120", "Spot-Shadow256.120", "Spot-Shadow128.120", "Spot-Shadow64.121", "Spot-Shadow512.121", "Spot-Shadow32.121", "Spot-Shadow256.121", "Spot-Shadow128.121", "Spot-Shadow64.122", "Spot-Shadow512.122", "Spot-Shadow32.122", "Spot-Shadow256.122", "Spot-Shadow128.122", "Spot-Shadow64.123", "Spot-Shadow512.123", "Spot-Shadow32.123", "Spot-Shadow256.123", "Spot-Shadow128.123", "Spot-Shadow64.124", "Spot-Shadow512.124", "Spot-Shadow32.124", "Spot-Shadow256.124", "Spot-Shadow128.124", "Spot-Shadow64.125", "Spot-Shadow512.125", "Spot-Shadow32.125", "Spot-Shadow256.125", "Spot-Shadow128.125", "Spot-Shadow64.126", "Spot-Shadow512.126", "Spot-Shadow32.126", "Spot-Shadow256.126", "Spot-Shadow128.126", "Spot-Shadow64.127", "Spot-Shadow512.127", "Spot-Shadow32.127", "Spot-Shadow256.127", "Spot-Shadow128.127", "Spot-Shadow64.128", "Spot-Shadow512.128", "Spot-Shadow32.128", "Spot-Shadow256.128", "Spot-Shadow128.128"]
+}
+]

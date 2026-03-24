@@ -1,0 +1,387 @@
+["s72-v2",
+{
+	"type":"MATERIAL",
+	"name":"lambertian::white",
+	"lambertian":{
+		"albedo":[ 0.8, 0.8, 0.8 ]
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Cube.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Cube.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Cube.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Cube.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube_1",
+	"translation":[0,-16.6831,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera00",
+	"translation":[21.2255,7.18121,13.1584],
+	"rotation":[0.201973,0.528345,0.770292,0.294465],
+	"scale":[1,1,1],
+	"camera":"Camera"
+},
+{
+	"type":"MATERIAL",
+	"name":"lambertian::grey",
+	"lambertian":{
+		"albedo":[ 0.0760348, 0.0760348, 0.0760348 ]
+	}
+},
+{
+	"type":"MESH",
+	"name":"Plane",
+	"topology":"TRIANGLE_LIST",
+	"count":6,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Plane.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Plane.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Plane.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Plane.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::grey"
+},
+{
+	"type":"NODE",
+	"name":"Plane_1",
+	"translation":[0,-16.6831,0],
+	"rotation":[0,0,0,1],
+	"scale":[10,10,10],
+	"mesh":"Plane"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr::cube",
+	"normalMap":{ "src":"..\\A3Create\\raw_plank_wall_nor_gl_1k.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\A3Create\\raw_plank_wall_diff_1k.png", "format":"srgb" },
+		"roughness":{ "src":"..\\A3Create\\raw_plank_wall_rough_1k.png", "format":"srgb" },
+		"metalness":0
+	}
+},
+{
+	"type":"MESH",
+	"name":"Cube.001",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Cube.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Cube.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Cube.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Cube.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube_1.001",
+	"translation":[0,15.594,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.001"
+},
+{
+	"type":"MATERIAL",
+	"name":"pbr::plane",
+	"normalMap":{ "src":"..\\A3Create\\gravel_concrete_03_nor_gl_1k.png", "format":"srgb" },
+	"pbr":{
+		"albedo":{ "src":"..\\A3Create\\gravel_concrete_03_diff_1k.png", "format":"srgb" },
+		"roughness":{ "src":"..\\A3Create\\gravel_concrete_03_rough_1k.png", "format":"srgb" },
+		"metalness":0
+	}
+},
+{
+	"type":"MESH",
+	"name":"Plane.001",
+	"topology":"TRIANGLE_LIST",
+	"count":6,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Plane.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Plane.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Plane.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Plane.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::plane"
+},
+{
+	"type":"NODE",
+	"name":"Plane_1.001",
+	"translation":[0,15.594,0],
+	"rotation":[0,0,0,1],
+	"scale":[10,10,10],
+	"mesh":"Plane.001"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera.001",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera00.001",
+	"translation":[12.371,3.33232,13.1401],
+	"rotation":[0.426642,0.177124,0.340062,0.819122],
+	"scale":[1,1,1],
+	"camera":"Camera.001"
+},
+{
+	"type":"MESH",
+	"name":"Cube.002",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Cube.002.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Cube.002.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Cube.002.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Cube.002.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Cube_1.002",
+	"translation":[72.5496,-16.6831,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.002"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera.002",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera00.002",
+	"translation":[93.775,7.18121,13.1584],
+	"rotation":[0.201973,0.528345,0.770292,0.294465],
+	"scale":[1,1,1],
+	"camera":"Camera.002"
+},
+{
+	"type":"MESH",
+	"name":"Plane.002",
+	"topology":"TRIANGLE_LIST",
+	"count":6,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Plane.002.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Plane.002.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Plane.002.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Plane.002.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::grey"
+},
+{
+	"type":"NODE",
+	"name":"Plane_1.002",
+	"translation":[72.5496,-16.6831,0],
+	"rotation":[0,0,0,1],
+	"scale":[10,10,10],
+	"mesh":"Plane.002"
+},
+{
+	"type":"MESH",
+	"name":"Cube.003",
+	"topology":"TRIANGLE_LIST",
+	"count":36,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Cube.003.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Cube.003.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Cube.003.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Cube.003.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::cube"
+},
+{
+	"type":"NODE",
+	"name":"Cube_1.003",
+	"translation":[72.5496,15.594,1],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Cube.003"
+},
+{
+	"type":"MESH",
+	"name":"Plane.003",
+	"topology":"TRIANGLE_LIST",
+	"count":6,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Plane.003.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Plane.003.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Plane.003.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Plane.003.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::plane"
+},
+{
+	"type":"NODE",
+	"name":"Plane_1.003",
+	"translation":[72.5496,15.594,0],
+	"rotation":[0,0,0,1],
+	"scale":[10,10,10],
+	"mesh":"Plane.003"
+},
+{
+
+	"type":"CAMERA",
+	"name":"Camera.003",
+	"perspective":{
+		"aspect":1.77778,
+		"vfov":0.47109,
+		"near":0.1,
+		"far":100
+	}
+},
+{
+	"type":"NODE",
+	"name":"Camera00.003",
+	"translation":[84.9206,3.33232,13.1401],
+	"rotation":[0.426642,0.177124,0.340062,0.819122],
+	"scale":[1,1,1],
+	"camera":"Camera.003"
+},
+{
+
+	"type":"LIGHT",
+	"name":"Sun",
+	"tint":[1, 1, 1],
+	"sun":{
+		"angle":0.00918043,
+		"strength":1
+	}
+},
+{
+	"type":"NODE",
+	"name":"Sun",
+	"translation":[32.6443,0,37.1669],
+	"rotation":[4.63013e-16,-0.282971,-3.80196e-08,0.959128],
+	"scale":[1,1,1],
+	"light":"Sun"
+},
+{
+	"type":"MESH",
+	"name":"Sphere",
+	"topology":"TRIANGLE_LIST",
+	"count":2880,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Sphere.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Sphere.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Sphere.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Sphere.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Sphere",
+	"translation":[0,-13.2199,1.16624],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere"
+},
+{
+	"type":"MESH",
+	"name":"Sphere.001",
+	"topology":"TRIANGLE_LIST",
+	"count":2880,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Sphere.001.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Sphere.001.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Sphere.001.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Sphere.001.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::cube"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.001",
+	"translation":[0,18.8876,1.16624],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere.001"
+},
+{
+	"type":"MESH",
+	"name":"Sphere.002",
+	"topology":"TRIANGLE_LIST",
+	"count":2880,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Sphere.002.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Sphere.002.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Sphere.002.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Sphere.002.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"pbr::cube"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.002",
+	"translation":[72.5001,18.8876,1.16624],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere.002"
+},
+{
+	"type":"MESH",
+	"name":"Sphere.003",
+	"topology":"TRIANGLE_LIST",
+	"count":2880,
+	"attributes":{
+		"POSITION":{ "src":"SunTest.Sphere.003.pnTt.b72", "offset":0, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"NORMAL":{ "src":"SunTest.Sphere.003.pnTt.b72", "offset":12, "stride":48, "format":"R32G32B32_SFLOAT" },
+		"TANGENT":{ "src":"SunTest.Sphere.003.pnTt.b72", "offset":24, "stride":48, "format":"R32G32B32A32_SFLOAT" },
+		"TEXCOORD":{ "src":"SunTest.Sphere.003.pnTt.b72", "offset":40, "stride":48, "format":"R32G32_SFLOAT" }
+	},
+	"material":"lambertian::white"
+},
+{
+	"type":"NODE",
+	"name":"Sphere.003",
+	"translation":[72.4097,-13.2199,1.16624],
+	"rotation":[0,0,0,1],
+	"scale":[1,1,1],
+	"mesh":"Sphere.003"
+},
+{
+	"type":"SCENE",
+	"name":"D:\\CMU\\CMU2026\\RealTimeGraphic\\nakluV\\A3\\Scene\\SunTest\\SunTest.blend",
+	"roots":["Cube_1", "Camera00", "Plane_1", "Cube_1.001", "Plane_1.001", "Camera00.001", "Cube_1.002", "Camera00.002", "Plane_1.002", "Cube_1.003", "Plane_1.003", "Camera00.003", "Sun", "Sphere", "Sphere.001", "Sphere.002", "Sphere.003"]
+}
+]

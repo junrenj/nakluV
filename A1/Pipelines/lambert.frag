@@ -3,8 +3,8 @@
 const int DISPLACE_MAX_STEP = 32;
 const float MAX_GGX_LOD = 5.0;
 const float PI = 3.1415926;
-const int MAX_SPOT_SHADOWS = 64;
-const int MAX_SPHERE_SHADOWS = 64;
+const int MAX_SPOT_SHADOWS = 256;
+const int MAX_SPHERE_SHADOWS = 256;
 
 struct Light
 {
