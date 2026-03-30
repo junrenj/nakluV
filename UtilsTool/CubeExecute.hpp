@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Helpers.hpp"
-#include "InputEvent.hpp"
+#include "CubeHelpers.hpp"
+#include "../InputEvent.hpp"
 
 #include <vulkan/vulkan_core.h>
 
@@ -18,41 +18,42 @@ struct GLFWwindow;
  * Real-time Graphics support framework.
  * Takes care of creating a Vulkan device and running a main loop.
  *
- *  RTG::Configuration configuration;
+ *  CubeExecute::Configuration configuration;
  *  configuration.application_info = VkApplicationInfo{ ... }; //set properly for your app
  *  config.parse(argc, argv); //manage command line arguments
  *
- *  RTG rtg(configuration);
- *  MyApplication app(rtg); //note: derives from RTG::Application
+ *  CubeExecute CubeExecute(configuration);
+ *  MyApplication app(ce); //note: derives from CubeExecute::Application
  *
- *  rtg.run(app);
+ *  ce.run(app);
+ * 
+ *  actually the simple version of rtg, dont want to containment the logic of rtg
  *
  */
 
-struct RTG {
+struct CubeExecute 
+{
 	//----------------------------------------
-	// Creating an RTG wrapper:
+	// Creating an CubeExecute wrapper:
 
 	struct Configuration;
 
-	RTG(Configuration const &); //creates/acquires resources
-	~RTG(); //destroys/deallocates resources
-	RTG(RTG const &) = delete; //don't copy this structure!
+	CubeExecute(Configuration const &); //creates/acquires resources
+	~CubeExecute(); //destroys/deallocates resources
+	CubeExecute(CubeExecute const &) = delete; //don't copy this structure!
 
-	//Configuration passed to RTG constructor:
-	struct Configuration {
+	//Configuration passed to CubeExecute constructor:
+	struct Configuration 
+	{
 		//application info passed to Vulkan:
-		VkApplicationInfo application_info{
+		VkApplicationInfo application_info
+		{
 			.pApplicationName = "Unknown",
 			.applicationVersion = VK_MAKE_VERSION(0,0,0),
 			.pEngineName = "Unknown",
 			.engineVersion = VK_MAKE_VERSION(0,0,0),
 			.apiVersion = VK_API_VERSION_1_3
 		};
-
-		//if true, add debug and validation layers and print more debug output:
-		//  `--debug` and `--no-debug` command-line flags
-		bool debug = false;
 
 		//if set, use a specific device for rendering:
 		// `--physical-device <name>` command-line flag
@@ -77,40 +78,21 @@ struct RTG {
 		// run without a window, read events from stdin
 		bool headless = false;
 
-		// file path to open
-		std::string FilePath = "Homework/A3/Scene/A3Create/S72/A3Create.s72";
-
-		// name of irradiance texture
-		std::string EnvIrradianceTexName = "env_irradiance";
-		// name of BrdfLut texture
-		std::string BrdfLutTexName = "brdf_lut";
-		// name of BrdfLut texture
-		std::string GGXTexName = "ggx";
-		uint8_t GGXNum = 5;
-		// PBRTexture Fallback Path
-		std::string FallbackFolderPath = "Resources";
-
-		// Camera to use, if user inputs a specific name for a camera
-		std::string CameraName = "FREECAMERA";	// this means a free camera, even no camera data in the scene, as a fallback if user enters a camera doesn't exist.
-
-		// Culling mode
-		enum class ECullingMode
+		// enum class for process mode
+		enum class EProcessMode
 		{
-			None = 0,
-			Normal = 1,
-		}CullMode;	// by default isOn SAT
+			Cubemap2Irradiance,
+			Cubemap2GGX,
+			BrdfLUT,
+		}ProcessMode;
 
-		// Exposure level
-		float ExposureIntensity = 0.0f;
+		// Output Info
+		uint8_t IrradianceOutputSize = 32;
+		uint8_t GGXLevelsCount = 5;
 
-		// Tone mapping
-		enum class ETonemappingMode
-		{
-			Linear = 0,
-			Gamma = 1,
-			Reinhard = 2,
-			ACES = 3,
-		}TonemappingMode = ETonemappingMode::Linear;
+		// Path of the Image
+		std::string InImagePath = "";
+		std::string OutImagePath = "";
 
 		//for configuration construction + management:
 		Configuration() = default;
@@ -123,13 +105,12 @@ struct RTG {
 	//------------------------------------------------
 	//Helper functions, split off into their own little package:
 	// see Helpers.hpp
-	Helpers helpers;
+	CubeHelpers helpers;
 
 	//------------------------------------------------
 	//Basic vulkan handles:
 
 	VkInstance instance = VK_NULL_HANDLE;
-	VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 	VkDevice device = VK_NULL_HANDLE;
 
@@ -162,8 +143,8 @@ struct RTG {
 	VkCommandPool HeadlessCommandPool = VK_NULL_HANDLE;
 	struct HeadlessSwapchainImage
 	{
-		Helpers::AllocatedImage Image;		// on-GPU rendering target
-		Helpers::AllocatedBuffer Buffer;	// host memory to copy image to after rendering
+		CubeHelpers::AllocatedImage Image;		// on-GPU rendering target
+		CubeHelpers::AllocatedBuffer Buffer;	// host memory to copy image to after rendering
 		VkCommandBuffer CopyCommand = VK_NULL_HANDLE;	// copy image -> buffer
 		VkFence ImagePresented = VK_NULL_HANDLE;		// fence to signal after copy finishes
 		std::string SaveTo = "";			// (if non-"") file to save to
@@ -176,12 +157,12 @@ struct RTG {
 	std::vector< VkImageView > swapchain_image_views; //image views of the images in the swapchain
 	std::vector< VkSemaphore > swapchain_image_dones; //image is done being rendered to and is ready for presentation
 
-	//swapchain management: (used from RTG::RTG(), RTG::~RTG(), and RTG::run() [on resize])
+	//swapchain management: (used from CubeExecute::CubeExecute(), CubeExecute::~CubeExecute(), and CubeExecute::run() [on resize])
 	void recreate_swapchain();
 	void destroy_swapchain(); //NOTE: swapchain must exist
 	
 	//Workspaces hold dynamic state that must be kept separate between frames.
-	// RTG stores some synchronization primitives per workspace.
+	// CubeExecute stores some synchronization primitives per workspace.
 	// (The bulk of per-workspace data will be managed by the Application.)
 	struct PerWorkspace {
 		VkFence workspace_available = VK_NULL_HANDLE; //workspace is ready for a new render
@@ -208,23 +189,23 @@ struct RTG {
 		virtual void on_input(InputEvent const &) = 0;
 
 		//[re]create resources when swapchain is recreated: (called at start of run() and when window is resized)
-		virtual void on_swapchain(RTG &, SwapchainEvent const &) = 0;
+		virtual void on_swapchain(CubeExecute &, SwapchainEvent const &) = 0;
 
 		//advance time for dt seconds: (called every frame)
 		virtual void update(float dt) = 0;
 
 		//queue commands to render a frame: (called every frame)
-		virtual void render(RTG &, RenderParams const &) = 0;
+		virtual void render(CubeExecute &, RenderParams const &) = 0;
 	};
 
-	//------------------------------
+	//------------------------------W
 	//Structure definitions:
 
-	//event structure (well, union) used to pass events from RTG -> App:
+	//event structure (well, union) used to pass events from CubeExecute -> App:
 	// See InputEvent.hpp for `union InputEvent`
 
 	//parameters passed to Application::on_swapchain() when swapchain is [re]created:
-	// (these can also be accessed on the rtg directly but the package puts them in a convenient spot)
+	// (these can also be accessed on the ce directly but the package puts them in a convenient spot)
 	struct SwapchainEvent {
 		VkExtent2D const &extent; //swapchain extent
 		std::vector< VkImage > const &images; //swapchain images

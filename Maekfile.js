@@ -27,19 +27,16 @@ custom_flags_and_rules();
 //maek.CPP(...) builds a c++ file:
 // it returns the path to the output object file
 const main_objs = [
-	maek.CPP('Tutorial.cpp'),
-	maek.CPP('A1/AssignmentOne.cpp'),
-	maek.CPP('A1/AssignmentOne-Vertex.cpp'),
-	maek.CPP('A1/Render/RenderScene.cpp'),
-	maek.CPP('A1/Render/RenderExtractor.cpp'),
-	maek.CPP('A1/Render/Texture.cpp'),
-	maek.CPP('A1/Render/BBox.cpp'),
-	maek.CPP('A1/Render/CullingUtils.cpp'),
-	maek.CPP('A1/Debug/DebugView.cpp'),
-	maek.CPP('A1/Debug/DebugColVertex.cpp'),
-	maek.CPP('A1/Animation/AnimationPlayer.cpp'),
-	maek.CPP('PosColVertex.cpp'),
-	maek.CPP('PosNorTexVertex.cpp'),
+	maek.CPP('Main/RenderPipelines.cpp'),
+	maek.CPP('Main/RenderPipelines-Vertex.cpp'),
+	maek.CPP('Main/Render/RenderScene.cpp'),
+	maek.CPP('Main/Render/RenderExtractor.cpp'),
+	maek.CPP('Main/Render/Texture.cpp'),
+	maek.CPP('Main/Render/BBox.cpp'),
+	maek.CPP('Main/Render/CullingUtils.cpp'),
+	maek.CPP('Main/Debug/DebugView.cpp'),
+	maek.CPP('Main/Debug/DebugColVertex.cpp'),
+	maek.CPP('Main/Animation/AnimationPlayer.cpp'),
 	maek.CPP('RTG.cpp'),
 	maek.CPP('Helpers.cpp'),
 	maek.CPP('main.cpp'),
@@ -47,79 +44,57 @@ const main_objs = [
 	// s72Loader
 	maek.CPP('external/s72Loader/sejp.cpp'),
 	maek.CPP('external/s72Loader/S72.cpp'),
-	// maek.CPP('external/s72Loader/print_scene.cpp'),
 ];
 
 const cube_objs = [
-    maek.CPP('A1/UtilsTool/main.cpp'),
-	maek.CPP('A1/UtilsTool/CubeHelpers.cpp'),
-	maek.CPP('A1/UtilsTool/CubeExecute.cpp'),
-	maek.CPP('A1/UtilsTool/GPUFace.cpp'),
-	maek.CPP('A1/UtilsTool/ImageProcessor.cpp'),
+    maek.CPP('UtilsTool/main.cpp'),
+	maek.CPP('UtilsTool/CubeHelpers.cpp'),
+	maek.CPP('UtilsTool/CubeExecute.cpp'),
+	maek.CPP('UtilsTool/GPUFace.cpp'),
+	maek.CPP('UtilsTool/ImageProcessor.cpp'),
 ];
 
 const cube_shader = [
-	maek.GLSLC('A1/UtilsTool/Shaders/ggx.comp'),
-	maek.GLSLC('A1/UtilsTool/Shaders/irradiance.comp'),
+	maek.GLSLC('UtilsTool/Shaders/ggx.comp'),
+	maek.GLSLC('UtilsTool/Shaders/irradiance.comp'),
 ];
-cube_objs.push( maek.CPP('A1/UtilsTool/CubePipeline.cpp', undefined, { depends:[...cube_shader] } ) );
+cube_objs.push( maek.CPP('UtilsTool/CubePipeline.cpp', undefined, { depends:[...cube_shader] } ) );
 
 const lut_shader = [
-	maek.GLSLC('A1/UtilsTool/Shaders/brdfLUT.comp'),
+	maek.GLSLC('UtilsTool/Shaders/brdfLUT.comp'),
 ];
-cube_objs.push( maek.CPP('A1/UtilsTool/LUTPipeline.cpp', undefined, { depends:[...lut_shader] } ) );
+cube_objs.push( maek.CPP('UtilsTool/LUTPipeline.cpp', undefined, { depends:[...lut_shader] } ) );
 
 const cube_exe = maek.LINK([...cube_objs], 'bin/cube');
 
 //maek.GLSLC(...) builds a glsl source file:
 // it returns the path to the output .inl file
 
-//uncomment to build background shaders and pipeline:
-const background_shaders = [
-	maek.GLSLC('background.vert'),
-	maek.GLSLC('background.frag'),
+// Render Pipeline
+const main_background_shaders = [
+	maek.GLSLC('Main/Pipelines/background.vert'),
+	maek.GLSLC('Main/Pipelines/background.frag'),
 ];
-main_objs.push( maek.CPP('Tutorial-BackgroundPipeline.cpp', undefined, { depends:[...background_shaders] } ) );
+main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-BackgroundPipeline.cpp', undefined, { depends:[...main_background_shaders] } ) );
 
-//uncomment to build lines shaders and pipeline:
-const lines_shaders = [
-	maek.GLSLC('lines.vert'),
-	maek.GLSLC('lines.frag'),
+const main_lines_shaders = [
+	maek.GLSLC('Main/Pipelines/lines.vert'),
+	maek.GLSLC('Main/Pipelines/lines.frag'),
 ];
-main_objs.push( maek.CPP('Tutorial-LinesPipeline.cpp', undefined, { depends:[...lines_shaders] } ) );
+main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-LinesPipeline.cpp', undefined, { depends:[...main_lines_shaders] } ) );
 
-//uncomment to build objects shaders and pipeline:
-const objects_shaders = [
-	maek.GLSLC('objects.vert'),
-	maek.GLSLC('objects.frag'),
+const main_lambert_shaders = [
+	maek.GLSLC('Main/Pipelines/lambert.vert'),
+	maek.GLSLC('Main/Pipelines/lambert.frag'),
 ];
-main_objs.push( maek.CPP('Tutorial-ObjectsPipeline.cpp', undefined, { depends:[...objects_shaders] } ) );
+main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-LambertPipeline.cpp', undefined, { depends:[...main_lambert_shaders] } ) );
 
-// A1
-const A1_background_shaders = [
-	maek.GLSLC('A1/Pipelines/background.vert'),
-	maek.GLSLC('A1/Pipelines/background.frag'),
+// A3 - Shadow
+const main_shadow_shaders = [
+	maek.GLSLC('Main/Pipelines/shadow.vert'),
+	maek.GLSLC('Main/Pipelines/shadow.frag'),
 ];
-main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-BackgroundPipeline.cpp', undefined, { depends:[...A1_background_shaders] } ) );
-
-const A1_lines_shaders = [
-	maek.GLSLC('A1/Pipelines/lines.vert'),
-	maek.GLSLC('A1/Pipelines/lines.frag'),
-];
-main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-LinesPipeline.cpp', undefined, { depends:[...A1_lines_shaders] } ) );
-
-const A1_lambert_shaders = [
-	maek.GLSLC('A1/Pipelines/lambert.vert'),
-	maek.GLSLC('A1/Pipelines/lambert.frag'),
-];
-main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-LambertPipeline.cpp', undefined, { depends:[...A1_lambert_shaders] } ) );
-
-// A3
-const A3_shadow_shaders = [
-	maek.GLSLC('A1/Pipelines/shadow.vert'),
-	maek.GLSLC('A1/Pipelines/shadow.frag'),
-];
-main_objs.push( maek.CPP('A1/Pipelines/AssignmentOne-ShadowPipeline.cpp', undefined, { depends:[...A3_shadow_shaders] } ) );
+main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-ShadowPipeline.cpp', undefined, { depends:[...main_shadow_shaders] } ) );
 
 const main_exe = maek.LINK([...main_objs], 'bin/main');
 

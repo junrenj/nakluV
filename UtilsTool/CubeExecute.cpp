@@ -1,6 +1,6 @@
-#include "RTG.hpp"
+#include "CubeExecute.hpp"
 
-#include "VK.hpp"
+#include "../VK.hpp"
 
 #include <vulkan/vulkan_core.h>
 #if defined(__APPLE__)
@@ -18,143 +18,73 @@
 #include <sstream>
 #include <fstream>
 #include <set>
-#include "Main/Debug/Profile.hpp"
 
-void RTG::Configuration::parse(int argc, char **argv) 
+void CubeExecute::Configuration::parse(int argc, char **argv) 
 {
+	if(argc <= 1)
+	{
+		throw std::runtime_error("require process mode");
+	}
 	for (int argi = 1; argi < argc; ++argi) 
 	{
 		std::string arg = argv[argi];
-		if (arg == "--debug") 
+		if(arg == "--irradiance")
 		{
-			debug = true;
-		} 
-		else if (arg == "--no-debug") 
-		{
-			debug = false;
-		} 
-		else if (arg == "--physical-device") 
-		{
-			if (argi + 1 >= argc) throw std::runtime_error("--physical-device requires a parameter (a device name).");
+			// generate an irradiance texture based on a cubemap
+			ProcessMode = EProcessMode::Cubemap2Irradiance;
+			if (argi + 2 >= argc) 
+			{
+        		throw std::runtime_error("--irradiance require input image path, output image path");
+    		}
+			// Input Path
+    		argi += 1;
+    		InImagePath = argv[argi];
+			// output Path
 			argi += 1;
-			physical_device_name = argv[argi];
-		} 
-		else if (arg == "--drawing-size") 
-		{
-			if (argi + 2 >= argc) throw std::runtime_error("--drawing-size requires two parameters (width and height).");
-			auto conv = [&](std::string const &what) 
+			OutImagePath = argv[argi];
+			if (argi + 1 < argc)
 			{
-				argi += 1;
-				std::string val = argv[argi];
-				for (size_t i = 0; i < val.size(); ++i) 
+				std::string PossibleNumber = argv[argi + 1];
+				size_t Pos;
+				int Value = std::stoi(PossibleNumber, &Pos);
+
+				if (Pos == PossibleNumber.length())
 				{
-					if (val[i] < '0' || val[i] > '9') 
-					{
-						throw std::runtime_error("--drawing-size " + what + " should match [0-9]+, got '" + val + "'.");
-					}
+					IrradianceOutputSize = (uint8_t)Value;
+					argi += 1;
 				}
-				return std::stoul(val);
-			};
-			surface_extent.width = conv("width");
-			surface_extent.height = conv("height");
+			}
 		}
-		else if (arg == "--headless") 
+		else if(arg == "--ggx")
 		{
-			headless = true; 
-		}
-		else if (arg == "--scene") 
-		{
-    		if (argi + 1 >= argc) 
+			// generate a set of ggx texture for roughness
+			ProcessMode = EProcessMode::Cubemap2GGX;
+			if (argi + 2 >= argc) 
 			{
-        		throw std::runtime_error("--scene requires a parameter (path to the scene file).");
+        		throw std::runtime_error("--ggx require input image path, output image path");
     		}
+			// Input Path
     		argi += 1;
-    		FilePath = argv[argi];
+    		InImagePath = argv[argi];
+			// output Path
+			argi += 1;
+			OutImagePath = argv[argi];
 		}
-		else if(arg == "--camera")
+		else if(arg == "--lut")
 		{
-			if (argi + 1 >= argc) 
-			{
-        		throw std::runtime_error("--camera requires a parameter (name of the camera you want to use).");
-    		}
-    		argi += 1;
-    		CameraName = argv[argi];
-		}
-		else if(arg == "--cull")
-		{
-			if (argi + 1 >= argc) 
-			{
-        		throw std::runtime_error("--cull requires a parameter (name of the cull mode you want to use).");
-    		}
-    		argi += 1;
-			const std::string value = argv[argi];
-			if(value == "NONE")
-			{
-				CullMode = ECullingMode::None;
-			}
-			else if(value == "NORMAL")
-			{
-				CullMode = ECullingMode::Normal;
-			}
-		}
-		else if(arg == "--exposure")
-		{
-			if (argi + 1 >= argc) 
-			{
-        		throw std::runtime_error("--exposure requires a parameter (exposure intensity).");
-    		}
-    		argi += 1;
-			try
-			{
-    			ExposureIntensity = std::stof(argv[argi]);
-			}
-			catch(const std::exception& e)
-			{
-				std::cout << "Invalid exposure number" << e.what() << std::endl;
-			}
-		}
-		else if(arg == "--tonemap")
-		{
-			if (argi + 1 >= argc) 
-			{
-        		throw std::runtime_error("--tonemap requires a parameter (tonemapping mode).");
-    		}
-    		argi += 1;
-			const std::string value = argv[argi];
-			if(value == "linear")
-			{
-    			TonemappingMode = ETonemappingMode::Linear;
-			}
-			else if(value == "gamma")
-			{
-				TonemappingMode = ETonemappingMode::Gamma;
-			}
-			else if(value == "reinhard")
-			{
-				TonemappingMode = ETonemappingMode::Reinhard;
-			}
-			else if(value == "aces")
-			{
-				TonemappingMode = ETonemappingMode::ACES;
-			}
-		}
-		else 
-		{
-			throw std::runtime_error("Unrecognized argument '" + arg + "'.");
+			argi += 1;
+			arg = argv[argi];
+			OutImagePath = argv[argi];
+			ProcessMode = EProcessMode::BrdfLUT;
 		}
 	}
 }
 
-void RTG::Configuration::usage(std::function< void(const char *, const char *) > const &callback) {
-	callback("--debug, --no-debug", "Turn on/off debug and validation layers.");
-	callback("--physical-device <name>", "Run on the named physical device (guesses, otherwise).");
-	callback("--drawing-size <w> <h>", "Set the size of the surface to draw to.");
-	callback("--headless", "Don't create a window; read events from stdin.");
-	callback("--scene FILEPATH", "replace FILEPATH with your filepath ex: external/s72Loader/example_scene/example.s72");
-	callback("--camera NAME", "replace NAME with camera's name you want to use ex: Camera001");
-	callback("--cull CULLMODE", "replace CULLMODE with mode you want to use, for now only support: NONE, NORMAL");
-	callback("--exposure E", "replace E with exposure intensity you want to use");
-	callback("--tonemap MODE", "replace MODE with tonemap mode you want to use, for now only support: linear, gamma, reinhard, aces");
+void CubeExecute::Configuration::usage(std::function< void(const char *, const char *) > const &callback) 
+{
+	callback("--irradiance", "generate an irradiance texture based on a cubemap ex: --irradiance input.png outputFileName");
+	callback("--ggx", "generate a set of ggx texture for roughness ex: --ggx input.png outputFileName");
+	callback("--lut", "generate a set of ggx texture for lut ex: --lut outputFileName");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
@@ -186,7 +116,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 	return VK_FALSE;
 }
 
-RTG::RTG(Configuration const &configuration_) : helpers(*this) {
+CubeExecute::CubeExecute(Configuration const &configuration_) : helpers(*this) {
 
 	//copy input configuration:
 	configuration = configuration_;
@@ -207,13 +137,6 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 		InstanceExtensions.emplace_back(VK_KHR_SURFACE_EXTENSION_NAME);
 		InstanceExtensions.emplace_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
 		#endif
-		
-		// add extensions and layers for debugging:
-		if(configuration.debug)
-		{
-			InstanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-			InstanceLayers.emplace_back("VK_LAYER_KHRONOS_validation");
-		}
 
 		if(!configuration.headless)
 		{
@@ -259,7 +182,7 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 		VkInstanceCreateInfo CreateInfo
 		{
 			.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-			.pNext = configuration.debug ? &DebugMessengerCreateInfo : nullptr,
+			.pNext = nullptr,
 			.flags = InstanceFlags,
 			.pApplicationInfo = &configuration.application_info,
 			.enabledLayerCount = uint32_t(InstanceLayers.size()),
@@ -268,17 +191,6 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 			.ppEnabledExtensionNames = InstanceExtensions.data()
 		};
 		VK( vkCreateInstance(&CreateInfo, nullptr, &instance));
-
-		// Create debug messenger
-		if(configuration.debug)
-		{
-			PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-			if (!vkCreateDebugUtilsMessengerEXT) 
-			{
-				throw std::runtime_error("Failed to lookup debug utils create fn.");
-			}
-			VK( vkCreateDebugUtilsMessengerEXT(instance, &DebugMessengerCreateInfo, nullptr, &debug_messenger) );
-		}
 	}
 	
 
@@ -576,7 +488,7 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 	//create initial swapchain:
 	recreate_swapchain();
 
-	//create workspace resources:
+	// create workspace resources:
 	workspaces.resize(configuration.workspaces);
 	for (auto &workspace : workspaces) 
 	{
@@ -601,15 +513,13 @@ RTG::RTG(Configuration const &configuration_) : helpers(*this) {
 			VK( vkCreateSemaphore(device, &CreateInfo, nullptr, &workspace.image_available));
 		}
 	}
-
-
 }
 
-RTG::~RTG() {
+CubeExecute::~CubeExecute() {
 	//don't destroy until device is idle:
 	if (device != VK_NULL_HANDLE) {
 		if (VkResult result = vkDeviceWaitIdle(device); result != VK_SUCCESS) {
-			std::cerr << "Failed to vkDeviceWaitIdle in RTG::~RTG [" << string_VkResult(result) << "]; continuing anyway." << std::endl;
+			std::cerr << "Failed to vkDeviceWaitIdle in CubeExecute::~CubeExecute [" << string_VkResult(result) << "]; continuing anyway." << std::endl;
 		}
 	}
 
@@ -653,16 +563,6 @@ RTG::~RTG() {
 		window = nullptr;
 	}
 
-	if(debug_messenger != VK_NULL_HANDLE)
-	{
-		PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-		if(vkDestroyDebugUtilsMessengerEXT)
-		{
-			vkDestroyDebugUtilsMessengerEXT(instance, debug_messenger, nullptr);
-			debug_messenger = VK_NULL_HANDLE;
-		}
-	}
-
 	if(instance != VK_NULL_HANDLE)
 	{
 		vkDestroyInstance(instance, nullptr);
@@ -671,7 +571,7 @@ RTG::~RTG() {
 
 }
 
-void RTG::recreate_swapchain() 
+void CubeExecute::recreate_swapchain() 
 {
 	// clean up swapchain if it already exists
 	if(!swapchain_images.empty())
@@ -729,7 +629,7 @@ void RTG::recreate_swapchain()
 				vkuFormatTexelBlockSize(surface_format.format) / vkuFormatTexelsPerBlock(surface_format.format),
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				Helpers::Mapped
+				CubeHelpers::Mapped
 			);
 
 			// Create and record copy command:
@@ -906,13 +806,9 @@ void RTG::recreate_swapchain()
 			VK( vkCreateSemaphore(device, &CreateInfo, nullptr, &swapchain_image_dones[i]));
 		}
 	}
-	if (configuration.debug) 
-	{
-		std::cout << "Swapchain is now " << swapchain_images.size() << " images of size " << swapchain_extent.width << "x" << swapchain_extent.height << "." << std::endl;
-	}
 }
 
-void RTG::destroy_swapchain() 
+void CubeExecute::destroy_swapchain() 
 {
 	VK( vkDeviceWaitIdle(device));	// wait for any rendering to old swapchain to finish
 
@@ -964,7 +860,7 @@ void RTG::destroy_swapchain()
 
 }
 
-void RTG::HeadlessSwapchainImage::Save() const 
+void CubeExecute::HeadlessSwapchainImage::Save() const 
 {
 	if (SaveTo == "") return;
 
@@ -1119,7 +1015,7 @@ static void KeyCallback(GLFWwindow *window, int Key, int Scanmode, int action, i
 	EventQueue->emplace_back(Event);
 }
 
-void RTG::run(Application &application) 
+void CubeExecute::run(Application &application) 
 {
 	auto OnSwapchain = [&,this]()
 	{
@@ -1404,7 +1300,4 @@ retry:
 		glfwSetScrollCallback(window, nullptr);
 		glfwSetKeyCallback(window, nullptr);
 	}
-
-
-
 }

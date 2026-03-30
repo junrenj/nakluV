@@ -1,8 +1,7 @@
 
 #include "RTG.hpp"
 
-#include "Tutorial.hpp"
-#include "A1/AssignmentOne.hpp"
+#include "Main/RenderPipelines.hpp"
 
 #include <iostream>
 
@@ -42,7 +41,7 @@ int main(int argc, char **argv) {
 		RTG rtg(configuration);
 
 		//initializes global (whole-life-of-application) resources:
-		UAssignmentOne application(rtg);
+		URenderPipelines application(rtg);
 
 		//main loop -- handles events, renders frames, etc:
 		rtg.run(application);
