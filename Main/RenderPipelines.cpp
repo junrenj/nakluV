@@ -16,26 +16,6 @@
 #include "glm/glm/gtc/type_ptr.hpp"
 #include "Debug/Profile.hpp"
 
-static const vec3 dirs[6] = 
-{
-    vec3( 1, 0, 0),
-    vec3(-1, 0, 0),
-    vec3( 0, 1, 0),
-    vec3( 0,-1, 0),
-    vec3( 0, 0, 1),
-    vec3( 0, 0,-1),
-};
-
-static const vec3 ups[6] = 
-{
-    vec3(0,-1, 0),
-    vec3(0,-1, 0),
-    vec3(0, 0, 1),
-    vec3(0, 0,-1),
-    vec3(0,-1, 0),
-    vec3(0,-1, 0),
-};
-
 URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 {
 	// load the scene and debug scene
