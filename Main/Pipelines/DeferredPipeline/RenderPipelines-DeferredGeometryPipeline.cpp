@@ -1,26 +1,34 @@
-#include "RenderPipelines-ShadowPipeline.hpp"
-#include "../RenderPipelines.hpp"
-
-#include "../../Helpers.hpp"
-#include "../../VK.hpp"
+#include "RenderPipelines-DeferredGeometryPipeline.hpp"
 
 static uint32_t vert_code[] =
-#include "../../spv/Main/Pipelines/shadow.vert.inl"
+#include "../../spv/Main/Pipelines/deferred-geometry.vert.inl"
 ;
 
 static uint32_t frag_code[] =
-#include "../../spv/Main/Pipelines/shadow.frag.inl"
+#include "../../spv/Main/Pipelines/deferred-geometry.frag.inl"
 ;
 
-void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass, VkDescriptorSetLayout TransformsLayout) 
+void FDeferredGeometryPipeline::Create(
+    RTG &rtg, VkRenderPass render_pass, 
+    uint32_t subpass, 
+    VkDescriptorSetLayout CameraLayout,
+    VkDescriptorSetLayout WorldLayout,
+    VkDescriptorSetLayout TransformsLayout,
+    VkDescriptorSetLayout TextureLayout) 
 {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
-    Set0_Transform = TransformsLayout;
+    Set0_Camera = CameraLayout;
+    Set1_World = WorldLayout;
+    Set2_Transforms = TransformsLayout;
+    Set3_Texture = TextureLayout;
     {
         std::array<VkDescriptorSetLayout, 1> layouts 
         {
-            Set0_Transform,
+            Set0_Camera,
+            Set1_World,
+            Set2_Transforms,
+            Set3_Texture,
         };
 
         VkPushConstantRange pushRange
@@ -118,12 +126,58 @@ void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpas
             .stencilTestEnable = VK_FALSE,
         };
 
+        std::array<VkPipelineColorBlendAttachmentState, 3> blend_attachments
+        {
+            VkPipelineColorBlendAttachmentState{
+                .blendEnable = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp = VK_BLEND_OP_ADD,
+                .colorWriteMask =
+                    VK_COLOR_COMPONENT_R_BIT |
+                    VK_COLOR_COMPONENT_G_BIT |
+                    VK_COLOR_COMPONENT_B_BIT |
+                    VK_COLOR_COMPONENT_A_BIT,
+            },
+            VkPipelineColorBlendAttachmentState{
+                .blendEnable = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp = VK_BLEND_OP_ADD,
+                .colorWriteMask =
+                    VK_COLOR_COMPONENT_R_BIT |
+                    VK_COLOR_COMPONENT_G_BIT |
+                    VK_COLOR_COMPONENT_B_BIT |
+                    VK_COLOR_COMPONENT_A_BIT,
+            },
+            VkPipelineColorBlendAttachmentState{
+                .blendEnable = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp = VK_BLEND_OP_ADD,
+                .colorWriteMask =
+                    VK_COLOR_COMPONENT_R_BIT |
+                    VK_COLOR_COMPONENT_G_BIT |
+                    VK_COLOR_COMPONENT_B_BIT |
+                    VK_COLOR_COMPONENT_A_BIT,
+            },
+        };
+
         VkPipelineColorBlendStateCreateInfo color_blend_state 
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             .logicOpEnable = VK_FALSE,
-            .attachmentCount = 0,
-            .pAttachments = nullptr,
+            .attachmentCount = uint32_t(blend_attachments.size()),
+            .pAttachments = blend_attachments.data(),
             .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
         };
 
@@ -152,7 +206,7 @@ void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpas
     vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 
-void FShadowPipeline::Destroy(RTG &rtg) 
+void FDeferredGeometryPipeline::Destroy(RTG &rtg) 
 {
     if (Handle != VK_NULL_HANDLE) 
     {
@@ -165,6 +219,4 @@ void FShadowPipeline::Destroy(RTG &rtg)
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
         Layout = VK_NULL_HANDLE;
     }
-
-    Set0_Transform = VK_NULL_HANDLE;
 }

@@ -10,7 +10,6 @@
 #include <iostream>
 #include "Render/RenderScene.hpp"
 #include "Render/RenderExtractor.hpp"
-#include "Render/Shadow.hpp"
 #include "Animation/AnimationPlayer.hpp"
 #include "../mat4.hpp"
 #include "glm/glm/gtc/type_ptr.hpp"
@@ -153,7 +152,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 			.subpassCount = 1,
 			.pSubpasses = &Subpass,
 		};
-		VK(vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &ShadowPass));
+		VK(vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &ShadowData.ShadowPass));
 	}
 
     // Create Command pool
@@ -199,7 +198,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 
 	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
-	ShadowPipeline.Create(rtg, ShadowPass, 0, LambertPipeline.Set2_Transforms);
+	ShadowPipeline.Create(rtg, ShadowData.ShadowPass, 0, LambertPipeline.Set2_Transforms);
 
     workspaces.resize(rtg.workspaces.size());
 	for (FWorkspace &workspace : workspaces)
@@ -633,7 +632,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 			.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
 			.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 		};
-		VK(vkCreateSampler(rtg.device, &CreateInfo, nullptr, &ShadowSamplerPCF));
+		VK(vkCreateSampler(rtg.device, &CreateInfo, nullptr, &ShadowData.ShadowSamplerPCF));
 	}
 
 	// dispatch shadow map
@@ -655,7 +654,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 		VkDescriptorPoolSize PoolSize
 		{
 			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.descriptorCount = MAX_SPOT_SHADOWS,
+			.descriptorCount = ShadowData.MAX_SPOT_SHADOWS,
 		};
 
 		VkDescriptorPoolCreateInfo CreateInfo
@@ -682,19 +681,20 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 	}
 	// write shadow map into descriptor
 	{
+		const std::vector<FShadowResource>& SpotLightShadows = ShadowData.SpotLightShadows;
 		if(SpotLightShadows.empty())
 		{
 			return;
 		}
 		
-		std::vector<VkDescriptorImageInfo> Infos(MAX_SPOT_SHADOWS);
-		for (uint32_t i = 0; i < MAX_SPOT_SHADOWS; ++i)
+		std::vector<VkDescriptorImageInfo> Infos(ShadowData.MAX_SPOT_SHADOWS);
+		for (uint32_t i = 0; i < ShadowData.MAX_SPOT_SHADOWS; ++i)
 		{
 			if (i < SpotLightShadows.size())
 			{
 				Infos[i] = VkDescriptorImageInfo
 				{
-					.sampler = ShadowSamplerPCF,
+					.sampler = ShadowData.ShadowSamplerPCF,
 					.imageView = SpotLightShadows[i].ImageView,
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 				};
@@ -703,7 +703,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 			{
 				Infos[i] = VkDescriptorImageInfo
 				{
-					.sampler = ShadowSamplerPCF,
+					.sampler = ShadowData.ShadowSamplerPCF,
 					.imageView = SpotLightShadows[0].ImageView,
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 				};
@@ -716,7 +716,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 			.dstSet = ShadowDescriptors,
 			.dstBinding = 0,
 			.dstArrayElement = 0,
-			.descriptorCount = MAX_SPOT_SHADOWS,
+			.descriptorCount = ShadowData.MAX_SPOT_SHADOWS,
 			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 			.pImageInfo = Infos.data(),
 		};
@@ -783,12 +783,15 @@ URenderPipelines::~URenderPipelines()
 	{
 		DestroyFramebuffers();
 	}
+
+	VkSampler& ShadowSamplerPCF = ShadowData.ShadowSamplerPCF;
 	if (ShadowSamplerPCF != VK_NULL_HANDLE) 
 	{
     	vkDestroySampler(rtg.device, ShadowSamplerPCF, nullptr);
     	ShadowSamplerPCF = VK_NULL_HANDLE;
 	}
 
+	std::vector<FShadowResource>& SpotLightShadows = ShadowData.SpotLightShadows;
 	for (auto& shadow : SpotLightShadows) 
 	{
 		if (shadow.Framebuffer != VK_NULL_HANDLE) 
@@ -892,6 +895,7 @@ URenderPipelines::~URenderPipelines()
 		RenderPass = VK_NULL_HANDLE;
 	}
 
+	VkRenderPass& ShadowPass = ShadowData.ShadowPass;
 	if(ShadowPass != VK_NULL_HANDLE)
 	{
 		vkDestroyRenderPass(rtg.device, ShadowPass, nullptr);
@@ -1924,6 +1928,7 @@ void URenderPipelines::RenderLambertPipeline(FWorkspace &workspace)
 
 void URenderPipelines::RenderShadowMaps(FWorkspace& Workspace)
 {
+	const std::vector<FShadowResource>& SpotLightShadows = ShadowData.SpotLightShadows;
 	if(SpotLightShadows.empty() || Scene.MeshProxyInstances.empty())
 	{
 		return;
@@ -1951,7 +1956,7 @@ void URenderPipelines::RenderShadowMaps(FWorkspace& Workspace)
         VkRenderPassBeginInfo BeginInfo
         {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .renderPass = ShadowPass,
+            .renderPass = ShadowData.ShadowPass,
             .framebuffer = Shadow.Framebuffer,
             .renderArea = {
                 .offset = {0, 0},
@@ -2031,6 +2036,7 @@ void URenderPipelines::RenderShadowMaps(FWorkspace& Workspace)
 
 void URenderPipelines::RenderCubeShadowMaps(FWorkspace& Workspace)
 {
+	const std::vector<FCubeShadowResource>& SphereLightShadows = ShadowData.SphereLightShadows;
 	if(SphereLightShadows.empty() || Scene.MeshProxyInstances.empty())
 	{
 		return;
@@ -2048,7 +2054,7 @@ void URenderPipelines::RenderCubeShadowMaps(FWorkspace& Workspace)
             VkRenderPassBeginInfo BeginInfo
 			{
                 .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                .renderPass = ShadowPass,
+                .renderPass = ShadowData.ShadowPass,
                 .framebuffer = Shadow.FaceFramebuffers[FaceIdx],
                 .renderArea = 
 				{
@@ -2183,7 +2189,7 @@ void URenderPipelines::GenerateShadowRes(const ULight* Light)
 	VkFramebufferCreateInfo FrameBufferInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		.renderPass = ShadowPass,
+		.renderPass = ShadowData.ShadowPass,
 		.attachmentCount = 1,
 		.pAttachments = &ShadowRes.ImageView,
 		.width = ShadowResolution,
@@ -2192,7 +2198,7 @@ void URenderPipelines::GenerateShadowRes(const ULight* Light)
 	};
 	VK(vkCreateFramebuffer(rtg.device, &FrameBufferInfo, nullptr, &ShadowRes.Framebuffer));
 
-	SpotLightShadows.push_back(std::move(ShadowRes));
+	ShadowData.SpotLightShadows.push_back(std::move(ShadowRes));
 }
 
 void URenderPipelines::GenerateCubeShadowRes(const ULight* Light)
@@ -2251,7 +2257,7 @@ void URenderPipelines::GenerateCubeShadowRes(const ULight* Light)
 		VkFramebufferCreateInfo FrameBufferInfo
 		{
 			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			.renderPass = ShadowPass,
+			.renderPass = ShadowData.ShadowPass,
 			.attachmentCount = 1,
 			.pAttachments = &CubeShadowRes.FaceViews[i],
 			.width = ShadowResolution,
@@ -2261,6 +2267,6 @@ void URenderPipelines::GenerateCubeShadowRes(const ULight* Light)
 		VK(vkCreateFramebuffer(rtg.device, &FrameBufferInfo, nullptr, &CubeShadowRes.FaceFramebuffers[i]));
 	}
 
-	SphereLightShadows.push_back(std::move(CubeShadowRes));
+	ShadowData.SphereLightShadows.push_back(std::move(CubeShadowRes));
 }
 //~END Shadow

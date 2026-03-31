@@ -3,6 +3,8 @@
 #include "../RTG.hpp"
 #include "Render/RenderScene.hpp"
 #include "Debug/DebugView.hpp"
+#include "Pipelines/RenderPipelines-ShadowPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-DeferredGeometryPipeline.hpp"
 
 struct FShadowResource;
 struct FCubeShadowResource;
@@ -24,18 +26,29 @@ struct URenderPipelines : RTG::Application
 	//Render passes describe how pipelines write to images:
 	VkRenderPass RenderPass = VK_NULL_HANDLE;
 
-	//Render pass for shadowmap
-	const uint32_t MAX_SPOT_SHADOWS = 64;
-	std::vector<FShadowResource> SpotLightShadows;
-	std::vector<FCubeShadowResource> SphereLightShadows;
-	VkRenderPass ShadowPass;
+//~BEGIN Shadow
+
+	// data set
+	FShadowDataSet ShadowData;
+	// pipeline
+	FShadowPipeline ShadowPipeline;
+
+//~END Shadow
+
+//~BEGIN GBuffer Pass
+	
+	// data set
+	FGBufferDataSet GBufferData;
+	// pipeline 
+	FDeferredGeometryPipeline DeferredGeometryPipeline;
+
+//~END GBuffer Pass
 
 	// Sampler
 	VkSampler TextureSamplerNearest = VK_NULL_HANDLE;
 	VkSampler TextureSamplerLinear = VK_NULL_HANDLE;
-	VkSampler ShadowSamplerPCF;
 
-
+//~BEGIN Forward Pass
     // Background Pipeline
     struct FBackgroundPipeline
     {
@@ -121,22 +134,7 @@ struct URenderPipelines : RTG::Application
 		
 		const uint32_t MAX_SPOT_SHADOWS = 32;	//TODO: replace it
 	}LambertPipeline;
-
-	// Shadow map
-	struct FShadowPipeline
-	{
-		VkDescriptorSetLayout Set0_Transform = VK_NULL_HANDLE;
-		VkPipelineLayout Layout = VK_NULL_HANDLE;
-		struct FPush
-		{
-			mat4 SHADOW_CLIP_FROM_WORLD;
-		};
-
-		VkPipeline Handle = VK_NULL_HANDLE;
-
-		void Create(RTG &, VkRenderPass RenderPass, uint32_t Subpass, VkDescriptorSetLayout TransformsLayout);
-		void Destroy(RTG &);
-	}ShadowPipeline;
+//~END Forward Pass
 	
 	VkCommandPool CommandPool = VK_NULL_HANDLE;
 	VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
