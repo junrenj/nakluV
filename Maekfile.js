@@ -89,6 +89,12 @@ const main_lambert_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-LambertPipeline.cpp', undefined, { depends:[...main_lambert_shaders] } ) );
 
+const main_deferred_geometry_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-geometry.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-geometry.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-DeferredGeometryPipeline.cpp', undefined, { depends:[...main_deferred_geometry_shaders] } ) );
+
 // A3 - Shadow
 const main_shadow_shaders = [
 	maek.GLSLC('Main/Pipelines/shadow.vert'),

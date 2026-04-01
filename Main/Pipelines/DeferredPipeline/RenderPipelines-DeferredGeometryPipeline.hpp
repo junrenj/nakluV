@@ -3,6 +3,7 @@
 #include <vector>
 #include "../../../Helpers.hpp"
 
+struct RTG;
 
 struct FGBufferDataSet
 {

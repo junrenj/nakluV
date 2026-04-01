@@ -1,11 +1,16 @@
 #include "RenderPipelines-DeferredGeometryPipeline.hpp"
 
+#include "../../RenderPipelines.hpp"
+
+#include "../../../RTG.hpp"
+#include "../../../VK.hpp"
+
 static uint32_t vert_code[] =
-#include "../../spv/Main/Pipelines/deferred-geometry.vert.inl"
+#include "../../../spv/Main/Pipelines/DeferredPipeline/deferred-geometry.vert.inl"
 ;
 
 static uint32_t frag_code[] =
-#include "../../spv/Main/Pipelines/deferred-geometry.frag.inl"
+#include "../../../spv/Main/Pipelines/DeferredPipeline/deferred-geometry.frag.inl"
 ;
 
 void FDeferredGeometryPipeline::Create(
@@ -23,7 +28,7 @@ void FDeferredGeometryPipeline::Create(
     Set2_Transforms = TransformsLayout;
     Set3_Texture = TextureLayout;
     {
-        std::array<VkDescriptorSetLayout, 1> layouts 
+        std::array<VkDescriptorSetLayout, 4> layouts 
         {
             Set0_Camera,
             Set1_World,
@@ -33,7 +38,7 @@ void FDeferredGeometryPipeline::Create(
 
         VkPushConstantRange pushRange
         {
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .offset = 0,
             .size = sizeof(FPush),
         };
@@ -102,10 +107,7 @@ void FDeferredGeometryPipeline::Create(
             .polygonMode = VK_POLYGON_MODE_FILL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
             .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-            .depthBiasEnable = VK_TRUE,
-            .depthBiasConstantFactor = 1.25f,
-            .depthBiasClamp = 0.0f,
-            .depthBiasSlopeFactor = 1.75f,
+            .depthBiasEnable = VK_FALSE,
             .lineWidth = 1.0f,
         };
 
@@ -125,7 +127,7 @@ void FDeferredGeometryPipeline::Create(
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
         };
-
+        // 3 GBuffer output
         std::array<VkPipelineColorBlendAttachmentState, 3> blend_attachments
         {
             VkPipelineColorBlendAttachmentState{
