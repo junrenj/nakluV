@@ -35,15 +35,6 @@ struct URenderPipelines : RTG::Application
 
 //~END Shadow
 
-//~BEGIN GBuffer Pass
-	
-	// data set
-	FGBufferDataSet GBufferData;
-	// pipeline 
-	FDeferredGeometryPipeline DeferredGeometryPipeline;
-
-//~END GBuffer Pass
-
 	// Sampler
 	VkSampler TextureSamplerNearest = VK_NULL_HANDLE;
 	VkSampler TextureSamplerLinear = VK_NULL_HANDLE;
@@ -273,6 +264,20 @@ struct URenderPipelines : RTG::Application
 	// Shadow
 	void GenerateShadowRes(const ULight* Light);
 	void GenerateCubeShadowRes(const ULight* Light);
+
+	
+//~BEGIN GBuffer Pass
+	
+	// data set
+	FGBufferDataSet GBufferData;
+	// pipeline 
+	FDeferredGeometryPipeline DeferredGeometryPipeline;
+	// function
+	void CreateGBufferPass();
+	void CreateGBufferTargets(VkExtent2D Extent, size_t FramebufferCount);
+	void RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_t FramebufferIndex);
+
+//~END GBuffer Pass
 
 	// for debug
 	UDebugScene DebugScene;

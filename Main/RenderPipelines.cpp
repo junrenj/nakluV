@@ -196,9 +196,12 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 		VK( vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &DescriptorPool));
 	}
 
+	CreateGBufferPass();
+
 	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
 	ShadowPipeline.Create(rtg, ShadowData.ShadowPass, 0, LambertPipeline.Set2_Transforms);
+	DeferredGeometryPipeline.Create(rtg, GBufferData.GBufferPass, 0, LambertPipeline.Set0_Camera, LambertPipeline.Set1_World, LambertPipeline.Set2_Transforms, LambertPipeline.Set3_TEXTURE);
 
     workspaces.resize(rtg.workspaces.size());
 	for (FWorkspace &workspace : workspaces)
@@ -965,6 +968,8 @@ void URenderPipelines::on_swapchain(RTG &rtg_, RTG::SwapchainEvent const &swapch
 
 		VK( vkCreateFramebuffer(rtg.device, &CreateInfo, nullptr, &SwapchainFramebuffer[i]));
 	}
+
+	CreateGBufferTargets(swapchain.extent, swapchain.image_views.size());
 }
 
 void URenderPipelines::DestroyFramebuffers()
@@ -1303,6 +1308,9 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 	// Shadow map render
 	RenderShadowMaps(workspace);
+
+	// Render G-Buffer
+	RenderDeferredGeometryPass(workspace, render_params.image_index);
 
 	// Render Pass
 	{
@@ -2270,3 +2278,368 @@ void URenderPipelines::GenerateCubeShadowRes(const ULight* Light)
 	ShadowData.SphereLightShadows.push_back(std::move(CubeShadowRes));
 }
 //~END Shadow
+
+//~BEGIN GBuffer
+void URenderPipelines::CreateGBufferPass()
+{
+	std::array<VkAttachmentDescription, 4> Attachments
+	{
+		VkAttachmentDescription
+		{
+			.format = GBufferData.GBuffer0Format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		},
+		VkAttachmentDescription
+		{
+			.format = GBufferData.GBuffer1Format,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		},
+		VkAttachmentDescription{
+            .format = GBufferData.GBuffer2Format,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+		VkAttachmentDescription{
+            .format = DepthFormat,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        }
+	};
+
+	std::array<VkAttachmentReference, 3> ColorRefs
+	{
+		VkAttachmentReference
+		{ 
+			.attachment = 0, 
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+		},
+        VkAttachmentReference
+		{ 
+			.attachment = 1, 
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+		},
+        VkAttachmentReference
+		{ 
+			.attachment = 2, 
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL 
+		},
+	};
+
+	VkAttachmentReference DepthRef
+    {
+        .attachment = 3,
+        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
+
+	VkSubpassDescription Subpass
+    {
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = uint32_t(ColorRefs.size()),
+        .pColorAttachments = ColorRefs.data(),
+        .pDepthStencilAttachment = &DepthRef,
+    };
+
+	std::array<VkSubpassDependency, 2> Dependencies
+    {
+        VkSubpassDependency{
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        },
+        VkSubpassDependency{
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        }
+    };
+
+    VkRenderPassCreateInfo CreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = uint32_t(Attachments.size()),
+        .pAttachments = Attachments.data(),
+        .subpassCount = 1,
+        .pSubpasses = &Subpass,
+        .dependencyCount = uint32_t(Dependencies.size()),
+        .pDependencies = Dependencies.data(),
+    };
+
+	VK(vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &GBufferData.GBufferPass));
+}
+
+void URenderPipelines::CreateGBufferTargets(VkExtent2D Extent, size_t FramebufferCount)
+{
+	for (auto framebuffer : GBufferData.GBufferFramebuffers)
+    {
+        if (framebuffer != VK_NULL_HANDLE)
+		{
+			vkDestroyFramebuffer(rtg.device, framebuffer, nullptr);
+		}
+    }
+    GBufferData.GBufferFramebuffers.clear();
+
+    for (auto view : GBufferData.GBufferViews)
+    {
+        if (view != VK_NULL_HANDLE)
+		{
+			vkDestroyImageView(rtg.device, view, nullptr);
+		}
+    }
+    GBufferData.GBufferViews.clear();
+
+    for (auto &img : GBufferData.GBufferImages)
+    {
+        if (img.handle != VK_NULL_HANDLE)
+		{
+			rtg.helpers.destroy_image(std::move(img));
+		}
+    }
+    GBufferData.GBufferImages.clear();
+
+    if (GBufferData.DepthView != VK_NULL_HANDLE)
+    {
+        vkDestroyImageView(rtg.device, GBufferData.DepthView, nullptr);
+        GBufferData.DepthView = VK_NULL_HANDLE;
+    }
+    if (GBufferData.DepthImage.handle != VK_NULL_HANDLE)
+    {
+        rtg.helpers.destroy_image(std::move(GBufferData.DepthImage));
+    }
+
+    std::array<VkFormat, 3> Formats
+    {
+        GBufferData.GBuffer0Format,
+        GBufferData.GBuffer1Format,
+        GBufferData.GBuffer2Format
+    };
+
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+        GBufferData.GBufferImages.emplace_back
+		(
+            rtg.helpers.create_image
+			(
+                Extent,
+                Formats[i],
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                Helpers::Unmapped
+            )
+        );
+
+        VkImageViewCreateInfo ViewInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = GBufferData.GBufferImages.back().handle,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = Formats[i],
+            .subresourceRange
+			{
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        };
+
+        VkImageView view = VK_NULL_HANDLE;
+        VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &view));
+        GBufferData.GBufferViews.push_back(view);
+    }
+
+    GBufferData.DepthImage = rtg.helpers.create_image
+	(
+        Extent,
+        DepthFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        Helpers::Unmapped
+    );
+
+    VkImageViewCreateInfo DepthViewInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = GBufferData.DepthImage.handle,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = DepthFormat,
+        .subresourceRange{
+            .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
+    VK(vkCreateImageView(rtg.device, &DepthViewInfo, nullptr, &GBufferData.DepthView));
+
+    GBufferData.GBufferFramebuffers.resize(FramebufferCount, VK_NULL_HANDLE);
+
+    for (size_t i = 0; i < FramebufferCount; ++i)
+    {
+        std::array<VkImageView, 4> Attachments
+        {
+            GBufferData.GBufferViews[0],
+            GBufferData.GBufferViews[1],
+            GBufferData.GBufferViews[2],
+            GBufferData.DepthView,
+        };
+
+        VkFramebufferCreateInfo FBInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = GBufferData.GBufferPass,
+            .attachmentCount = uint32_t(Attachments.size()),
+            .pAttachments = Attachments.data(),
+            .width = Extent.width,
+            .height = Extent.height,
+            .layers = 1,
+        };
+
+        VK(vkCreateFramebuffer(rtg.device, &FBInfo, nullptr, &GBufferData.GBufferFramebuffers[i]));
+    }
+}
+
+void URenderPipelines::RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_t FramebufferIndex)
+{
+	if (Scene.MeshProxyInstances.empty())
+	{
+		return;
+	}
+
+	std::array<VkClearValue, 4> ClearValues
+    {
+        VkClearValue{ .color{ .float32{0.5f, 0.5f, 1.0f, 1.0f} } }, // normal default
+        VkClearValue{ .color{ .float32{0.0f, 0.0f, 0.0f, 0.0f} } }, // albedo/met
+        VkClearValue{ .color{ .float32{0.0f, 0.0f, 0.0f, 0.0f} } }, // pos/type
+        VkClearValue{ .depthStencil{ .depth = 1.0f, .stencil = 0 } }
+    };
+
+	VkRenderPassBeginInfo BeginInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = GBufferData.GBufferPass,
+        .framebuffer = GBufferData.GBufferFramebuffers[FramebufferIndex],
+        .renderArea{
+            .offset = {0, 0},
+            .extent = rtg.swapchain_extent,
+        },
+        .clearValueCount = uint32_t(ClearValues.size()),
+        .pClearValues = ClearValues.data(),
+    };
+
+	vkCmdBeginRenderPass(Workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    ViewportPillarBoxing(Workspace);
+
+    vkCmdBindPipeline(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DeferredGeometryPipeline.Handle);
+
+    {
+        std::array<VkBuffer, 1> VertexBuffers{ ObjectVertices.handle };
+        std::array<VkDeviceSize, 1> Offsets{ 0 };
+        vkCmdBindVertexBuffers(Workspace.command_buffer, 0, 1, VertexBuffers.data(), Offsets.data());
+    }
+
+    {
+        std::array<VkDescriptorSet, 3> DescriptorSets
+        {
+            Workspace.CameraDescriptors,
+            Workspace.WorldDescriptors,
+            Workspace.TransformDescriptors,
+        };
+
+        vkCmdBindDescriptorSets
+		(
+            Workspace.command_buffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            DeferredGeometryPipeline.Layout,
+            0,
+            uint32_t(DescriptorSets.size()),
+            DescriptorSets.data(),
+            0, nullptr
+        );
+    }
+
+    const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
+    for (uint32_t i = 0; i < ProxyList.size(); ++i)
+    {
+        const FMeshRenderProxy* Proxy = ProxyList[i];
+        if (!Proxy->bCanSee)
+		{
+			continue;
+		}
+		
+        const FMaterial* Material = Scene.Materials[Proxy->MaterialIdx];
+        FDeferredGeometryPipeline::FPush Push
+        {
+            .MaterialType = int(Material->Type),
+            .Padding0 = 0.0f,
+            .Padding1 = 0.0f,
+            .Padding2 = 0.0f,
+        };
+
+        vkCmdPushConstants
+		(
+            Workspace.command_buffer,
+            DeferredGeometryPipeline.Layout,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(Push),
+            &Push
+        );
+
+        vkCmdBindDescriptorSets
+		(
+            Workspace.command_buffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            DeferredGeometryPipeline.Layout,
+            3,
+            1,
+            &MaterialDescriptors[Proxy->MaterialIdx],
+            0,
+            nullptr
+        );
+
+        vkCmdDraw
+		(
+            Workspace.command_buffer,
+            Proxy->VertexNum,
+            1,
+            Proxy->FirstVertexIdx,
+            i
+        );
+    }
+
+    vkCmdEndRenderPass(Workspace.command_buffer);
+}
+//~END GBuffer

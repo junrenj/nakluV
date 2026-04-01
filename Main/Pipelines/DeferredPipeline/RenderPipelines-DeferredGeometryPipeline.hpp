@@ -10,10 +10,19 @@ struct FGBufferDataSet
     // 0. render pass
 	VkRenderPass GBufferPass;
 
-    // 1. data set
+    // 1. format for each geometry buffer
+    VkFormat GBuffer0Format = VK_FORMAT_R16G16B16A16_SFLOAT; // normal + roughness
+    VkFormat GBuffer1Format = VK_FORMAT_R8G8B8A8_UNORM;      // albedo + metalness
+    VkFormat GBuffer2Format = VK_FORMAT_R16G16B16A16_SFLOAT; // worldPos + materialType
+
+    // 2. data set
     std::vector<Helpers::AllocatedImage> GBufferImages;
     std::vector<VkImageView> GBufferViews;
     std::vector<VkFramebuffer> GBufferFramebuffers;
+
+    // 3. depth
+    Helpers::AllocatedImage DepthImage;
+    VkImageView DepthView = VK_NULL_HANDLE;
 };
 
 struct FDeferredGeometryPipeline
@@ -35,7 +44,9 @@ struct FDeferredGeometryPipeline
         float Padding2;
     };
 
-    void Create(RTG &, 
+    void Create
+    (
+        RTG &, 
         VkRenderPass RenderPass, 
         uint32_t subpass,
         VkDescriptorSetLayout CameraLayout,
