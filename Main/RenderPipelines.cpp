@@ -195,6 +195,43 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 
 		VK( vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &DescriptorPool));
 	}
+	// Debug Geometry Buffer
+	{
+		VkDescriptorPoolSize PoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 3,
+		};
+
+		VkDescriptorPoolCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = 1,
+			.poolSizeCount = 1,
+			.pPoolSizes = &PoolSize,
+		};
+
+		VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &GBufferDebugDescriptorPool));
+	}
+	// Deferred Lighting
+	{
+		VkDescriptorPoolSize PoolSize
+		{
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 3,
+		};
+
+		VkDescriptorPoolCreateInfo CreateInfo
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = 1,
+			.poolSizeCount = 1,
+			.pPoolSizes = &PoolSize,
+		};
+
+		VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &DeferredLightingDescriptorPool));
+	}
+	
 
 	CreateGBufferPass();
 
@@ -202,6 +239,10 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
     LambertPipeline.Create(rtg, RenderPass, 0);
 	ShadowPipeline.Create(rtg, ShadowData.ShadowPass, 0, LambertPipeline.Set2_Transforms);
 	DeferredGeometryPipeline.Create(rtg, GBufferData.GBufferPass, 0, LambertPipeline.Set0_Camera, LambertPipeline.Set1_World, LambertPipeline.Set2_Transforms, LambertPipeline.Set3_TEXTURE);
+	GBufferDebugPipeline.Create(rtg, RenderPass, 0);
+	DeferredLightingPipeline.Create(rtg, RenderPass, 0, LambertPipeline.Set1_World, LambertPipeline.Set4_Lights, LambertPipeline.Set5_EnvTex, LambertPipeline.Set6_Shadowmap);
+
+	
 
     workspaces.resize(rtg.workspaces.size());
 	for (FWorkspace &workspace : workspaces)
@@ -761,6 +802,20 @@ URenderPipelines::~URenderPipelines()
 		ShadowDescriptorPool = nullptr;
 	}
 
+	GBufferDebugPipeline.Destroy(rtg);
+
+	if (GBufferDebugDescriptorPool)
+	{
+		vkDestroyDescriptorPool(rtg.device, GBufferDebugDescriptorPool, nullptr);
+		GBufferDebugDescriptorPool = VK_NULL_HANDLE;
+	}
+
+	if(DeferredLightingDescriptorPool)
+	{
+		vkDestroyDescriptorPool(rtg.device, DeferredLightingDescriptorPool, nullptr);
+		DeferredLightingDescriptorPool = VK_NULL_HANDLE;
+	}
+
 	if(TextureSamplerNearest)
 	{
 		vkDestroySampler(rtg.device, TextureSamplerNearest, nullptr);
@@ -970,6 +1025,8 @@ void URenderPipelines::on_swapchain(RTG &rtg_, RTG::SwapchainEvent const &swapch
 	}
 
 	CreateGBufferTargets(swapchain.extent, swapchain.image_views.size());
+	CreateGBufferDebugDescriptors();
+	CreateDeferredLightingDescriptors();
 }
 
 void URenderPipelines::DestroyFramebuffers()
@@ -1336,10 +1393,23 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 		vkCmdBeginRenderPass(workspace.command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		ViewportPillarBoxing(workspace);
+
+		if (GBufferDebugView == EGBufferDebugView::None)
+		{
+			ViewportPillarBoxing(workspace);
+
+			// RenderLambertPipeline(workspace);
+
+			RenderDeferredLightingPass(workspace);
 		
-		RenderLinesPipeline(workspace);
-        RenderLambertPipeline(workspace);
+			RenderLinesPipeline(workspace);
+		}
+		else
+		{
+			ViewportFullScreen(workspace);
+
+			RenderGBufferDebugPipeline(workspace);
+		}
 		
 		vkCmdEndRenderPass(workspace.command_buffer);
 	}
@@ -1570,11 +1640,57 @@ void URenderPipelines::on_input(InputEvent const &evt)
 		return;
 	}
 
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_1)
+	{
+		if (GBufferDebugView == EGBufferDebugView::Albedo)
+			GBufferDebugView = EGBufferDebugView::None;
+		else
+			GBufferDebugView = EGBufferDebugView::Albedo;
+		return;
+	}
+
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_2)
+	{
+		if (GBufferDebugView == EGBufferDebugView::Normal)
+			GBufferDebugView = EGBufferDebugView::None;
+		else
+			GBufferDebugView = EGBufferDebugView::Normal;
+		return;
+	}
+
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_3)
+	{
+		if (GBufferDebugView == EGBufferDebugView::Position)
+			GBufferDebugView = EGBufferDebugView::None;
+		else
+			GBufferDebugView = EGBufferDebugView::Position;
+		return;
+	}
+
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_4)
+	{
+		if (GBufferDebugView == EGBufferDebugView::Roughness)
+			GBufferDebugView = EGBufferDebugView::None;
+		else
+			GBufferDebugView = EGBufferDebugView::Roughness;
+		return;
+	}
+
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_5)
+	{
+		if (GBufferDebugView == EGBufferDebugView::Metalness)
+			GBufferDebugView = EGBufferDebugView::None;
+		else
+			GBufferDebugView = EGBufferDebugView::Metalness;
+		return;
+	}
+
 	// Animation Play
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_SPACE)
 	{
 		bIsPlay = !bIsPlay;
 	}
+	
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_P)
 	{
 		UAnimPlayer::ResetAnimationsTime();
@@ -2642,4 +2758,253 @@ void URenderPipelines::RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_
 
     vkCmdEndRenderPass(Workspace.command_buffer);
 }
+
+void URenderPipelines::CreateDeferredLightingDescriptors()
+{
+	if (DeferredLightingDescriptors == VK_NULL_HANDLE)
+    {
+        VkDescriptorSetAllocateInfo AllocInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = DeferredLightingDescriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &DeferredLightingPipeline.Set0_GBuffer,
+        };
+        VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &DeferredLightingDescriptors));
+    }
+
+    std::array<VkDescriptorImageInfo, 3> Infos
+    {
+        VkDescriptorImageInfo
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[0],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+        VkDescriptorImageInfo
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[1],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+        VkDescriptorImageInfo
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[2],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+    };
+
+    std::array<VkWriteDescriptorSet, 3> Writes
+    {
+        VkWriteDescriptorSet
+		{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = DeferredLightingDescriptors,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[0],
+        },
+        VkWriteDescriptorSet
+		{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = DeferredLightingDescriptors,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[1],
+        },
+        VkWriteDescriptorSet
+		{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = DeferredLightingDescriptors,
+            .dstBinding = 2,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[2],
+        },
+    };
+
+    vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+}
+
+void URenderPipelines::RenderDeferredLightingPass(FWorkspace &Workspace)
+{
+	vkCmdBindPipeline(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DeferredLightingPipeline.Handle);
+
+    // set 0: gbuffer
+    vkCmdBindDescriptorSets
+	(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        DeferredLightingPipeline.Layout,
+        0,
+        1,
+        &DeferredLightingDescriptors,
+        0,
+        nullptr
+    );
+
+    // set 1: world
+    vkCmdBindDescriptorSets
+	(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        DeferredLightingPipeline.Layout,
+        1,
+        1,
+        &Workspace.WorldDescriptors,
+        0,
+        nullptr
+    );
+
+    // set 2: lights
+    vkCmdBindDescriptorSets
+	(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        DeferredLightingPipeline.Layout,
+        2,
+        1,
+        &Workspace.LightsDescriptors,
+        0,
+        nullptr
+    );
+
+    FDeferredLightingPipeline::FConstant Constant
+    {
+        .LightsCount = int(Scene.LightProxyInstances.size()),
+        .Padding0 = 0.0f,
+        .Padding1 = 0.0f,
+        .Padding2 = 0.0f,
+    };
+
+    vkCmdPushConstants
+	(
+        Workspace.command_buffer,
+        DeferredLightingPipeline.Layout,
+        VK_SHADER_STAGE_FRAGMENT_BIT,
+        0,
+        sizeof(Constant),
+        &Constant
+    );
+
+    vkCmdDraw(Workspace.command_buffer, 3, 1, 0, 0);
+}
 //~END GBuffer
+
+//~BEGIN GBuffer Debug
+void URenderPipelines::CreateGBufferDebugDescriptors()
+{
+    if (GBufferDebugDescriptors == VK_NULL_HANDLE)
+    {
+        VkDescriptorSetAllocateInfo AllocInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = GBufferDebugDescriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &GBufferDebugPipeline.Set0_GBuffer,
+        };
+        VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &GBufferDebugDescriptors));
+    }
+
+    std::array<VkDescriptorImageInfo, 3> Infos
+    {
+        VkDescriptorImageInfo
+		{
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[0],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+        VkDescriptorImageInfo
+		{
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[1],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+        VkDescriptorImageInfo
+		{
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[2],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+    };
+
+    std::array<VkWriteDescriptorSet, 3> Writes
+    {
+        VkWriteDescriptorSet{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = GBufferDebugDescriptors,
+            .dstBinding = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[0],
+        },
+        VkWriteDescriptorSet{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = GBufferDebugDescriptors,
+            .dstBinding = 1,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[1],
+        },
+        VkWriteDescriptorSet{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = GBufferDebugDescriptors,
+            .dstBinding = 2,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[2],
+        },
+    };
+
+    vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+}
+
+void URenderPipelines::RenderGBufferDebugPipeline(FWorkspace &workspace)
+{
+    vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GBufferDebugPipeline.Handle);
+
+    vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GBufferDebugPipeline.Layout, 0, 1, &GBufferDebugDescriptors, 0, nullptr);
+
+    FGBufferDebugPipeline::FPush Push{};
+    switch (GBufferDebugView)
+    {
+        case EGBufferDebugView::Albedo:   Push.Mode = 1; break;
+        case EGBufferDebugView::Normal:   Push.Mode = 2; break;
+        case EGBufferDebugView::Position: Push.Mode = 3; break;
+		case EGBufferDebugView::Roughness: Push.Mode = 4; break;
+		case EGBufferDebugView::Metalness: Push.Mode = 5; break;
+        default:                          Push.Mode = 0; break;
+    }
+
+    vkCmdPushConstants(workspace.command_buffer, GBufferDebugPipeline.Layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Push), &Push);
+
+    vkCmdDraw(workspace.command_buffer, 3, 1, 0, 0);
+}
+
+void URenderPipelines::ViewportFullScreen(FWorkspace &workspace)
+{
+    VkViewport Viewport
+    {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = float(rtg.swapchain_extent.width),
+        .height = float(rtg.swapchain_extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+    vkCmdSetViewport(workspace.command_buffer, 0, 1, &Viewport);
+
+    VkRect2D Scissor
+    {
+        .offset = { 0, 0 },
+        .extent = rtg.swapchain_extent,
+    };
+    vkCmdSetScissor(workspace.command_buffer, 0, 1, &Scissor);
+}
+//~END GBuffer Debug

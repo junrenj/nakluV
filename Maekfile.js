@@ -95,6 +95,19 @@ const main_deferred_geometry_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-DeferredGeometryPipeline.cpp', undefined, { depends:[...main_deferred_geometry_shaders] } ) );
 
+const debug_deferred_geometry_shaders = [
+	maek.GLSLC('Main/Debug/Shaders/gbuffer-debug.vert'),
+	maek.GLSLC('Main/Debug/Shaders/gbuffer-debug.frag'),
+];
+main_objs.push( maek.CPP('Main/Debug/RenderPipeline-DebugGeometryPipeline.cpp', undefined, { depends:[...debug_deferred_geometry_shaders] } ) );
+
+const main_deferred_lighting_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-lighting.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-lighting.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.cpp', undefined, { depends:[...main_deferred_lighting_shaders] } ) );
+
+
 // A3 - Shadow
 const main_shadow_shaders = [
 	maek.GLSLC('Main/Pipelines/shadow.vert'),

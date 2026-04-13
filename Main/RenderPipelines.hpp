@@ -5,6 +5,8 @@
 #include "Debug/DebugView.hpp"
 #include "Pipelines/RenderPipelines-ShadowPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-DeferredGeometryPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.hpp"
+#include "Debug/DebugGeometryPipeline.hpp"
 
 struct FShadowResource;
 struct FCubeShadowResource;
@@ -277,10 +279,42 @@ struct URenderPipelines : RTG::Application
 	void CreateGBufferTargets(VkExtent2D Extent, size_t FramebufferCount);
 	void RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_t FramebufferIndex);
 
+	// Deferred Lighting
+	FDeferredLightingPipeline DeferredLightingPipeline;
+
+	VkDescriptorPool DeferredLightingDescriptorPool = VK_NULL_HANDLE;
+	VkDescriptorSet DeferredLightingDescriptors = VK_NULL_HANDLE;
+
+	void CreateDeferredLightingDescriptors();
+
 //~END GBuffer Pass
 
-	// for debug
+//~BEGIN Debug
 	UDebugScene DebugScene;
 	void InitializeDebugRenderScene();
 	void DrawDebugLines();
+
+	enum class EGBufferDebugView
+	{
+		None = 0,
+		Albedo = 1,
+		Normal = 2,
+		Position = 3,
+		Roughness = 4,
+		Metalness = 5,
+	};
+
+	EGBufferDebugView GBufferDebugView = EGBufferDebugView::None;
+	FGBufferDebugPipeline GBufferDebugPipeline;
+
+	VkDescriptorPool GBufferDebugDescriptorPool = VK_NULL_HANDLE;
+	VkDescriptorSet GBufferDebugDescriptors = VK_NULL_HANDLE;
+
+	void RenderDeferredLightingPass(FWorkspace &workspace);
+
+	void CreateGBufferDebugDescriptors();
+	void RenderGBufferDebugPipeline(FWorkspace &workspace);
+	void ViewportFullScreen(FWorkspace &workspace);
+//~END Debug
+
 };
