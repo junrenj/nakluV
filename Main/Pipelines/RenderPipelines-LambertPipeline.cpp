@@ -16,24 +16,6 @@ void URenderPipelines::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pa
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
 
-    {
-        VkPushConstantRange Range {
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset = 0,
-            .size = sizeof(FConstant),
-        };
-
-        VkPipelineLayoutCreateInfo create_info {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = 0,
-            .pSetLayouts = nullptr,
-            .pushConstantRangeCount = 1,
-            .pPushConstantRanges = &Range,
-        };
-
-        VK ( vkCreatePipelineLayout(rtg.device, &create_info, nullptr, &Layout));
-    }
-
     { //the set0_Camera layout holds world info in a uniform buffer used in the fragment shader:
 		std::array< VkDescriptorSetLayoutBinding, 1 > bindings{
 			VkDescriptorSetLayoutBinding{
@@ -240,15 +222,23 @@ void URenderPipelines::FLambertPipeline::Create(RTG &rtg, VkRenderPass render_pa
             Set6_Shadowmap,
         };
 
-        VkPipelineLayoutCreateInfo create_info {
+        VkPushConstantRange Range
+        {
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset = 0,
+            .size = sizeof(FConstant),
+        };
+
+        VkPipelineLayoutCreateInfo CreateInfo
+        {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .setLayoutCount = uint32_t(layouts.size()),
             .pSetLayouts = layouts.data(),
-            .pushConstantRangeCount = 0,
-            .pPushConstantRanges = nullptr,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &Range,
         };
 
-        VK ( vkCreatePipelineLayout(rtg.device, &create_info, nullptr, &Layout));
+        VK(vkCreatePipelineLayout(rtg.device, &CreateInfo, nullptr, &Layout));
     }
 
     {

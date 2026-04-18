@@ -1,3 +1,4 @@
 {
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "disabled",
+    "cmake.sourceDirectory": "D:/CMU/CMU2026/RealTimeGraphic/nakluV/external/glm"
 }

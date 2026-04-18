@@ -310,7 +310,7 @@ struct URenderPipelines : RTG::Application
 	VkDescriptorPool GBufferDebugDescriptorPool = VK_NULL_HANDLE;
 	VkDescriptorSet GBufferDebugDescriptors = VK_NULL_HANDLE;
 
-	void RenderDeferredLightingPass(FWorkspace &workspace);
+	void RenderDeferredLightingPipeline(FWorkspace &workspace);
 
 	void CreateGBufferDebugDescriptors();
 	void RenderGBufferDebugPipeline(FWorkspace &workspace);

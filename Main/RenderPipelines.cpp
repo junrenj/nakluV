@@ -242,8 +242,6 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 	GBufferDebugPipeline.Create(rtg, RenderPass, 0);
 	DeferredLightingPipeline.Create(rtg, RenderPass, 0, LambertPipeline.Set1_World, LambertPipeline.Set4_Lights, LambertPipeline.Set5_EnvTex, LambertPipeline.Set6_Shadowmap);
 
-	
-
     workspaces.resize(rtg.workspaces.size());
 	for (FWorkspace &workspace : workspaces)
 	{
@@ -528,7 +526,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 			VkDescriptorPoolSize
 			{
 				.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1 * EnvCount,	 // one descriptor per set, one set 5 texture
+				.descriptorCount = 3 * EnvCount,	 // one descriptor per set, one set 5 texture
 			}
 		};
 
@@ -726,46 +724,44 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 	// write shadow map into descriptor
 	{
 		const std::vector<FShadowResource>& SpotLightShadows = ShadowData.SpotLightShadows;
-		if(SpotLightShadows.empty())
+		if(!SpotLightShadows.empty())
 		{
-			return;
-		}
-		
-		std::vector<VkDescriptorImageInfo> Infos(ShadowData.MAX_SPOT_SHADOWS);
-		for (uint32_t i = 0; i < ShadowData.MAX_SPOT_SHADOWS; ++i)
-		{
-			if (i < SpotLightShadows.size())
+			std::vector<VkDescriptorImageInfo> Infos(ShadowData.MAX_SPOT_SHADOWS);
+			for (uint32_t i = 0; i < ShadowData.MAX_SPOT_SHADOWS; ++i)
 			{
-				Infos[i] = VkDescriptorImageInfo
+				if (i < SpotLightShadows.size())
 				{
-					.sampler = ShadowData.ShadowSamplerPCF,
-					.imageView = SpotLightShadows[i].ImageView,
-					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-				};
+					Infos[i] = VkDescriptorImageInfo
+					{
+						.sampler = ShadowData.ShadowSamplerPCF,
+						.imageView = SpotLightShadows[i].ImageView,
+						.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+					};
+				}
+				else
+				{
+					Infos[i] = VkDescriptorImageInfo
+					{
+						.sampler = ShadowData.ShadowSamplerPCF,
+						.imageView = SpotLightShadows[0].ImageView,
+						.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+					};
+				}
 			}
-			else
+
+			VkWriteDescriptorSet Write
 			{
-				Infos[i] = VkDescriptorImageInfo
-				{
-					.sampler = ShadowData.ShadowSamplerPCF,
-					.imageView = SpotLightShadows[0].ImageView,
-					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-				};
-			}
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = ShadowDescriptors,
+				.dstBinding = 0,
+				.dstArrayElement = 0,
+				.descriptorCount = ShadowData.MAX_SPOT_SHADOWS,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = Infos.data(),
+			};
+
+			vkUpdateDescriptorSets(rtg.device, 1, &Write, 0, nullptr);
 		}
-
-		VkWriteDescriptorSet Write
-		{
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = ShadowDescriptors,
-			.dstBinding = 0,
-			.dstArrayElement = 0,
-			.descriptorCount = ShadowData.MAX_SPOT_SHADOWS,
-			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.pImageInfo = Infos.data(),
-		};
-
-		vkUpdateDescriptorSets(rtg.device, 1, &Write, 0, nullptr);
 	}
 }
 
@@ -1369,6 +1365,42 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 	// Render G-Buffer
 	RenderDeferredGeometryPass(workspace, render_params.image_index);
 
+	// Barrier
+	for (size_t i = 0; i < GBufferData.GBufferImages.size(); i++)
+	{
+		VkImageMemoryBarrier gbufferBarrier
+		{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+			.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+			.image = GBufferData.GBufferImages[i].handle,
+			.subresourceRange
+			{
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			},
+		};
+
+		vkCmdPipelineBarrier
+		(
+			workspace.command_buffer,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &gbufferBarrier
+		);
+	}
+	
+
 	// Render Pass
 	{
 		std::array<VkClearValue, 2> clear_values
@@ -1400,8 +1432,12 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 			// RenderLambertPipeline(workspace);
 
-			RenderDeferredLightingPass(workspace);
+			ViewportFullScreen(workspace);
+
+			RenderDeferredLightingPipeline(workspace);
 		
+			ViewportPillarBoxing(workspace);
+			
 			RenderLinesPipeline(workspace);
 		}
 		else
@@ -1968,86 +2004,90 @@ void URenderPipelines::RenderLinesPipeline(FWorkspace &workspace)
 
 void URenderPipelines::RenderLambertPipeline(FWorkspace &workspace)
 {
-    // Draw with the objects pipeline:
-	if (!Scene.MeshProxyInstances.empty()) 
-	{ 
-		vkCmdBindPipeline(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, LambertPipeline.Handle);
-	}
+    if (Scene.MeshProxyInstances.empty())
+    {
+        return;
+    }
 
-	{
-		// use object_vertices (offset 0) as vertex buffer binding 0:
-		std::array< VkBuffer, 1 > VertexBuffers{ ObjectVertices.handle };
-		std::array< VkDeviceSize, 1 > Offsets{ 0 };
-		vkCmdBindVertexBuffers(workspace.command_buffer, 0, uint32_t(VertexBuffers.size()), VertexBuffers.data(), Offsets.data());
-	}
+    vkCmdBindPipeline(
+        workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        LambertPipeline.Handle
+    );
 
-	// Bind World and Transforms descriptor sets:
-	{
-		std::array< VkDescriptorSet, 3 > DescriptorSets
-		{
-            workspace.CameraDescriptors,    // 0：Camera
-			workspace.WorldDescriptors, 	// 1: World
-			workspace.TransformDescriptors, // 2: Transforms
-		};
-		vkCmdBindDescriptorSets
-		(
-			workspace.command_buffer, 			// Command Buffer
-			VK_PIPELINE_BIND_POINT_GRAPHICS, 	// Pipeline bind point
-			LambertPipeline.Layout, 			// Pipeline Layout
-			0, 									// First Set
-			uint32_t(DescriptorSets.size()), DescriptorSets.data(), // descriptor sets count, ptr
-			0, nullptr // DynamicOffsets Count, ptr
-		);
-	}
-	// Set4_Light
-	{
-    	vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            LambertPipeline.Layout, 4, 1, &workspace.LightsDescriptors, 0, nullptr);
-	}
-	// Set5_EnvTex
-	{
-    	vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            LambertPipeline.Layout, 5, 1, &EnvTexDescriptors[0], 0, nullptr);
-	}
-	// Set6_Shadowmap
-	{
-		vkCmdBindDescriptorSets(workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        						LambertPipeline.Layout, 6, 1, &ShadowDescriptors, 0, nullptr);
-	}
+    {
+        std::array<VkBuffer, 1> VertexBuffers{ ObjectVertices.handle };
+        std::array<VkDeviceSize, 1> Offsets{ 0 };
+        vkCmdBindVertexBuffers(
+            workspace.command_buffer,
+            0,
+            uint32_t(VertexBuffers.size()),
+            VertexBuffers.data(),
+            Offsets.data()
+        );
+    }
 
-	// Set3_Material Set
-	const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
-	for (uint32_t i = 0; i < ProxyList.size(); i++)
-	{
-		const FMeshRenderProxy* Proxy = ProxyList[i];
-		if(!Proxy->bCanSee)
-		{
-			continue;
-		}
-		// Push constant here
-		{
-			const FMaterial* Material = Scene.Materials[Proxy->MaterialIdx];
-			FLambertPipeline::FConstant Constant
-			{
-				.MaterialType = (int)Material->Type,
-				.LightsCount = 	(int)Scene.Lights2Nodes.size(),
-			};
-			vkCmdPushConstants(workspace.command_buffer, LambertPipeline.Layout, 
-								VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Constant), &Constant);
+    const std::vector<FMeshRenderProxy*>& ProxyList = Scene.MeshProxyInstances;
 
-		}
-		vkCmdBindDescriptorSets
-		(
-			workspace.command_buffer,			// Command buffer
-			VK_PIPELINE_BIND_POINT_GRAPHICS,	// Pipeline bind point
-			LambertPipeline.Layout,				// Pipeline Layout
-			3, 	// Third Sets
-			1, &MaterialDescriptors[Proxy->MaterialIdx],	// descriptor sets count, ptr
-			0, nullptr	// Dynamic offsets count, ptr
-		);
-		vkCmdDraw(workspace.command_buffer, Proxy->VertexNum, 1, Proxy->FirstVertexIdx, i);
-	}
+    for (uint32_t i = 0; i < ProxyList.size(); ++i)
+    {
+        const FMeshRenderProxy* Proxy = ProxyList[i];
+        if (!Proxy || !Proxy->bCanSee)
+        {
+            continue;
+        }
 
+        const FMaterial* Material = Scene.Materials[Proxy->MaterialIdx];
+        if (!Material)
+        {
+            continue;
+        }
+
+        FLambertPipeline::FConstant Constant
+        {
+            .MaterialType = int(Material->Type),
+            .LightsCount  = int(Scene.Lights2Nodes.size()),
+        };
+
+        vkCmdPushConstants(
+            workspace.command_buffer,
+            LambertPipeline.Layout,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(Constant),
+            &Constant
+        );
+
+        std::array<VkDescriptorSet, 7> DescriptorSets
+        {
+            workspace.CameraDescriptors,                  // set 0
+            workspace.WorldDescriptors,                   // set 1
+            workspace.TransformDescriptors,               // set 2
+            MaterialDescriptors[Proxy->MaterialIdx],      // set 3
+            workspace.LightsDescriptors,                  // set 4
+            EnvTexDescriptors[0],                         // set 5
+            ShadowDescriptors                             // set 6
+        };
+
+        vkCmdBindDescriptorSets(
+            workspace.command_buffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            LambertPipeline.Layout,
+            0,
+            uint32_t(DescriptorSets.size()),
+            DescriptorSets.data(),
+            0,
+            nullptr
+        );
+
+        vkCmdDraw(
+            workspace.command_buffer,
+            Proxy->VertexNum,
+            1,
+            Proxy->FirstVertexIdx,
+            i
+        );
+    }
 }
 
 void URenderPipelines::RenderShadowMaps(FWorkspace& Workspace)
@@ -2152,8 +2192,39 @@ void URenderPipelines::RenderShadowMaps(FWorkspace& Workspace)
                 meshIdx
             );
         }
-
         vkCmdEndRenderPass(Workspace.command_buffer);
+		
+		{
+			VkImageMemoryBarrier barrier
+			{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+				.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = SpotLightShadows[i].Image.handle,
+				.subresourceRange{
+					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+					.baseMipLevel = 0,
+					.levelCount = 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+			};
+
+			vkCmdPipelineBarrier
+			(
+				Workspace.command_buffer,
+				VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
 	}
 
 }
@@ -2832,45 +2903,26 @@ void URenderPipelines::CreateDeferredLightingDescriptors()
     vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
 }
 
-void URenderPipelines::RenderDeferredLightingPass(FWorkspace &Workspace)
+void URenderPipelines::RenderDeferredLightingPipeline(FWorkspace &Workspace)
 {
 	vkCmdBindPipeline(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DeferredLightingPipeline.Handle);
 
-    // set 0: gbuffer
-    vkCmdBindDescriptorSets
-	(
-        Workspace.command_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        DeferredLightingPipeline.Layout,
-        0,
-        1,
-        &DeferredLightingDescriptors,
-        0,
-        nullptr
-    );
+	std::array<VkDescriptorSet, 5> DescriptorSets
+    {
+        DeferredLightingDescriptors,   // set 0: GBuffer
+        Workspace.WorldDescriptors,    // set 1: World
+        Workspace.LightsDescriptors,   // set 2: Lights
+        EnvTexDescriptors[0],          // set 3: EnvTex
+        ShadowDescriptors              // set 4: Shadowmap
+    };
 
-    // set 1: world
-    vkCmdBindDescriptorSets
-	(
+    vkCmdBindDescriptorSets(
         Workspace.command_buffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         DeferredLightingPipeline.Layout,
-        1,
-        1,
-        &Workspace.WorldDescriptors,
         0,
-        nullptr
-    );
-
-    // set 2: lights
-    vkCmdBindDescriptorSets
-	(
-        Workspace.command_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        DeferredLightingPipeline.Layout,
-        2,
-        1,
-        &Workspace.LightsDescriptors,
+        uint32_t(DescriptorSets.size()),
+        DescriptorSets.data(),
         0,
         nullptr
     );
@@ -2883,8 +2935,7 @@ void URenderPipelines::RenderDeferredLightingPass(FWorkspace &Workspace)
         .Padding2 = 0.0f,
     };
 
-    vkCmdPushConstants
-	(
+    vkCmdPushConstants(
         Workspace.command_buffer,
         DeferredLightingPipeline.Layout,
         VK_SHADER_STAGE_FRAGMENT_BIT,

@@ -142,7 +142,7 @@ void FDeferredLightingPipeline::Create(
             .depthClampEnable = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
             .polygonMode = VK_POLYGON_MODE_FILL,
-            .cullMode = VK_CULL_MODE_BACK_BIT,
+            .cullMode = VK_CULL_MODE_NONE,
             .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .depthBiasEnable = VK_FALSE,
             .lineWidth = 1.0f,
@@ -155,69 +155,49 @@ void FDeferredLightingPipeline::Create(
             .sampleShadingEnable = VK_FALSE,
         };
 
-        VkPipelineDepthStencilStateCreateInfo depth_stencil_state 
+        VkPipelineDepthStencilStateCreateInfo depth_stencil_state
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .depthTestEnable = VK_TRUE,
-            .depthWriteEnable = VK_TRUE,
-            .depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+            .depthTestEnable = VK_FALSE,
+            .depthWriteEnable = VK_FALSE,
+            .depthCompareOp = VK_COMPARE_OP_ALWAYS,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
         };
+        
         // 3 GBuffer output
-        std::array<VkPipelineColorBlendAttachmentState, 3> blend_attachments
+        VkPipelineColorBlendAttachmentState blend_attachment
         {
-            VkPipelineColorBlendAttachmentState{
-                .blendEnable = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp = VK_BLEND_OP_ADD,
-                .colorWriteMask =
-                    VK_COLOR_COMPONENT_R_BIT |
-                    VK_COLOR_COMPONENT_G_BIT |
-                    VK_COLOR_COMPONENT_B_BIT |
-                    VK_COLOR_COMPONENT_A_BIT,
-            },
-            VkPipelineColorBlendAttachmentState{
-                .blendEnable = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp = VK_BLEND_OP_ADD,
-                .colorWriteMask =
-                    VK_COLOR_COMPONENT_R_BIT |
-                    VK_COLOR_COMPONENT_G_BIT |
-                    VK_COLOR_COMPONENT_B_BIT |
-                    VK_COLOR_COMPONENT_A_BIT,
-            },
-            VkPipelineColorBlendAttachmentState{
-                .blendEnable = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp = VK_BLEND_OP_ADD,
-                .colorWriteMask =
-                    VK_COLOR_COMPONENT_R_BIT |
-                    VK_COLOR_COMPONENT_G_BIT |
-                    VK_COLOR_COMPONENT_B_BIT |
-                    VK_COLOR_COMPONENT_A_BIT,
-            },
+            .blendEnable = VK_FALSE,
+            .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+            .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+            .colorBlendOp = VK_BLEND_OP_ADD,
+            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+            .alphaBlendOp = VK_BLEND_OP_ADD,
+            .colorWriteMask =
+                VK_COLOR_COMPONENT_R_BIT |
+                VK_COLOR_COMPONENT_G_BIT |
+                VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT,
         };
 
         VkPipelineColorBlendStateCreateInfo color_blend_state 
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             .logicOpEnable = VK_FALSE,
-            .attachmentCount = uint32_t(blend_attachments.size()),
-            .pAttachments = blend_attachments.data(),
+            .attachmentCount = 1,
+            .pAttachments = &blend_attachment,
             .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+        };
+
+        VkPipelineVertexInputStateCreateInfo vertex_input_state
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .vertexBindingDescriptionCount = 0,
+            .pVertexBindingDescriptions = nullptr,
+            .vertexAttributeDescriptionCount = 0,
+            .pVertexAttributeDescriptions = nullptr,
         };
 
         VkGraphicsPipelineCreateInfo create_info 
@@ -225,7 +205,7 @@ void FDeferredLightingPipeline::Create(
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = (uint32_t) (stages.size()),
             .pStages = stages.data(),
-            .pVertexInputState = &URenderPipelines::FLambertPipeline::FVertex::ArrayInputState,
+            .pVertexInputState = &vertex_input_state,
             .pInputAssemblyState = &input_assembly_state,
             .pViewportState = &viewport_state,
             .pRasterizationState = &rasterization_state,
@@ -259,25 +239,4 @@ void FDeferredLightingPipeline::Destroy(RTG &rtg)
         vkDestroyDescriptorSetLayout(rtg.device, Set0_GBuffer, nullptr);
         Set0_GBuffer = VK_NULL_HANDLE;
     }
-    if (Set1_World != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorSetLayout(rtg.device, Set1_World, nullptr);
-        Set1_World = VK_NULL_HANDLE;
-    }
-    if (Set2_Lights != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorSetLayout(rtg.device, Set2_Lights, nullptr);
-        Set2_Lights = VK_NULL_HANDLE;
-    }
-    if (Set3_EnvTex != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorSetLayout(rtg.device, Set3_EnvTex, nullptr);
-        Set3_EnvTex = VK_NULL_HANDLE;
-    }
-    if (Set4_Shadowmap != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorSetLayout(rtg.device, Set4_Shadowmap, nullptr);
-        Set4_Shadowmap = VK_NULL_HANDLE;
-    }
-    
 }
