@@ -1,4 +1,4 @@
-#include "DebugGeometryPipeline.hpp"
+#include "RenderPipelines-DebugGeometryPipeline.hpp"
 
 #include "../../RTG.hpp"
 #include "../../VK.hpp"
@@ -18,25 +18,32 @@ void FGBufferDebugPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t S
 
     // set 0: gbuffer textures
     {
-        std::array<VkDescriptorSetLayoutBinding, 3> bindings
+        std::array<VkDescriptorSetLayoutBinding, 4> bindings
         {
-            VkDescriptorSetLayoutBinding
+            VkDescriptorSetLayoutBinding    // GBuffer 0 - normal.xyz, roughness
             {
                 .binding = 0,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
-            VkDescriptorSetLayoutBinding
+            VkDescriptorSetLayoutBinding    // GBuffer 1 - albedo.rgb, metalness
             {
                 .binding = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
-            VkDescriptorSetLayoutBinding
+            VkDescriptorSetLayoutBinding    // GBuffer 2 - worldPos.xyz, materialType
             {
                 .binding = 2,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding    // SSAO
+            {
+                .binding = 3,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,

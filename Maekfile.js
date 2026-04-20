@@ -89,6 +89,7 @@ const main_lambert_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-LambertPipeline.cpp', undefined, { depends:[...main_lambert_shaders] } ) );
 
+// deferred pipeline
 const main_deferred_geometry_shaders = [
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-geometry.vert'),
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-geometry.frag'),
@@ -99,7 +100,7 @@ const debug_deferred_geometry_shaders = [
 	maek.GLSLC('Main/Debug/Shaders/gbuffer-debug.vert'),
 	maek.GLSLC('Main/Debug/Shaders/gbuffer-debug.frag'),
 ];
-main_objs.push( maek.CPP('Main/Debug/RenderPipeline-DebugGeometryPipeline.cpp', undefined, { depends:[...debug_deferred_geometry_shaders] } ) );
+main_objs.push( maek.CPP('Main/Debug/RenderPipelines-DebugGeometryPipeline.cpp', undefined, { depends:[...debug_deferred_geometry_shaders] } ) );
 
 const main_deferred_lighting_shaders = [
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-lighting.vert'),
@@ -107,6 +108,12 @@ const main_deferred_lighting_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.cpp', undefined, { depends:[...main_deferred_lighting_shaders] } ) );
 
+// postprocessing pipeline
+const main_ssao_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAO.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAO.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-SSAOPipeline.cpp', undefined, { depends:[...main_ssao_shaders] } ) );
 
 // A3 - Shadow
 const main_shadow_shaders = [

@@ -6,7 +6,8 @@
 #include "Pipelines/RenderPipelines-ShadowPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-DeferredGeometryPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.hpp"
-#include "Debug/DebugGeometryPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-SSAOPipeline.hpp"
+#include "Debug/RenderPipelines-DebugGeometryPipeline.hpp"
 
 struct FShadowResource;
 struct FCubeShadowResource;
@@ -165,6 +166,11 @@ struct URenderPipelines : RTG::Application
 		Helpers::AllocatedBuffer ShadowTransformsSrc;	// host coherent; mapped
 		Helpers::AllocatedBuffer ShadowTransforms;	// device-local
 		VkDescriptorSet ShadowTransformDescriptors;	// references Transforms
+
+		// location for SSAO
+		Helpers::AllocatedBuffer SSAOSrc;
+    	Helpers::AllocatedBuffer SSAO;
+    	VkDescriptorSet SSAOUboDescriptors = VK_NULL_HANDLE;
 	};
 	std::vector< FWorkspace > workspaces;
 
@@ -225,6 +231,9 @@ struct URenderPipelines : RTG::Application
 
 	// Computed from the current camera (as set by camera_mode) during update():
 	mat4 CLIP_FROM_WORLD;
+	mat4 VIEW_FROM_WORLD = mat4(1.0f);
+	mat4 PROJECTION = mat4(1.0f);
+	mat4 INV_PROJECTION = mat4(1.0f);
 
 	FLambertPipeline::FWorld World;
 	
@@ -289,6 +298,18 @@ struct URenderPipelines : RTG::Application
 
 //~END GBuffer Pass
 
+//~BEGIN postprocess pass
+	// SSAO
+	FSSAOData SSAOData;
+	FDeferredSSAOPipeline SSAOPipeline;
+	void CreateSSAODescriptors(FWorkspace &workspace);
+	void CreateSSAOPass();
+	void CreateSSAOTargets(VkExtent2D Extent, size_t FrameBufferCount);
+	void RenderSSAOPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
+	void UpdateSSAOBuffer(FWorkspace &workspace);
+
+//~END postprocess pass
+
 //~BEGIN Debug
 	UDebugScene DebugScene;
 	void InitializeDebugRenderScene();
@@ -302,6 +323,7 @@ struct URenderPipelines : RTG::Application
 		Position = 3,
 		Roughness = 4,
 		Metalness = 5,
+		SSAO = 6,
 	};
 
 	EGBufferDebugView GBufferDebugView = EGBufferDebugView::None;
