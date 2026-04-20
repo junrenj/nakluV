@@ -31,8 +31,8 @@ layout(push_constant) uniform PushConsts
 
 layout(set=1,binding=0,std140) uniform World 
 {
-	vec3 EYE;
-	vec2 AJUST_VAR;
+	vec4 EYE;
+	vec4 AJUST_VAR;
 };
 
 layout(set=4,binding=0,std140) readonly buffer Lights
@@ -71,7 +71,7 @@ vec4 Displacement()
 {
 	vec2 ddx = dFdx(texcoord);
     vec2 ddy = dFdy(texcoord);
-	vec3 worldV = normalize(EYE - position);
+	vec3 worldV = normalize(EYE.xyz - position);
 	vec3 vTangent = transpose(TBN) * worldV;
 	vec2 UVDist = vec2(vTangent.x, vTangent.y) / vTangent.z * 0.05;
 	float rayHeight = 1.0;
@@ -592,7 +592,7 @@ vec3 CalDirectLightings_Lambert(vec3 nWorld, vec3 albedo)
 vec4 Mirror()
 {
 	vec3 nWorld = NormalFromTexture();
-	vec3 v = normalize(EYE - position);
+	vec3 v = normalize(EYE.xyz - position);
 	vec3 r = reflect(-v, nWorld);
 	vec3 env = textureLod(ENV_TEX, r, 0.0).rgb;
 	return vec4(env, 1.0);
@@ -614,7 +614,7 @@ vec4 PBR(vec2 uv)
 
 	// 1. Dir
 	vec3 nWorld = NormalFromTexture();
-	vec3 v = normalize(EYE - position);
+	vec3 v = normalize(EYE.xyz - position);
 	vec3 r = reflect(-v, nWorld);
 
 	float NdotV = max(dot(nWorld, v), 0.0);
@@ -654,7 +654,7 @@ vec4 Lambertian(vec2 uv)
 	vec3 albedo = texture(ALBEDO_TEX, uv).rgb;
 	// Dir
 	vec3 nWorld = NormalFromTexture();
-	vec3 v = normalize(EYE - position);
+	vec3 v = normalize(EYE.xyz - position);
 	vec3 r = reflect(-v, nWorld);
 
 	vec3 irradiance = texture(IRRADIANCE_TEX, nWorld).rgb;

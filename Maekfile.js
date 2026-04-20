@@ -115,10 +115,16 @@ const main_ssao_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-SSAOPipeline.cpp', undefined, { depends:[...main_ssao_shaders] } ) );
 
+const main_ssaoBlur_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAOBlur.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAOBlur.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-SSAOBlurPipeline.cpp', undefined, { depends:[...main_ssaoBlur_shaders] } ) );
+
+
 // A3 - Shadow
 const main_shadow_shaders = [
 	maek.GLSLC('Main/Pipelines/shadow.vert'),
-	maek.GLSLC('Main/Pipelines/shadow.frag'),
 ];
 main_objs.push( maek.CPP('Main/Pipelines/RenderPipelines-ShadowPipeline.cpp', undefined, { depends:[...main_shadow_shaders] } ) );
 

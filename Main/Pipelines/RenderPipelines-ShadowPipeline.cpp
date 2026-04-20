@@ -8,14 +8,9 @@ static uint32_t vert_code[] =
 #include "../../spv/Main/Pipelines/shadow.vert.inl"
 ;
 
-static uint32_t frag_code[] =
-#include "../../spv/Main/Pipelines/shadow.frag.inl"
-;
-
 void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpass, VkDescriptorSetLayout TransformsLayout) 
 {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
-    VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
     Set0_Transform = TransformsLayout;
     {
         std::array<VkDescriptorSetLayout, 1> layouts 
@@ -43,20 +38,12 @@ void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpas
     }
 
     {
-        std::array <VkPipelineShaderStageCreateInfo, 2> stages 
+        VkPipelineShaderStageCreateInfo stage 
         {
-            VkPipelineShaderStageCreateInfo {
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .module = vert_module,
-                .pName = "main",
-            },
-            VkPipelineShaderStageCreateInfo {
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .module = frag_module,
-                .pName = "main",
-            },
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = vert_module,
+            .pName = "main",
         };
 
         std::vector<VkDynamicState> dynamic_states 
@@ -130,8 +117,8 @@ void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpas
         VkGraphicsPipelineCreateInfo create_info 
         {
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            .stageCount = (uint32_t) (stages.size()),
-            .pStages = stages.data(),
+            .stageCount = 1,
+            .pStages = &stage,
             .pVertexInputState = &URenderPipelines::FLambertPipeline::FVertex::ArrayInputState,
             .pInputAssemblyState = &input_assembly_state,
             .pViewportState = &viewport_state,
@@ -147,8 +134,6 @@ void FShadowPipeline::Create(RTG &rtg, VkRenderPass render_pass, uint32_t subpas
 
         VK ( vkCreateGraphicsPipelines(rtg.device, VK_NULL_HANDLE, 1, &create_info, nullptr, &Handle));
     }
-
-    vkDestroyShaderModule(rtg.device, frag_module, nullptr);
     vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 

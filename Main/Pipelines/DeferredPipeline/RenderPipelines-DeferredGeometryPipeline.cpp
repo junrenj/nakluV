@@ -221,4 +221,9 @@ void FDeferredGeometryPipeline::Destroy(RTG &rtg)
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
         Layout = VK_NULL_HANDLE;
     }
+
+    Set0_Camera = VK_NULL_HANDLE;
+    Set1_World = VK_NULL_HANDLE;
+    Set2_Transforms = VK_NULL_HANDLE;
+    Set3_Texture = VK_NULL_HANDLE;
 }

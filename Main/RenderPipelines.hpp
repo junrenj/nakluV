@@ -7,6 +7,7 @@
 #include "Pipelines/DeferredPipeline/RenderPipelines-DeferredGeometryPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-SSAOPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-SSAOBlurPipeline.hpp"
 #include "Debug/RenderPipelines-DebugGeometryPipeline.hpp"
 
 struct FShadowResource;
@@ -295,6 +296,7 @@ struct URenderPipelines : RTG::Application
 	VkDescriptorSet DeferredLightingDescriptors = VK_NULL_HANDLE;
 
 	void CreateDeferredLightingDescriptors();
+	void DestroyGBufferResources();
 
 //~END GBuffer Pass
 
@@ -307,6 +309,15 @@ struct URenderPipelines : RTG::Application
 	void CreateSSAOTargets(VkExtent2D Extent, size_t FrameBufferCount);
 	void RenderSSAOPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
 	void UpdateSSAOBuffer(FWorkspace &workspace);
+	void DestroySSAOResources();
+
+	// SSAO Blur
+	FSSAOBlurData SSAOBlurData;
+	FDeferredSSAOBlurPipeline SSAOBlurPipeline;
+	void CreateSSAOBlurDescriptors();
+	void CreateSSAOBlurPass();
+	void CreateSSAOBlurTargets(VkExtent2D Extent, size_t FrameBufferCount);
+	void RenderSSAOBlurPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
 
 //~END postprocess pass
 

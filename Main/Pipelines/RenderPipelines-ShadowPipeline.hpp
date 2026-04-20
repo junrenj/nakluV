@@ -39,7 +39,7 @@ struct FShadowDataSet
 	VkSampler ShadowSamplerPCF;
     
 	// 2. data
-	const uint32_t MAX_SPOT_SHADOWS = 64;
+	const uint32_t MAX_SPOT_SHADOWS = 32;
 	std::vector<FShadowResource> SpotLightShadows;
 	std::vector<FCubeShadowResource> SphereLightShadows;
 };

@@ -374,9 +374,16 @@ void URenderPipelines::FLambertPipeline::Destroy(RTG &rtg)
         Set4_Lights = VK_NULL_HANDLE;
     }
 
-    if (Set5_EnvTex != VK_NULL_HANDLE) {
+    if (Set5_EnvTex != VK_NULL_HANDLE) 
+    {
         vkDestroyDescriptorSetLayout(rtg.device, Set5_EnvTex, nullptr);
         Set5_EnvTex = VK_NULL_HANDLE;
+    }
+
+    if (Set6_Shadowmap != VK_NULL_HANDLE) 
+    {
+        vkDestroyDescriptorSetLayout(rtg.device, Set6_Shadowmap, nullptr);
+        Set6_Shadowmap = VK_NULL_HANDLE;
     }
     
     if (Layout != VK_NULL_HANDLE) {
