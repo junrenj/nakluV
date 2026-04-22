@@ -64,13 +64,43 @@ void FDeferredLightingPipeline::Create(
     }
 
     {
-        std::array<VkDescriptorSetLayout, 5> layouts 
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings
+        {
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+        };
+
+        VkDescriptorSetLayoutCreateInfo create_info
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = uint32_t(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set5_ScreenProcess));
+    }
+
+    {
+        std::array<VkDescriptorSetLayout, 6> layouts 
         {
             Set0_GBuffer,
             Set1_World,
             Set2_Lights,
             Set3_EnvTex,
-            Set4_Shadowmap
+            Set4_Shadowmap,
+            Set5_ScreenProcess,
         };
 
         VkPushConstantRange pushRange
@@ -241,5 +271,10 @@ void FDeferredLightingPipeline::Destroy(RTG &rtg)
     {
         vkDestroyDescriptorSetLayout(rtg.device, Set0_GBuffer, nullptr);
         Set0_GBuffer = VK_NULL_HANDLE;
+    }
+    if (Set5_ScreenProcess != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(rtg.device, Set5_ScreenProcess, nullptr);
+        Set5_ScreenProcess = VK_NULL_HANDLE;
     }
 }

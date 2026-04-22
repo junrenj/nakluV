@@ -108,7 +108,7 @@ const main_deferred_lighting_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.cpp', undefined, { depends:[...main_deferred_lighting_shaders] } ) );
 
-// postprocessing pipeline
+// screen processing pipeline
 const main_ssao_shaders = [
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAO.vert'),
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAO.frag'),
@@ -120,6 +120,18 @@ const main_ssaoBlur_shaders = [
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAOBlur.frag'),
 ];
 main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-SSAOBlurPipeline.cpp', undefined, { depends:[...main_ssaoBlur_shaders] } ) );
+
+const main_ssdo_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSDO.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSDO.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-SSDOPipeline.cpp', undefined, { depends:[...main_ssdo_shaders] } ) );
+
+const main_ssdoFilter_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSDOFilter.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSDOFilter.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-SSDOFilterPipeline.cpp', undefined, { depends:[...main_ssdoFilter_shaders] } ) );
 
 
 // A3 - Shadow

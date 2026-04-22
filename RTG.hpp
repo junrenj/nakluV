@@ -78,7 +78,7 @@ struct RTG {
 		bool headless = false;
 
 		// file path to open
-		std::string FilePath = "Homework/A3/Scene/A3Create/S72/A3Create.s72";
+		std::string FilePath = "Homework/Final/scene/s72/Control_Scene.s72";
 
 		// name of irradiance texture
 		std::string EnvIrradianceTexName = "env_irradiance";

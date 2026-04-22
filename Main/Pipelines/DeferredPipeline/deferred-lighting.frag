@@ -51,6 +51,8 @@ layout(set=3,binding=2) uniform sampler2D LUT_TEX;
 
 layout(set=4, binding=0) uniform sampler2DShadow SpotShadowMaps[MAX_SPOT_SHADOWS];
 
+layout(set=5, binding=0) uniform sampler2D SSAOTex;
+layout(set=5, binding=1) uniform sampler2D SSDOTex;
 
 layout(location = 0) in vec2 uv;
 layout(location = 0) out vec4 outColor;
@@ -532,6 +534,9 @@ void main()
     vec4 g1 = texture(GBuffer1Tex, uv);
     vec4 g2 = texture(GBuffer2Tex, uv);
 
+    float ao = texture(SSAOTex, uv).r;
+    vec3 ssdo = texture(SSDOTex, uv).rgb;
+
     vec3 worldPos = g2.xyz;
     vec3 N = normalize(g0.xyz * 2.0 - 1.0);
     float rough = g0.w;
@@ -543,6 +548,7 @@ void main()
 
     vec3 V = normalize(WORLD.VIEW_POS.xyz - worldPos);
     vec3 R = reflect(-V, N);
+
 
     vec3 color = vec3(0.0);
 
@@ -565,16 +571,16 @@ void main()
         vec3 kS = F0;
         vec3 kD = (1.0 - kS) * (1.0 - metal);
 
-        vec3 ibl = kD * diffuseIBL + specularIBL;
+        vec3 ibl = kD * diffuseIBL * ao + specularIBL;
 
-        color = direct + ibl;
+        color = direct + ibl + ssdo;
     }
     else if (materialType == 1) // Lambertian
     {
         vec3 direct = CalDirectLightings_Lambert(worldPos, N, albedo);
         vec3 irradiance = texture(IRRADIANCE_TEX, N).rgb;
-        vec3 ibl = irradiance * albedo / PI;
-        color = direct + ibl;
+        vec3 ibl = irradiance * albedo / PI * ao;
+        color = direct + ibl + ssdo;
     }
     else if (materialType == 2) // Mirror
     {

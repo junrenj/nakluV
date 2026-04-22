@@ -54,9 +54,9 @@ vec3 RandomVec(vec2 texcoord)
     return normalize(vec3(x, y, z));
 }
 
-vec3 DecodeNormal(vec3 enc)
+vec3 DecodeNormal(vec3 InN)
 {
-    return normalize(enc * 2.0 - 1.0);
+    return normalize(InN * 2.0 - 1.0);
 }
 
 float ComputeSSAO(vec2 texcoord)

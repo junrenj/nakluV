@@ -22,6 +22,7 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
     InitializeDebugRenderScene();
 	InitializeCommandLineSettings();
 
+
     // select a depth format:
     DepthFormat = rtg.helpers.find_image_format
     (
@@ -218,13 +219,13 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 		VkDescriptorPoolSize PoolSize
 		{
 			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.descriptorCount = 5,
+			.descriptorCount = 6,
 		};
 
 		VkDescriptorPoolCreateInfo CreateInfo
 		{
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-			.maxSets = 1,
+			.maxSets = 2,
 			.poolSizeCount = 1,
 			.pPoolSizes = &PoolSize,
 		};
@@ -237,6 +238,9 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 	CreateSSAOPass();
 	CreateSSAOBlurPass();
 
+	CreateSSDOPass();
+	CreateSSDOFilterPass();
+
 	LinesPipeline.Create(rtg, RenderPass, 0);
     LambertPipeline.Create(rtg, RenderPass, 0);
 	ShadowPipeline.Create(rtg, ShadowData.ShadowPass, 0, LambertPipeline.Set2_Transforms);
@@ -245,6 +249,8 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 	// postprocessing
 	SSAOPipeline.Create(rtg, SSAOData.SSAOPass, 0);
 	SSAOBlurPipeline.Create(rtg, SSAOBlurData.BlurPass, 0);
+	SSDOPipeline.Create(rtg, SSDOData.SSDOPass, 0);
+	SSDOFilterPipeline.Create(rtg, SSDOFilterData.FilterPass, 0);
 
 	GBufferDebugPipeline.Create(rtg, RenderPass, 0);
 	DeferredLightingPipeline.Create(rtg, RenderPass, 0, LambertPipeline.Set1_World, LambertPipeline.Set4_Lights, LambertPipeline.Set5_EnvTex, LambertPipeline.Set6_Shadowmap);
@@ -363,6 +369,23 @@ URenderPipelines::URenderPipelines(RTG &rtg_) : rtg(rtg_)
 		workspace.SSAO = rtg.helpers.create_buffer
 		(
 			sizeof(FSSAOPassUBO),
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			Helpers::Unmapped
+		);
+
+		// SSDO UBO
+		workspace.SSDOSrc = rtg.helpers.create_buffer
+		(
+			sizeof(FSSDOPassUBO),
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			Helpers::Mapped
+		);
+
+		workspace.SSDO = rtg.helpers.create_buffer
+		(
+			sizeof(FSSDOPassUBO),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			Helpers::Unmapped
@@ -1009,6 +1032,7 @@ URenderPipelines::~URenderPipelines()
 	
 	DestroyGBufferResources();
 	DestroySSAOResources();
+	DestroySSDOResources();
 
 	// Destroy command pool
 	if(CommandPool != VK_NULL_HANDLE)
@@ -1095,16 +1119,22 @@ void URenderPipelines::on_swapchain(RTG &rtg_, RTG::SwapchainEvent const &swapch
 	}
 
 	CreateGBufferTargets(swapchain.extent, swapchain.image_views.size());
+
 	CreateSSAOTargets(swapchain.extent, swapchain.image_views.size());
 	CreateSSAOBlurTargets(swapchain.extent, swapchain.image_views.size());
+	CreateSSDOTargets(swapchain.extent, swapchain.image_views.size());
+	CreateSSDOFilterTargets(swapchain.extent, swapchain.image_views.size());
+
 	CreateGBufferDebugDescriptors();
 	CreateDeferredLightingDescriptors();
 	for (auto& workspace : workspaces)
 	{
 		CreateSSAODescriptors(workspace);
+		CreateSSDODescriptors(workspace);
 	}
 	
 	CreateSSAOBlurDescriptors();
+	CreateSSDOFilterDescriptors();
 }
 
 void URenderPipelines::DestroyFramebuffers()
@@ -1422,6 +1452,7 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 	// upload UBO Info
 	{
 		UpdateSSAOBuffer(workspace);
+		UpdateSSDOBuffer(workspace);
 	}
 
 	// Memory Barrier
@@ -1492,6 +1523,9 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 	RenderSSAOPass(workspace, render_params.image_index);
 	RenderSSAOBlurPass(workspace, render_params.image_index);
 
+	RenderSSDOPass(workspace, render_params.image_index);
+	RenderSSDOFilterPass(workspace, render_params.image_index);
+
 	// Render Pass
 	{
 		std::array<VkClearValue, 2> clear_values
@@ -1523,8 +1557,6 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 
 			// RenderLambertPipeline(workspace);
 
-			ViewportFullScreen(workspace);
-
 			ViewportPillarBoxing(workspace);
 
 			RenderDeferredLightingPipeline(workspace);
@@ -1536,6 +1568,8 @@ void URenderPipelines::render(RTG &rtg_, RTG::RenderParams const &render_params)
 			ViewportPillarBoxing(workspace);
 
 			RenderGBufferDebugPipeline(workspace);
+			
+			RenderLinesPipeline(workspace);
 		}
 		
 		vkCmdEndRenderPass(workspace.command_buffer);
@@ -1766,7 +1800,7 @@ void URenderPipelines::on_input(InputEvent const &evt)
 		rtg.configuration.debug = !rtg.configuration.debug;
 		return;
 	}
-
+	// Gbuffer - Albedo
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_1)
 	{
 		if (GBufferDebugView == EGBufferDebugView::Albedo)
@@ -1775,7 +1809,7 @@ void URenderPipelines::on_input(InputEvent const &evt)
 			GBufferDebugView = EGBufferDebugView::Albedo;
 		return;
 	}
-
+	// Gbuffer - Normal
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_2)
 	{
 		if (GBufferDebugView == EGBufferDebugView::Normal)
@@ -1784,7 +1818,7 @@ void URenderPipelines::on_input(InputEvent const &evt)
 			GBufferDebugView = EGBufferDebugView::Normal;
 		return;
 	}
-
+	// Gbuffer - Position
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_3)
 	{
 		if (GBufferDebugView == EGBufferDebugView::Position)
@@ -1793,7 +1827,7 @@ void URenderPipelines::on_input(InputEvent const &evt)
 			GBufferDebugView = EGBufferDebugView::Position;
 		return;
 	}
-
+	// Gbuffer - Roughness
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_4)
 	{
 		if (GBufferDebugView == EGBufferDebugView::Roughness)
@@ -1802,7 +1836,7 @@ void URenderPipelines::on_input(InputEvent const &evt)
 			GBufferDebugView = EGBufferDebugView::Roughness;
 		return;
 	}
-
+	// Gbuffer - Metalness
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_5)
 	{
 		if (GBufferDebugView == EGBufferDebugView::Metalness)
@@ -1811,13 +1845,22 @@ void URenderPipelines::on_input(InputEvent const &evt)
 			GBufferDebugView = EGBufferDebugView::Metalness;
 		return;
 	}
-
+	// Screen processing - SSAO
 	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_6)
 	{
 		if (GBufferDebugView == EGBufferDebugView::SSAO)
 			GBufferDebugView = EGBufferDebugView::None;
 		else
 			GBufferDebugView = EGBufferDebugView::SSAO;
+		return;
+	}
+	// Screen processing - SSDO
+	if(evt.type == InputEvent::KeyDown && evt.key.key == GLFW_KEY_7)
+	{
+		if (GBufferDebugView == EGBufferDebugView::SSDO)
+			GBufferDebugView = EGBufferDebugView::None;
+		else
+			GBufferDebugView = EGBufferDebugView::SSDO;
 		return;
 	}
 
@@ -2953,76 +2996,135 @@ void URenderPipelines::CreateDeferredLightingDescriptors()
         VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &DeferredLightingDescriptors));
     }
 
-    std::array<VkDescriptorImageInfo, 3> Infos
     {
-        VkDescriptorImageInfo
-        {
-            .sampler = TextureSamplerNearest,
-            .imageView = GBufferData.GBufferViews[0],
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        },
-        VkDescriptorImageInfo
-        {
-            .sampler = TextureSamplerNearest,
-            .imageView = GBufferData.GBufferViews[1],
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        },
-        VkDescriptorImageInfo
-        {
-            .sampler = TextureSamplerNearest,
-            .imageView = GBufferData.GBufferViews[2],
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        },
-    };
+		std::array<VkDescriptorImageInfo, 3> Infos
+		{
+			VkDescriptorImageInfo
+			{
+				.sampler = TextureSamplerNearest,
+				.imageView = GBufferData.GBufferViews[0],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			},
+			VkDescriptorImageInfo
+			{
+				.sampler = TextureSamplerNearest,
+				.imageView = GBufferData.GBufferViews[1],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			},
+			VkDescriptorImageInfo
+			{
+				.sampler = TextureSamplerNearest,
+				.imageView = GBufferData.GBufferViews[2],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			},
+		};
 
-    std::array<VkWriteDescriptorSet, 3> Writes
-    {
-        VkWriteDescriptorSet
+		std::array<VkWriteDescriptorSet, 3> Writes
 		{
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = DeferredLightingDescriptors,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &Infos[0],
-        },
-        VkWriteDescriptorSet
-		{
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = DeferredLightingDescriptors,
-            .dstBinding = 1,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &Infos[1],
-        },
-        VkWriteDescriptorSet
-		{
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = DeferredLightingDescriptors,
-            .dstBinding = 2,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &Infos[2],
-        },
-    };
+			VkWriteDescriptorSet
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = DeferredLightingDescriptors,
+				.dstBinding = 0,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &Infos[0],
+			},
+			VkWriteDescriptorSet
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = DeferredLightingDescriptors,
+				.dstBinding = 1,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &Infos[1],
+			},
+			VkWriteDescriptorSet
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = DeferredLightingDescriptors,
+				.dstBinding = 2,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &Infos[2],
+			},
+		};
+		
+    	vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+	}
 
-    vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+
+	if(DeferredLightingScreenProcessDescriptors == VK_NULL_HANDLE)
+	{
+		VkDescriptorSetAllocateInfo AllocInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = DeferredLightingDescriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &DeferredLightingPipeline.Set5_ScreenProcess,
+        };
+        VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &DeferredLightingScreenProcessDescriptors));
+	}
+	{
+		std::array<VkDescriptorImageInfo, 2> Infos
+		{
+			VkDescriptorImageInfo
+			{
+				.sampler = TextureSamplerNearest,
+				.imageView = SSAOBlurData.AOBlurView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			},
+			VkDescriptorImageInfo
+			{
+				.sampler = TextureSamplerNearest,
+				.imageView = SSDOFilterData.SSDOFilterView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			},
+		};
+
+		std::array<VkWriteDescriptorSet, 2> Writes
+		{
+			VkWriteDescriptorSet
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = DeferredLightingScreenProcessDescriptors,
+				.dstBinding = 0,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &Infos[0],
+			},
+			VkWriteDescriptorSet
+			{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = DeferredLightingScreenProcessDescriptors,
+				.dstBinding = 1,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &Infos[1],
+			},
+		};
+		
+    	vkUpdateDescriptorSets(rtg.device, uint32_t(Writes.size()), Writes.data(), 0, nullptr);
+	}
 }
 
 void URenderPipelines::RenderDeferredLightingPipeline(FWorkspace &Workspace)
 {
 	vkCmdBindPipeline(Workspace.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, DeferredLightingPipeline.Handle);
 
-	std::array<VkDescriptorSet, 5> DescriptorSets
+	std::array<VkDescriptorSet, 6> DescriptorSets
     {
         DeferredLightingDescriptors,   // set 0: GBuffer
         Workspace.WorldDescriptors,    // set 1: World
         Workspace.LightsDescriptors,   // set 2: Lights
         EnvTexDescriptors[0],          // set 3: EnvTex
-        ShadowDescriptors              // set 4: Shadowmap
+        ShadowDescriptors,              // set 4: Shadowmap
+		DeferredLightingScreenProcessDescriptors,	// set 5 : Screen Processing
     };
 
     vkCmdBindDescriptorSets(
@@ -3121,36 +3223,44 @@ void URenderPipelines::CreateGBufferDebugDescriptors()
         VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &GBufferDebugDescriptors));
     }
 
-    std::array<VkDescriptorImageInfo, 4> Infos
+    std::array<VkDescriptorImageInfo, 5> Infos
     {
-        VkDescriptorImageInfo
+        VkDescriptorImageInfo	// GBuffer0 xyz - normal w - roughness
 		{
             .sampler = TextureSamplerNearest,
             .imageView = GBufferData.GBufferViews[0],
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
-        VkDescriptorImageInfo
+        VkDescriptorImageInfo	// GBuffer1 xyz - albedo w - metalness
 		{
             .sampler = TextureSamplerNearest,
             .imageView = GBufferData.GBufferViews[1],
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
-        VkDescriptorImageInfo
+        VkDescriptorImageInfo	// Gbuffer2 xyz - position w - materialType
 		{
             .sampler = TextureSamplerNearest,
             .imageView = GBufferData.GBufferViews[2],
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
-		VkDescriptorImageInfo{
+		VkDescriptorImageInfo	// SSAO
+		{
             .sampler = TextureSamplerNearest,
             .imageView = SSAOBlurData.AOBlurView,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         },
+		VkDescriptorImageInfo	// SSDO
+		{
+            .sampler = TextureSamplerNearest,
+            .imageView = SSDOFilterData.SSDOFilterView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
     };
 
-    std::array<VkWriteDescriptorSet, 4> Writes
+    std::array<VkWriteDescriptorSet, 5> Writes
     {
-        VkWriteDescriptorSet{
+        VkWriteDescriptorSet
+		{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = GBufferDebugDescriptors,
             .dstBinding = 0,
@@ -3158,7 +3268,8 @@ void URenderPipelines::CreateGBufferDebugDescriptors()
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .pImageInfo = &Infos[0],
         },
-        VkWriteDescriptorSet{
+        VkWriteDescriptorSet
+		{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = GBufferDebugDescriptors,
             .dstBinding = 1,
@@ -3166,7 +3277,8 @@ void URenderPipelines::CreateGBufferDebugDescriptors()
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .pImageInfo = &Infos[1],
         },
-        VkWriteDescriptorSet{
+        VkWriteDescriptorSet
+		{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = GBufferDebugDescriptors,
             .dstBinding = 2,
@@ -3174,13 +3286,23 @@ void URenderPipelines::CreateGBufferDebugDescriptors()
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .pImageInfo = &Infos[2],
         },
-		VkWriteDescriptorSet{
+		VkWriteDescriptorSet
+		{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = GBufferDebugDescriptors,
             .dstBinding = 3,
             .descriptorCount = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .pImageInfo = &Infos[3],
+        },
+		VkWriteDescriptorSet
+		{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = GBufferDebugDescriptors,
+            .dstBinding = 4,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &Infos[4],
         },
     };
 
@@ -3202,6 +3324,7 @@ void URenderPipelines::RenderGBufferDebugPipeline(FWorkspace &workspace)
 		case EGBufferDebugView::Roughness: Push.Mode = 4; break;
 		case EGBufferDebugView::Metalness: Push.Mode = 5; break;
 		case EGBufferDebugView::SSAO:		Push.Mode = 6; break;
+		case EGBufferDebugView::SSDO:		Push.Mode = 7; break;
         default:                          Push.Mode = 0; break;
     }
 
@@ -3232,7 +3355,8 @@ void URenderPipelines::ViewportFullScreen(FWorkspace &workspace)
 }
 //~END GBuffer Debug
 
-//~BEGIN Postprocess
+//~BEGIN Screen processing
+// SSAO
 void URenderPipelines::CreateSSAOPass()
 {
     VkAttachmentDescription Attachment
@@ -3905,5 +4029,677 @@ void URenderPipelines::RenderSSAOBlurPass(FWorkspace& Workspace, uint32_t Frameb
 	);
 }
 
+// SSDO
+void URenderPipelines::CreateSSDOPass()
+{
+    VkAttachmentDescription Attachment
+    {
+        .format = SSDOData.DOFormat,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+
+    VkAttachmentReference ColorRef
+    {
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+
+    VkSubpassDescription Subpass
+    {
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &ColorRef,
+    };
+
+    VkSubpassDependency Dependency
+    {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+    };
+
+    VkRenderPassCreateInfo CreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = 1,
+        .pAttachments = &Attachment,
+        .subpassCount = 1,
+        .pSubpasses = &Subpass,
+        .dependencyCount = 1,
+        .pDependencies = &Dependency,
+    };
+
+    VK(vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &SSDOData.SSDOPass));
+}
+
+void URenderPipelines::CreateSSDOTargets(VkExtent2D Extent, size_t FramebufferCount)
+{
+    if (SSDOData.DOView != VK_NULL_HANDLE)
+    {
+        vkDestroyImageView(rtg.device, SSDOData.DOView, nullptr);
+        SSDOData.DOView = VK_NULL_HANDLE;
+    }
+
+    if (SSDOData.DOImage.handle != VK_NULL_HANDLE)
+    {
+        rtg.helpers.destroy_image(std::move(SSDOData.DOImage));
+    }
+
+    for (auto fb : SSDOData.DOFramebuffers)
+    {
+        if (fb != VK_NULL_HANDLE) vkDestroyFramebuffer(rtg.device, fb, nullptr);
+    }
+    SSDOData.DOFramebuffers.clear();
+
+    SSDOData.DOImage = rtg.helpers.create_image(
+        Extent,
+        SSDOData.DOFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        Helpers::Unmapped
+    );
+
+    VkImageViewCreateInfo ViewInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = SSDOData.DOImage.handle,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = SSDOData.DOFormat,
+        .subresourceRange{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
+    VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &SSDOData.DOView));
+
+    SSDOData.DOFramebuffers.resize(FramebufferCount, VK_NULL_HANDLE);
+    for (size_t i = 0; i < FramebufferCount; ++i)
+    {
+        VkFramebufferCreateInfo FBInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = SSDOData.SSDOPass,
+            .attachmentCount = 1,
+            .pAttachments = &SSDOData.DOView,
+            .width = Extent.width,
+            .height = Extent.height,
+            .layers = 1,
+        };
+        VK(vkCreateFramebuffer(rtg.device, &FBInfo, nullptr, &SSDOData.DOFramebuffers[i]));
+    }
+}
+
+void URenderPipelines::CreateSSDODescriptors(FWorkspace &workspace)
+{
+    if (SSDOData.DescriptorPool == VK_NULL_HANDLE)
+    {
+        std::array<VkDescriptorPoolSize, 2> PoolSizes
+        {
+            VkDescriptorPoolSize
+            {
+                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 3 * uint32_t(workspaces.size()),
+            },
+            VkDescriptorPoolSize
+            {
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1 * uint32_t(workspaces.size()),
+            }
+        };
+
+        VkDescriptorPoolCreateInfo CreateInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = uint32_t(workspaces.size()),
+            .poolSizeCount = uint32_t(PoolSizes.size()),
+            .pPoolSizes = PoolSizes.data(),
+        };
+
+        VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &SSDOData.DescriptorPool));
+    }
+
+    if (workspace.SSDOUboDescriptors == VK_NULL_HANDLE)
+    {
+        VkDescriptorSetAllocateInfo AllocInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = SSDOData.DescriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &SSDOPipeline.Set0_GBuffer,
+        };
+
+        VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &workspace.SSDOUboDescriptors));
+    }
+
+    std::array<VkDescriptorImageInfo, 3> ImageInfos
+    {
+        VkDescriptorImageInfo
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[0],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+        VkDescriptorImageInfo
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[1],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+        VkDescriptorImageInfo
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[2],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+    };
+
+    VkDescriptorBufferInfo UBOInfo
+    {
+        .buffer = workspace.SSAO.handle,
+        .offset = 0,
+        .range = workspace.SSAO.size,
+    };
+
+    std::array<VkWriteDescriptorSet, 4> Writes
+    {
+        VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = workspace.SSDOUboDescriptors,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &ImageInfos[0],
+        },
+        VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = workspace.SSDOUboDescriptors,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &ImageInfos[1],
+        },
+        VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = workspace.SSDOUboDescriptors,
+            .dstBinding = 2,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &ImageInfos[2],
+        },
+        VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = workspace.SSDOUboDescriptors,
+            .dstBinding = 3,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = &UBOInfo,
+        },
+    };
+
+    vkUpdateDescriptorSets(
+        rtg.device,
+        uint32_t(Writes.size()),
+        Writes.data(),
+        0,
+        nullptr
+    );
+}
+
+void URenderPipelines::RenderSSDOPass(FWorkspace& Workspace, uint32_t FramebufferIndex)
+{
+    VkClearValue ClearValue{};
+    ClearValue.color.float32[0] = 1.0f;
+    ClearValue.color.float32[1] = 1.0f;
+    ClearValue.color.float32[2] = 1.0f;
+    ClearValue.color.float32[3] = 1.0f;
+
+    VkRenderPassBeginInfo BeginInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = SSDOData.SSDOPass,
+        .framebuffer = SSDOData.DOFramebuffers[FramebufferIndex],
+        .renderArea{
+            .offset = {0, 0},
+            .extent = rtg.swapchain_extent,
+        },
+        .clearValueCount = 1,
+        .pClearValues = &ClearValue,
+    };
+
+    vkCmdBeginRenderPass(Workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    ViewportFullScreen(Workspace);
+
+    vkCmdBindPipeline(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        SSDOPipeline.Handle
+    );
+
+    vkCmdBindDescriptorSets(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        SSDOPipeline.Layout,
+        0,
+        1,
+        &Workspace.SSAOUboDescriptors,
+        0,
+        nullptr
+    );
+
+    vkCmdDraw(Workspace.command_buffer, 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(Workspace.command_buffer);
+
+	VkImageMemoryBarrier doBarrier
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image = SSDOData.DOImage.handle,
+		.subresourceRange{
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+	};
+
+	vkCmdPipelineBarrier(
+		Workspace.command_buffer,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &doBarrier
+	);
+}
+
+void URenderPipelines::UpdateSSDOBuffer(FWorkspace &workspace)
+{
+	FSSDOPassUBO ssdo{};
+
+	std::memcpy(ssdo.ViewFromWorld, glm::value_ptr(VIEW_FROM_WORLD), sizeof(float) * 16);
+	std::memcpy(ssdo.Projection, glm::value_ptr(PROJECTION), sizeof(float) * 16);
+	std::memcpy(ssdo.InvProjection, glm::value_ptr(INV_PROJECTION), sizeof(float) * 16);
+
+	ssdo.Radius = 1.5f;
+	ssdo.Bias   = 0.08f;
+	ssdo.Power  = 1.2f;
+
+	assert(workspace.SSDOSrc.size == sizeof(FSSDOPassUBO));
+	assert(workspace.SSDOSrc.allocation.mapped);
+
+	// CPU -> staging buffer
+	std::memcpy(workspace.SSDOSrc.allocation.data(), &ssdo, sizeof(FSSDOPassUBO));
+
+	// staging -> device local
+	VkBufferCopy CopyRegion
+	{
+		.srcOffset = 0,
+		.dstOffset = 0,
+		.size = sizeof(FSSAOPassUBO),
+	};
+
+	vkCmdCopyBuffer(
+		workspace.command_buffer,
+		workspace.SSDOSrc.handle,
+		workspace.SSDO.handle,
+		1,
+		&CopyRegion
+	);
+}
+
+void URenderPipelines::DestroySSDOResources()
+{
+    for (auto &fb : SSDOData.DOFramebuffers)
+    {
+        if (fb != VK_NULL_HANDLE)
+        {
+            vkDestroyFramebuffer(rtg.device, fb, nullptr);
+            fb = VK_NULL_HANDLE;
+        }
+    }
+    SSDOData.DOFramebuffers.clear();
+
+    if (SSDOData.DOView != VK_NULL_HANDLE)
+    {
+        vkDestroyImageView(rtg.device, SSDOData.DOView, nullptr);
+        SSDOData.DOView = VK_NULL_HANDLE;
+    }
+
+    if (SSDOData.DOImage.handle != VK_NULL_HANDLE)
+    {
+        rtg.helpers.destroy_image(std::move(SSDOData.DOImage));
+    }
+
+    if (SSDOData.DescriptorPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(rtg.device, SSDOData.DescriptorPool, nullptr);
+        SSDOData.DescriptorPool = VK_NULL_HANDLE;
+    }
+
+    SSDOData.DescriptorSet = VK_NULL_HANDLE;
+
+    if (SSDOData.SSDOPass != VK_NULL_HANDLE)
+    {
+        vkDestroyRenderPass(rtg.device, SSDOData.SSDOPass, nullptr);
+        SSDOData.SSDOPass = VK_NULL_HANDLE;
+    }
+}
+
+void URenderPipelines::CreateSSDOFilterPass()
+{
+    VkAttachmentDescription Attachment
+    {
+        .format = SSDOFilterData.SSDOFilterFormat,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+
+    VkAttachmentReference ColorRef
+    {
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+
+    VkSubpassDescription Subpass
+    {
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &ColorRef,
+    };
+
+    VkSubpassDependency Dependency
+    {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+    };
+
+    VkRenderPassCreateInfo CreateInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = 1,
+        .pAttachments = &Attachment,
+        .subpassCount = 1,
+        .pSubpasses = &Subpass,
+        .dependencyCount = 1,
+        .pDependencies = &Dependency,
+    };
+
+    VK(vkCreateRenderPass(rtg.device, &CreateInfo, nullptr, &SSDOFilterData.FilterPass));
+}
+
+void URenderPipelines::CreateSSDOFilterTargets(VkExtent2D Extent, size_t FramebufferCount)
+{
+    if (SSDOFilterData.SSDOFilterView != VK_NULL_HANDLE)
+    {
+        vkDestroyImageView(rtg.device, SSDOFilterData.SSDOFilterView, nullptr);
+        SSDOFilterData.SSDOFilterView = VK_NULL_HANDLE;
+    }
+
+    if (SSDOFilterData.SSDOFilterImage.handle != VK_NULL_HANDLE)
+    {
+        rtg.helpers.destroy_image(std::move(SSDOFilterData.SSDOFilterImage));
+    }
+
+    for (auto fb : SSDOFilterData.SSDOFilterFramebuffers)
+    {
+        if (fb != VK_NULL_HANDLE) vkDestroyFramebuffer(rtg.device, fb, nullptr);
+    }
+    SSDOFilterData.SSDOFilterFramebuffers.clear();
+
+    SSDOFilterData.SSDOFilterImage = rtg.helpers.create_image(
+        Extent,
+        SSDOFilterData.SSDOFilterFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        Helpers::Unmapped
+    );
+
+    VkImageViewCreateInfo ViewInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = SSDOFilterData.SSDOFilterImage.handle,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = SSDOFilterData.SSDOFilterFormat,
+        .subresourceRange{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
+    VK(vkCreateImageView(rtg.device, &ViewInfo, nullptr, &SSDOFilterData.SSDOFilterView));
+
+    SSDOFilterData.SSDOFilterFramebuffers.resize(FramebufferCount, VK_NULL_HANDLE);
+    for (size_t i = 0; i < FramebufferCount; ++i)
+    {
+        VkFramebufferCreateInfo FBInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = SSDOFilterData.FilterPass,
+            .attachmentCount = 1,
+            .pAttachments = &SSDOFilterData.SSDOFilterView,
+            .width = Extent.width,
+            .height = Extent.height,
+            .layers = 1,
+        };
+        VK(vkCreateFramebuffer(rtg.device, &FBInfo, nullptr, &SSDOFilterData.SSDOFilterFramebuffers[i]));
+    }
+}
+
+void URenderPipelines::CreateSSDOFilterDescriptors()
+{
+    if (SSDOFilterData.DescriptorPool == VK_NULL_HANDLE)
+    {
+        VkDescriptorPoolSize PoolSize
+        {
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 3,
+        };
+
+        VkDescriptorPoolCreateInfo CreateInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = 1,
+            .poolSizeCount = 1,
+            .pPoolSizes = &PoolSize,
+        };
+
+        VK(vkCreateDescriptorPool(rtg.device, &CreateInfo, nullptr, &SSDOFilterData.DescriptorPool));
+    }
+
+    if (SSDOFilterData.DescriptorSet == VK_NULL_HANDLE)
+    {
+        VkDescriptorSetAllocateInfo AllocInfo
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = SSDOFilterData.DescriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &SSDOFilterPipeline.Set0_InputInfo,
+        };
+
+        VK(vkAllocateDescriptorSets(rtg.device, &AllocInfo, &SSDOFilterData.DescriptorSet));
+    }
+
+    std::array<VkDescriptorImageInfo, 3> ImageInfos
+    {
+        VkDescriptorImageInfo	// SSDO
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = SSDOData.DOView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+		VkDescriptorImageInfo	// normalWS
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[0],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+		VkDescriptorImageInfo	// positionWS
+        {
+            .sampler = TextureSamplerNearest,
+            .imageView = GBufferData.GBufferViews[2],
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        },
+    };
+
+    std::array<VkWriteDescriptorSet, 3> Writes
+    {
+        VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = SSDOFilterData.DescriptorSet,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &ImageInfos[0],
+        },
+		VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = SSDOFilterData.DescriptorSet,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &ImageInfos[1],
+        },
+		VkWriteDescriptorSet
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = SSDOFilterData.DescriptorSet,
+            .dstBinding = 2,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &ImageInfos[2],
+        },
+    };
+
+    vkUpdateDescriptorSets(
+        rtg.device,
+        uint32_t(Writes.size()),
+        Writes.data(),
+        0,
+        nullptr
+    );
+}
+
+void URenderPipelines::RenderSSDOFilterPass(FWorkspace& Workspace, uint32_t FramebufferIndex)
+{
+    VkClearValue ClearValue{};
+    ClearValue.color.float32[0] = 1.0f;
+    ClearValue.color.float32[1] = 1.0f;
+    ClearValue.color.float32[2] = 1.0f;
+    ClearValue.color.float32[3] = 1.0f;
+
+    VkRenderPassBeginInfo BeginInfo
+    {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = SSDOFilterData.FilterPass,
+        .framebuffer = SSDOFilterData.SSDOFilterFramebuffers[FramebufferIndex],
+        .renderArea{
+            .offset = {0, 0},
+            .extent = rtg.swapchain_extent,
+        },
+        .clearValueCount = 1,
+        .pClearValues = &ClearValue,
+    };
+
+    vkCmdBeginRenderPass(Workspace.command_buffer, &BeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    ViewportFullScreen(Workspace);
+
+    vkCmdBindPipeline(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        SSDOFilterPipeline.Handle
+    );
+
+    vkCmdBindDescriptorSets(
+        Workspace.command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        SSDOFilterPipeline.Layout,
+        0,
+        1,
+        &SSDOFilterData.DescriptorSet,
+        0,
+        nullptr
+    );
+
+    vkCmdDraw(Workspace.command_buffer, 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(Workspace.command_buffer);
+
+	VkImageMemoryBarrier SSDOFilterBarrier
+	{
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image = SSAOBlurData.AOBlurImage.handle,
+		.subresourceRange{
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+	};
+
+	vkCmdPipelineBarrier(
+		Workspace.command_buffer,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &SSDOFilterBarrier
+	);
+}
 
 //~END Postprocess

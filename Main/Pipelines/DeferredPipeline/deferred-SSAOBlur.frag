@@ -7,9 +7,9 @@ layout(set = 0, binding = 2) uniform sampler2D GBuffer_PostionWS; // Position
 layout(location = 0) in vec2 uv;
 layout(location = 0) out vec4 outColor;
 
-vec3 DecodeNormal(vec3 enc)
+vec3 DecodeNormal(vec3 InN)
 {
-    return normalize(enc * 2.0 - 1.0);
+    return normalize(InN * 2.0 - 1.0);
 }
 
 void main()

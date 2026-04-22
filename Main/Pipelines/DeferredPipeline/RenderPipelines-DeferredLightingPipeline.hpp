@@ -12,6 +12,7 @@ struct FDeferredLightingPipeline
     VkDescriptorSetLayout Set2_Lights = VK_NULL_HANDLE;
     VkDescriptorSetLayout Set3_EnvTex = VK_NULL_HANDLE;
     VkDescriptorSetLayout Set4_Shadowmap = VK_NULL_HANDLE;
+    VkDescriptorSetLayout Set5_ScreenProcess = VK_NULL_HANDLE;
 
     VkPipelineLayout Layout = VK_NULL_HANDLE;
     VkPipeline Handle = VK_NULL_HANDLE;

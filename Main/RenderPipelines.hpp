@@ -8,6 +8,9 @@
 #include "Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-SSAOPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-SSAOBlurPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-SSDOPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-SSDOFilterPipeline.hpp"
+
 #include "Debug/RenderPipelines-DebugGeometryPipeline.hpp"
 
 struct FShadowResource;
@@ -172,6 +175,11 @@ struct URenderPipelines : RTG::Application
 		Helpers::AllocatedBuffer SSAOSrc;
     	Helpers::AllocatedBuffer SSAO;
     	VkDescriptorSet SSAOUboDescriptors = VK_NULL_HANDLE;
+
+		// location for SSDO
+		Helpers::AllocatedBuffer SSDOSrc;
+    	Helpers::AllocatedBuffer SSDO;
+    	VkDescriptorSet SSDOUboDescriptors = VK_NULL_HANDLE;
 	};
 	std::vector< FWorkspace > workspaces;
 
@@ -301,6 +309,8 @@ struct URenderPipelines : RTG::Application
 //~END GBuffer Pass
 
 //~BEGIN postprocess pass
+	VkDescriptorSet DeferredLightingScreenProcessDescriptors = VK_NULL_HANDLE;
+
 	// SSAO
 	FSSAOData SSAOData;
 	FDeferredSSAOPipeline SSAOPipeline;
@@ -319,6 +329,24 @@ struct URenderPipelines : RTG::Application
 	void CreateSSAOBlurTargets(VkExtent2D Extent, size_t FrameBufferCount);
 	void RenderSSAOBlurPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
 
+	// SSDO
+	FSSDOData SSDOData;
+	FDeferredSSDOPipeline SSDOPipeline;
+	void CreateSSDODescriptors(FWorkspace &workspace);
+	void CreateSSDOPass();
+	void CreateSSDOTargets(VkExtent2D Extent, size_t FrameBufferCount);
+	void RenderSSDOPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
+	void UpdateSSDOBuffer(FWorkspace &workspace);
+	void DestroySSDOResources();
+
+	// SSDO Filter
+	FSSDOFilterData SSDOFilterData;
+	FDeferredSSDOFilterPipeline SSDOFilterPipeline;
+	void CreateSSDOFilterDescriptors();
+	void CreateSSDOFilterPass();
+	void CreateSSDOFilterTargets(VkExtent2D Extent, size_t FrameBufferCount);
+	void RenderSSDOFilterPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
+
 //~END postprocess pass
 
 //~BEGIN Debug
@@ -335,6 +363,7 @@ struct URenderPipelines : RTG::Application
 		Roughness = 4,
 		Metalness = 5,
 		SSAO = 6,
+		SSDO = 7,
 	};
 
 	EGBufferDebugView GBufferDebugView = EGBufferDebugView::None;
