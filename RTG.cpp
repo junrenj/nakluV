@@ -138,6 +138,14 @@ void RTG::Configuration::parse(int argc, char **argv)
 				TonemappingMode = ETonemappingMode::ACES;
 			}
 		}
+		else if (arg == "--ssao") 
+		{
+			ScreenProcessMode = EScreenProcessMode::SSAO; 
+		}
+		else if(arg == "--ssdo")
+		{
+			ScreenProcessMode = EScreenProcessMode::SSDO;
+		}
 		else 
 		{
 			throw std::runtime_error("Unrecognized argument '" + arg + "'.");

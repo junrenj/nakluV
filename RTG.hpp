@@ -112,6 +112,14 @@ struct RTG {
 			ACES = 3,
 		}TonemappingMode = ETonemappingMode::Linear;
 
+		// Screen Processing
+		enum class EScreenProcessMode
+		{
+			None = -1,
+			SSAO = 0,
+			SSDO = 1,
+		}ScreenProcessMode = EScreenProcessMode::None;
+
 		//for configuration construction + management:
 		Configuration() = default;
 		void parse(int argc, char **argv); //parse command-line options; throws on error

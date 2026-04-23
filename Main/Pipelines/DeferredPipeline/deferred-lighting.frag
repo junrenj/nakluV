@@ -25,7 +25,7 @@ struct Light
 layout(push_constant) uniform Push
 {
     int LightsCount;
-    float Padding0;
+    int SSMode;         // -1 -> None 0 -> SSAO 1 -> SSDO
     float Padding1;
     float Padding2;
 } PushConstant;
@@ -534,7 +534,7 @@ void main()
     vec4 g1 = texture(GBuffer1Tex, uv);
     vec4 g2 = texture(GBuffer2Tex, uv);
 
-    float ao = texture(SSAOTex, uv).r;
+    float ssao = texture(SSAOTex, uv).r;
     vec3 ssdo = texture(SSDOTex, uv).rgb;
 
     vec3 worldPos = g2.xyz;
@@ -571,16 +571,41 @@ void main()
         vec3 kS = F0;
         vec3 kD = (1.0 - kS) * (1.0 - metal);
 
-        vec3 ibl = kD * diffuseIBL * ao + specularIBL;
+        vec3 ibl = kD * diffuseIBL + specularIBL;
 
-        color = direct + ibl + ssdo;
+        if(PushConstant.SSMode == -1)
+        {
+            color = direct + ibl;
+        }
+        else if(PushConstant.SSMode == 0)
+        {
+            ibl = kD * diffuseIBL + specularIBL;
+            color = direct + ibl;
+            color *= ssao;
+        }
+        else if(PushConstant.SSMode == 1)
+        {
+            color = direct + ibl + ssdo;
+        }
     }
     else if (materialType == 1) // Lambertian
     {
         vec3 direct = CalDirectLightings_Lambert(worldPos, N, albedo);
         vec3 irradiance = texture(IRRADIANCE_TEX, N).rgb;
-        vec3 ibl = irradiance * albedo / PI * ao;
+        vec3 ibl = irradiance * albedo / PI;
         color = direct + ibl + ssdo;
+        if(PushConstant.SSMode == -1)
+        {
+            color = direct + ibl;
+        }
+        else if(PushConstant.SSMode == 0)
+        {
+            color = direct + ibl * ssao;
+        }
+        else if(PushConstant.SSMode == 1)
+        {
+            color = direct + ibl + ssdo;
+        }
     }
     else if (materialType == 2) // Mirror
     {

@@ -2942,7 +2942,7 @@ void URenderPipelines::RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_
         FDeferredGeometryPipeline::FPush Push
         {
             .MaterialType = int(Material->Type),
-            .Padding0 = 0.0f,
+            .Padding0 = int(rtg.configuration.ScreenProcessMode),
             .Padding1 = 0.0f,
             .Padding2 = 0.0f,
         };
@@ -4350,7 +4350,7 @@ void URenderPipelines::UpdateSSDOBuffer(FWorkspace &workspace)
 	std::memcpy(ssdo.Projection, glm::value_ptr(PROJECTION), sizeof(float) * 16);
 	std::memcpy(ssdo.InvProjection, glm::value_ptr(INV_PROJECTION), sizeof(float) * 16);
 
-	ssdo.Radius = 1.5f;
+	ssdo.Radius = 2.5f;
 	ssdo.Bias   = 0.08f;
 	ssdo.Power  = 1.2f;
 

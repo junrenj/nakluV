@@ -39,7 +39,7 @@ struct FDeferredGeometryPipeline
     struct FPush
     {
         int MaterialType;
-        float Padding0;
+        int Padding0;
         float Padding1;
         float Padding2;
     };

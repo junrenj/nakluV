@@ -111,7 +111,7 @@ void main()
         vec3 diffToTarget = sampleWorldPos - targetPos;
         float hitDist = length(diffToTarget);
 
-        float visibility = 1.0 - smoothstep(UBO.Bias, UBO.Bias * 4.0, hitDist);
+        float visibility = (hitDist < UBO.Bias) ? 1.0 : 0.0;
 
         if (visibility <= 1e-4)
             continue;
@@ -120,6 +120,13 @@ void main()
         float dist = length(L);
 
         if (dist < 1e-4)
+            continue;
+
+        if (dist > UBO.Radius)
+            continue;
+
+        float normalAgree = dot(N, sampleNormal);
+        if (normalAgree < 0.3)
             continue;
 
         vec3 wi = L / dist;

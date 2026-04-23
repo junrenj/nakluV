@@ -308,7 +308,7 @@ struct URenderPipelines : RTG::Application
 
 //~END GBuffer Pass
 
-//~BEGIN postprocess pass
+//~BEGIN screen process pass
 	VkDescriptorSet DeferredLightingScreenProcessDescriptors = VK_NULL_HANDLE;
 
 	// SSAO
@@ -347,7 +347,7 @@ struct URenderPipelines : RTG::Application
 	void CreateSSDOFilterTargets(VkExtent2D Extent, size_t FrameBufferCount);
 	void RenderSSDOFilterPass(FWorkspace& Workspace, uint32_t FramebufferIndex);
 
-//~END postprocess pass
+//~END screen process pass
 
 //~BEGIN Debug
 	UDebugScene DebugScene;
