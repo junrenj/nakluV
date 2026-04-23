@@ -78,7 +78,7 @@ struct RTG {
 		bool headless = false;
 
 		// file path to open
-		std::string FilePath = "Homework/Final/scene/s72/Control_Scene.s72";
+		std::string FilePath = "Homework/Final/scene/TestScene/s72/TestScene.s72";
 
 		// name of irradiance texture
 		std::string EnvIrradianceTexName = "env_irradiance";
@@ -115,9 +115,9 @@ struct RTG {
 		// Screen Processing
 		enum class EScreenProcessMode
 		{
-			None = -1,
-			SSAO = 0,
-			SSDO = 1,
+			None = 0,
+			SSAO = 1,
+			SSDO = 2,
 		}ScreenProcessMode = EScreenProcessMode::None;
 
 		//for configuration construction + management:

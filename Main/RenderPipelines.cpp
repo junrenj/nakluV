@@ -2942,7 +2942,7 @@ void URenderPipelines::RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_
         FDeferredGeometryPipeline::FPush Push
         {
             .MaterialType = int(Material->Type),
-            .Padding0 = int(rtg.configuration.ScreenProcessMode),
+            .Padding0 = 0.0f,
             .Padding1 = 0.0f,
             .Padding2 = 0.0f,
         };
@@ -3141,7 +3141,7 @@ void URenderPipelines::RenderDeferredLightingPipeline(FWorkspace &Workspace)
     FDeferredLightingPipeline::FConstant Constant
     {
         .LightsCount = int(Scene.LightProxyInstances.size()),
-        .Padding0 = 0.0f,
+        .ScreenProcessMode = int(rtg.configuration.ScreenProcessMode),
         .Padding1 = 0.0f,
         .Padding2 = 0.0f,
     };

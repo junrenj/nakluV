@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0, binding = 0) uniform sampler2D GBuffer0Tex; // normal (world-space)
+layout(set = 0, binding = 0) uniform sampler2D GBuffer0Tex; // normal (encoded 0..1)
 layout(set = 0, binding = 1) uniform sampler2D GBuffer1Tex; // albedo
 layout(set = 0, binding = 2) uniform sampler2D GBuffer2Tex; // position (world-space)
 
@@ -60,43 +60,51 @@ bool IsValidUV(vec2 coord)
            coord.y >= 0.0 && coord.y <= 1.0;
 }
 
-vec3 DecodeNormal(vec3 InN)
+vec3 DecodeNormal(vec3 n)
 {
-    return normalize(InN * 2.0 - 1.0);
+    return normalize(n * 2.0 - 1.0);
+}
+
+bool IsValidGBuffer(vec3 rawN, vec3 P)
+{
+    return length(rawN) > 1e-4 && length(P) > 1e-4;
 }
 
 void main()
 {
-    vec3 P = texture(GBuffer2Tex, uv).xyz;
-    vec3 N = DecodeNormal(texture(GBuffer0Tex, uv).rgb);
+    vec3 rawN = texture(GBuffer0Tex, uv).rgb;
+    vec3 P    = texture(GBuffer2Tex, uv).xyz;
 
-    if (length(N) < 1e-4)
+    if (!IsValidGBuffer(rawN, P))
     {
-        outColor = vec4(0.0, 0.0, 0.0, 1.0);
+        outColor = vec4(0.0);
         return;
     }
 
-    vec3 randomVec = RandomVec(uv);
+    vec3 N = DecodeNormal(rawN);
+
+    vec3 randomVec = RandomVec(uv * vec2(textureSize(GBuffer0Tex, 0)));
     vec3 T = normalize(randomVec - N * dot(randomVec, N));
-    vec3 B = cross(N, T);
+    vec3 B = normalize(cross(N, T));
     mat3 TBN = mat3(T, B, N);
 
     vec3 indirect = vec3(0.0);
     float validSamples = 0.0;
 
+    vec3 Pv = (UBO.ViewFromWorld * vec4(P, 1.0)).xyz;
+
     for (int i = 0; i < KERNEL_SIZE; ++i)
     {
-        vec3 sampleDir = normalize(TBN * SampleKernel[i]);
+        vec3 dir = normalize(TBN * SampleKernel[i]);
 
         float scale = float(i + 1) / float(KERNEL_SIZE);
         scale = mix(0.1, 1.0, scale * scale);
 
-        vec3 targetPos = P + sampleDir * (UBO.Radius * scale);
+        vec3 targetPosWS = P + dir * (UBO.Radius * scale);
+        vec3 targetPosVS = (UBO.ViewFromWorld * vec4(targetPosWS, 1.0)).xyz;
 
-        vec4 clipPos = UBO.Projection * UBO.ViewFromWorld * vec4(targetPos, 1.0);
-
-        if (abs(clipPos.w) < 1e-4)
-            continue;
+        vec4 clipPos = UBO.Projection * vec4(targetPosVS, 1.0);
+        if (abs(clipPos.w) < 1e-5) continue;
 
         vec3 ndc = clipPos.xyz / clipPos.w;
         vec2 sampleUV = ndc.xy * 0.5 + 0.5;
@@ -104,50 +112,49 @@ void main()
         if (!IsValidUV(sampleUV))
             continue;
 
-        vec3 sampleWorldPos = texture(GBuffer2Tex, sampleUV).xyz;
-        vec3 sampleNormal   = DecodeNormal(texture(GBuffer0Tex, sampleUV).xyz);
-        vec3 sampleAlbedo   = texture(GBuffer1Tex, sampleUV).rgb;
+        vec3 sampleRawN = texture(GBuffer0Tex, sampleUV).rgb;
+        vec3 samplePWS  = texture(GBuffer2Tex, sampleUV).xyz;
+        vec3 sampleAlb  = texture(GBuffer1Tex, sampleUV).rgb;
 
-        vec3 diffToTarget = sampleWorldPos - targetPos;
-        float hitDist = length(diffToTarget);
-
-        float visibility = (hitDist < UBO.Bias) ? 1.0 : 0.0;
-
-        if (visibility <= 1e-4)
+        if (!IsValidGBuffer(sampleRawN, samplePWS))
             continue;
 
-        vec3 L = sampleWorldPos - P;
+        vec3 sampleN = DecodeNormal(sampleRawN);
+        vec3 samplePVS = (UBO.ViewFromWorld * vec4(samplePWS, 1.0)).xyz;
+
+        float depthDelta = targetPosVS.z - samplePVS.z;
+
+        float Thickness = 0.05;
+        float dz = targetPosVS.z - samplePVS.z;
+        bool hit = (dz > -UBO.Bias) && (dz < Thickness);
+
+        if (!hit)
+            continue;
+
+        vec3 L = samplePWS - P;
         float dist = length(L);
-
-        if (dist < 1e-4)
-            continue;
-
-        if (dist > UBO.Radius)
-            continue;
-
-        float normalAgree = dot(N, sampleNormal);
-        if (normalAgree < 0.3)
+        if (dist < 1e-4 || dist > UBO.Radius)
             continue;
 
         vec3 wi = L / dist;
 
         float NdotL = max(dot(N, wi), 0.0);
+        float sampleFacing = max(dot(sampleN, -wi), 0.0);
 
-        float sampleFacing = max(dot(sampleNormal, -wi), 0.0);
+        if (NdotL <= 0.0 || sampleFacing <= 0.0)
+            continue;
 
-        float attenuation = 1.0 - clamp(dist / UBO.Radius, 0.0, 1.0);
+        float attenuation = 1.0 - dist / UBO.Radius;
         attenuation *= attenuation;
-
-        vec3 bounce = sampleAlbedo * NdotL * sampleFacing * attenuation * visibility;
+        
+        vec3 bounce = sampleAlb * NdotL * sampleFacing * attenuation;
 
         indirect += bounce;
         validSamples += 1.0;
     }
 
     if (validSamples > 0.0)
-    {
         indirect /= validSamples;
-    }
 
     indirect *= UBO.Power;
 

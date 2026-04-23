@@ -20,7 +20,7 @@ struct FDeferredLightingPipeline
     struct FConstant
     {
         int LightsCount;	// How many lights on the scene
-        float Padding0;
+        int ScreenProcessMode;  // 0->None 1->SSAO 2->SSDO
         float Padding1;
         float Padding2;
     };

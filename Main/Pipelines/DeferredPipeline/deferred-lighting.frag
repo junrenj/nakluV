@@ -573,17 +573,17 @@ void main()
 
         vec3 ibl = kD * diffuseIBL + specularIBL;
 
-        if(PushConstant.SSMode == -1)
+        if(PushConstant.SSMode == 0)
         {
             color = direct + ibl;
         }
-        else if(PushConstant.SSMode == 0)
+        else if(PushConstant.SSMode == 1)
         {
             ibl = kD * diffuseIBL + specularIBL;
             color = direct + ibl;
             color *= ssao;
         }
-        else if(PushConstant.SSMode == 1)
+        else if(PushConstant.SSMode == 2)
         {
             color = direct + ibl + ssdo;
         }
@@ -594,15 +594,15 @@ void main()
         vec3 irradiance = texture(IRRADIANCE_TEX, N).rgb;
         vec3 ibl = irradiance * albedo / PI;
         color = direct + ibl + ssdo;
-        if(PushConstant.SSMode == -1)
+        if(PushConstant.SSMode == 0)
         {
             color = direct + ibl;
         }
-        else if(PushConstant.SSMode == 0)
+        else if(PushConstant.SSMode == 1)
         {
             color = direct + ibl * ssao;
         }
-        else if(PushConstant.SSMode == 1)
+        else if(PushConstant.SSMode == 2)
         {
             color = direct + ibl + ssdo;
         }
