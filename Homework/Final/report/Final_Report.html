@@ -126,7 +126,7 @@ As both techniques rely on G-buffer data, the rendering pipeline was restructure
 I recreated the Research Sector atrium from the video game Control. This scene features rich architectural facades, making it particularly suitable for testing SSAO and SSDO.
 <p>
 <video controls playsinline style="width: 100%; height: auto;">
-		<source src="Videos/A3_Create.mp4" type="video/mp4">
+		<source src="Videos/Final_Create.mp4" type="video/mp4">
 	</video>
 </p>
 
@@ -196,7 +196,7 @@ To support deferred rendering, I restructured the original forward rendering pip
 <br>Then, using the G-buffer and shadow information, the direct lighting buffer is computed. 
 <br>After that, SSAO and SSDO are applied. 
 <br>Finally, the combined pipeline integrates all the intermediate results to produce the final rendered image.
-<h3>All Buffers Debug View <span class="atag">A3-load & light</span></h3>
+<h3>All Buffers Debug View <span class="atag">Info Buffer View</span></h3>
 	<video controls playsinline style="width: 100%; height: auto;">
 		<source src="Videos/Buffer.mp4" type="video/mp4">
 	</video>
@@ -208,7 +208,7 @@ To support deferred rendering, I restructured the original forward rendering pip
 To make the SSAO effect more pronounced, I currently apply it by directly multiplying it with the final output color.
 </p>
 <p>
-<h3>SSAO Buffer</h3>
+<h3>SSAO Buffer<span class="atag">SSAO Buffer View</span></h3>
 	<video controls playsinline style="width: 100%; height: auto;">
 		<source src="Videos/SSAOBuffer.mp4" type="video/mp4">
 	</video>
@@ -237,12 +237,12 @@ As shown in the figure below, the cost of the SSAO pass (excluding the blur pass
 <p>
 I incorporate SSDO as part of the indirect lighting contribution in the final pixel color.
 </p>
-<h3>SSDO Buffer</h3>
+<h3>SSDO Buffer<span class="atag">SSDO Buffer View</span></h3>
 <video controls playsinline style="width: 100%; height: auto;">
 		<source src="Videos/SSDOBuffer.mp4" type="video/mp4">
 	</video>
 <h3>SSDO on and off </h3>
-The video below shows the difference between with ssao and without ssdo.
+The video below shows the difference between with ssdo and without ssdo.
 <video controls playsinline style="width: 100%; height: auto;">
 		<source src="Videos/SSDOCompare.mp4" type="video/mp4">
 	</video>
