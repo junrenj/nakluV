@@ -14,7 +14,7 @@ struct FSSAOPassUBO
     float Radius;
     float Bias;
     float Power;
-    float Padding0;
+    int SampleCount;
 };
 
 struct FDeferredSSAOPipeline

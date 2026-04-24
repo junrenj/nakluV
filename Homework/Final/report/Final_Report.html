@@ -122,8 +122,8 @@ code var {
 <p>
 In the final project, I integrated Screen Space Ambient Occlusion (SSAO) and Screen Space Directional Occlusion (SSDO) into the rendering engine. 
 As both techniques rely on G-buffer data, the rendering pipeline was restructured to use a deferred rendering architecture.
-<h2>My Lit Scene <span class="atag creative">Final-create</span></h2>
-I used Blender to build the scene and created a flowing water effect using keyframe animation. Unfortunately, I did not have enough time to implement point light shadows; otherwise, the scene would have looked even more visually appealing.
+<h2>My Final Scene <span class="atag creative">Final-create</span></h2>
+I recreated the Research Sector atrium from the video game Control. This scene features rich architectural facades, making it particularly suitable for testing SSAO and SSDO.
 <p>
 <video controls playsinline style="width: 100%; height: auto;">
 		<source src="Videos/A3_Create.mp4" type="video/mp4">
@@ -133,22 +133,15 @@ I used Blender to build the scene and created a flowing water effect using keyfr
 
 <p>
 1. Poliigon https://www.poliigon.com include
-<br>Poliigon_MetalPaintedMatte_7037_BaseColor.png <br>Poliigon_MetalPaintedMatte_7037_Metallic.png
-<br>Poliigon_MetalPaintedMatte_7037_Normal.png <br> Poliigon_MetalPaintedMatte_7037_Roughness.png
-<br>Poliigon_StoneQuartzite_8060_BaseColor.png <br> Poliigon_StoneQuartzite_8060_Normal.png
-<br>Poliigon_StoneQuartzite_8060_Roughness.jpg	<br>
+<br> Texture files name start from Poliigon<br>
 2. TexturesCom https://www.textures.com/ include
-<br>TCom_Concrete_Polished_1K_albedo.png <br> TCom_Concrete_Polished_1K_normal.png 
-<br>TCom_Concrete_Polished_1K_roughness.png <br> TCom_Various_AcousticFoam_512_albedo.png
-<br>TCom_Various_AcousticFoam_512_metallic.png<br>TCom_Various_AcousticFoam_512_normal.png
-<br>TCom_Various_AcousticFoam_512_roughness.png <br>
+<br> Texture files name start from TCom <br>
 3. TextureHeaven https://polyhaven.com/textures include
-<br>raw_plank_wall_diff_1k.png <br>raw_plank_wall_nor_gl_1k.png
-<br>raw_plank_wall_rough_1k.png <br>concrete_diff_1k.png
-<br>concrete_floor_worn_001_diff_1k.png <br>concrete_floor_worn_001_nor_gl_1k.png
-<br>concrete_floor_worn_001_rough_1k.png <br>concrete_nor_gl_1k.png
-<br>concrete_rough_1k.png <br>gravel_concrete_03_diff_1k.png
-<br>gravel_concrete_03_nor_gl_1k.png <br> gravel_concrete_03_rough_1k.png
+<br>Texture files name start from polyheaven <br>
+4. TextureHeaven https://www.sharetextures.com include
+<br>Texture files name start from ST <br>
+5. Tropical Plant monstera deliciosa https://sketchfab.com/3d-models/tropical-plant-monstera-deliciosa-2fa12ba0af5442c9af8f9bead1a7d020
+<br>
 </p>
 
 <h3>Command-line Arguments (Viewer)</h3>
@@ -163,282 +156,157 @@ I used Blender to build the scene and created a flowing water effect using keyfr
 <li><code>--cull <var>CULLMODE</var></code> -- required -- choose your cull mode, now only has <code><var>NONE | NORMAL<var></code></li>
 <li><code>--exposure <var>EXPOSURE</var></code> -- required -- Select Exposure Compensation Value</li>
 <li><code>--tonemap <var>MODE</var></code> -- required -- replace MODE with tonemap mode you want to use, for now only support:<code><var>linear, gamma, reinhard, aces<var></code></li>
+<li><code>--ssao <var>SAMPLE COUNT</var></code>  -- required -- turn on ssao and decide the sample counts(max:64)</li>
+<li><code>--ssdo <var>SAMPLE COUNT</var></code>  -- required -- turn on ssdo and decide the sample counts(max:64)</li>
 </p>
 
-<h2>Evidence</h2>
+<h3>Controls</h3>
 
-<p>
-
-<h3>Load lights and light-lambertian test <span class="atag">A3-load & light</span></h3>
-	<video controls playsinline style="width: 100%; height: auto;">
-		<source src="Videos/A3_Lambertian.mp4" type="video/mp4">
-	</video>
-
-<h3>Load lights and light-pbr test <span class="atag">A3-load & light</span></h3>
-	<video controls playsinline style="width: 100%; height: auto;">
-		<source src="Videos/A3_PBR.mp4" type="video/mp4">
-	</video>
-
-<h3> shadow test <span class="atag">A3-shadow</span></h3>
-	<video controls playsinline style="width: 100%; height: auto;">
-		<source src="Videos/A3_Shadow.mp4" type="video/mp4">
-	</video>
-
+<p class="placeholder">
+Document the keyboard and mouse controls used to control your viewer when run interactively.
+Note that the controls below are placeholders not requirements.
 </p>
 
-<h3>Loading light objects <span class="atag">A3-load</span></h3> 
+<ul>
+<li class="placeholder"><kbd>/</kbd> Enable or disable debug line</li>
+<li class="placeholder"><kbd>Tab</kbd> Switch camera's mode</li>
+<li class="placeholder"><kbd>+ or =</kbd> Switch next cameras.</li>
+<li class="placeholder"><kbd>C</kbd> Enable or diable culling.</li>
+<li class="placeholder"><kbd>SPACE</kbd> Play or pause animation.</li>
+<li class="placeholder"><kbd>P</kbd> Replay animation from beginning.</li>
+<li class="placeholder"><kbd>Mouse Left Button</kbd> Rotate camera in FREE_CAMERA_MODE.</li>
+<li class="placeholder"><kbd>Mouse wheel</kbd> Zoom in or out in FREE_CAMERA_MODE.</li>
+<li class="placeholder"><kbd>1</kbd> GBuffer - Albedo</li>
+<li class="placeholder"><kbd>2</kbd> GBuffer - NormalWS</li>
+<li class="placeholder"><kbd>3</kbd> GBuffer - PositionWS</li>
+<li class="placeholder"><kbd>4</kbd> GBuffer - Roughness</li>
+<li class="placeholder"><kbd>5</kbd> GBuffer - Metalness</li>
+<li class="placeholder"><kbd>6</kbd> Direct Lighting Buffer</li>
+<li class="placeholder"><kbd>7</kbd> SSAO Buffer</li>
+<li class="placeholder"><kbd>8</kbd> SSDO Buffer</li>
+
+<li class="placeholder">...</li>
+</ul>
+
+<h2>GBuffer / Direct Lighting Buffer</h2>
 
 <p>
-	Light data is loaded from the S72 file as S72::Light, then converted by URenderExtractor into engine-side objects (ULight). These are collected in URenderScene and transformed into FLightProxy for rendering. For lights that cast shadows, additional resources (FShadowResource) are created. 
-	Finally, the data is uploaded to the GPU as structured buffers and shadow maps.
-<img src="Images/LightStrcuture.png" alt="LightStructure" style="max-width: 100%; height: auto;">
-</p>
-
-
-<h3>Adding Direct Lighting to Materials <span class="atag">A3-materials</span></h3>
-
-<p>
-I directly upload an array of Lights to the shader, 
-where it is mapped to a corresponding struct and used by the material for lighting calculations.
-<img src="Images/lightcode.png" alt="light code" style="max-width: 100%; height: auto;">
-</p>
-
-<p>
-Include screenshots or recordings of your viewer showing proper behavior of lambertian and pbr materials under sphere, spot, and sun lights.
-<h3>Sun Light </h3>
+To support deferred rendering, I restructured the original forward rendering pipeline. The current rendering pipeline executes in the following order:
+<br>First, the shadow map pass is rendered. Next, the G-buffer pass is generated. 
+<br>Then, using the G-buffer and shadow information, the direct lighting buffer is computed. 
+<br>After that, SSAO and SSDO are applied. 
+<br>Finally, the combined pipeline integrates all the intermediate results to produce the final rendered image.
+<h3>All Buffers Debug View <span class="atag">A3-load & light</span></h3>
 	<video controls playsinline style="width: 100%; height: auto;">
-		<source src="Videos/A3_Sun.mp4" type="video/mp4">
-	</video>
-<h3>Sphere Light and spot light </h3>
-	<video controls playsinline style="width: 100%; height: auto;">
-		<source src="Videos/A3_PBR.mp4" type="video/mp4">
+		<source src="Videos/Buffer.mp4" type="video/mp4">
 	</video>
 </p>
 
+<h2>SSAO</h2>
+
 <p>
-I created several test scenes (see A3/Scene/LightNumTest). I used 5, 10, 20, 40, 60, 80, 160, 320, and 640 spotlights in the scene. 
-During testing, I set Max_Spot_Num to 0 to measure only the shader logic.
+To make the SSAO effect more pronounced, I currently apply it by directly multiplying it with the final output color.
+</p>
+<p>
+<h3>SSAO Buffer</h3>
+	<video controls playsinline style="width: 100%; height: auto;">
+		<source src="Videos/SSAOBuffer.mp4" type="video/mp4">
+	</video>
+<h3>SSAO on and off </h3>
+The images below show the difference between with ssao and without ssao.
 <br>
-The results show approximately linear growth. Since the x-axis in the latter half of the plot increases exponentially, the curve also appears exponential. 
-Assuming a typical game targets at least 60 FPS, around 3000 spotlights would likely reduce the frame rate to about 60 FPS.
+<img src="Images/SSAO.png" alt="SSAO" style="max-width: 100%; height: auto;">
+<img src="Images/SSAO_1.png" alt="SSAO" style="max-width: 100%; height: auto;">
+<img src="Images/SSAO_2.png" alt="SSAO" style="max-width: 100%; height: auto;">
+</p>
+<h3>SSAO Sample Count </h3>
+The image below shows the difference between different sample counts.
+As shown in the figure below, as the number of samples increases, the SSAO becomes smoother and exhibits less noise.
+<br>
+<img src="Images/SSAO_SampleCompare.png" alt="SSAO Sample Count" style="max-width: 100%; height: auto;">
 </p>
 
-<figure>
-<!-- Feel free to use and duplicate the below example graph to plot data
- 	 Edit labels and variables in script below the canvas -->
-<canvas id="A3-light-perf" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
-<figcaption>
-The performance of my materials on a given number of lights.
-The result of (my tone-mapping curve) applied to a color of increasing intensity.
-</figcaption>
-</figure>
-<script>
-//adding an event listener so that this chart gets made *after* the document loads:
-window.addEventListener('load', () => {
-	const lights     = [5, 10, 20, 40, 60, 80, 160, 320, 640];
-	const frameTimeL = [0.06, 0.07, 0.08, 0.13, 0.17, 0.19, 0.26, 0.7, 1.1];
-	const frameTimeP = [0.12, 0.14, 0.147, 0.26, 0.34, 0.4, 0.55, 1.64, 2.66];
-	//if your tone mapping handles color channels separately
+<h3>SSAO performance </h3>
+<p>
+As shown in the figure below, the cost of the SSAO pass (excluding the blur pass) shows a positive correlation with the number of samples.
+<img src="Images/SSAO_TimeConsume.png" alt="SSDO Performance" style="max-width: 100%; height: auto;">
 
-	// Chart.js supports many types of charts and configuration options.
-	//   See: https://www.chartjs.org/docs/latest/
-	new Chart("A3-light-perf", {
-		type: "line",
-		data: {
-			labels: lights,
-			datasets: [
-				{ label: "lambertian", data: frameTimeL, backgroundColor:'#f00', borderColor:'#f00' },
-				{ label: "pbr", data: frameTimeP, backgroundColor:'#0f0', borderColor:'#0f0' },
-			]
-		},
-		options: {
-			plugins: {
-				title: { display: true, text: "Lighting Performance" }, //show a chart title
-				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
-			},
-			scales: {
-				y:{
-					min:0, //having y-axis start at zero provides better relative view of data
-					title: { display:true, text:"frame time (ms)" },
-				},
-				x:{
-					title: { display:true, text:"number of lights" },
-				},
-			},
-			animation:false, //don't animate in the data sets
-		}
-	});
+</p>
+
+<h2>SSDO</h2>
+<p>
+I incorporate SSDO as part of the indirect lighting contribution in the final pixel color.
+</p>
+<h3>SSDO Buffer</h3>
+<video controls playsinline style="width: 100%; height: auto;">
+		<source src="Videos/SSDOBuffer.mp4" type="video/mp4">
+	</video>
+<h3>SSDO on and off </h3>
+The video below shows the difference between with ssao and without ssdo.
+<video controls playsinline style="width: 100%; height: auto;">
+		<source src="Videos/SSDOCompare.mp4" type="video/mp4">
+	</video>
+<h3>SSDO Sample Count </h3>
+The image below shows the difference between different sample counts.
+As shown in the figure below, as the number of samples increases, the SSDO becomes smoother and exhibits less noise.
+<br>
+<img src="Images/SSDO_SampleCompare.png" alt="SSDO Sample Count" style="max-width: 100%; height: auto;">
+
+<h3>SSDO performance </h3>
+<p>
+As shown in the figure below, the cost of the SSDO pass (excluding the blur pass) shows a positive correlation with the number of samples.
+<img src="Images/SSDO_TimeConsume.png" alt="SSDO_TimeConsume" style="max-width: 100%; height: auto;">
+
+</p>
+
+<h2>SSAO VS SSDO</h2>
+<p>
+<h3>Visual Difference</h3>
+From the visual results shown below, the main idea of SSAO is to compute an occlusion factor, which effectively darkens the scene. 
+In contrast, SSDO aims to determine whether there are nearby surfaces that can act as emissive light sources, thereby simulating indirect illumination.
+<img src="Images/VisualComapre.png" alt="SSAO & SSDO VisualComapre" style="max-width: 100%; height: auto;">
+
+<h3>Performance Difference</h3>
+</p>
+The chart shows that the frame time of both SSAO and SSDO increases with the sample count, indicating a positive correlation between sampling rate and performance cost. 
+SSDO consistently incurs higher costs than SSAO and scales more steeply, reflecting its greater computational complexity.
+<figure>
+  <canvas id="Final-SSAO_SSDO" width="900" height="450"></canvas>
+</figure>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+window.addEventListener('load', () => {
+  const sampleCount = [8, 16, 32, 64];
+  const frameTimeL = [194, 420, 1043, 2034];
+  const frameTimeP = [465, 828, 1848, 3385];
+
+  new Chart("Final-SSAO_SSDO", {
+    type: "line",
+    data: {
+      labels: sampleCount,
+      datasets: [
+        { label: "SSAO", data: frameTimeL, borderColor: "#f00", backgroundColor: "#f00" },
+        { label: "SSDO", data: frameTimeP, borderColor: "#0f0", backgroundColor: "#0f0" }
+      ]
+    },
+    options: {
+      plugins: {
+        title: { display: true, text: "SSAO & SSDO performance" },
+        legend: { display: true, onClick: () => {} }
+      },
+      scales: {
+        y: {
+          min: 0,
+          title: { display: true, text: "frame time (us)" }
+        },
+        x: {
+          title: { display: true, text: "Samples Count" }
+        }
+      },
+      animation: false
+    }
+  });
 });
 </script>
-
-<h3>Adding Shadows for Spot Lights <span class="atag">A3-shadows</span></h3>
-
-<p>
-Shadow maps are rendered in the render function before the Lambert pipeline. 
-I use a dedicated shadow pipeline with a shadow.vert shader to render depth information from the light's point of view.
-<br>
-To reduce shadow artifacts, 
-I apply both depth bias and normal bias to mitigate self-shadowing issues (shadow acne) on lit surfaces.
-<br>
-Cube map textures are provided to materials through a descriptor set, 
-allowing shaders to directly sample the data.
-<br>
-For PCF filtering, I use a 2x2 sampling pattern with uniform weights to smooth shadow edges.
-</p>
-
-
-<p>
-Include output images showing that spot light shadows are working correctly for both lambertian and pbr materials.
-<br>
-<img src="Images/shadow_example.png" alt="ShadowExample" style="max-width: 100%; height: auto;">
-</p>
-<p>
-Include output images showing that "shadow" light parameter does actually change the shadow map resolution.
-<img src="Images/shadow_resolution.png" alt="ShadowResolution" style="max-width: 100%; height: auto;">
-</p>
-
-<p>
-Include a graph showing the performance impact of adding shadowing to lights to a scene.
-Attempt to separate the performance impact of shadow map rendering and shadow map sampling (e.g., by testing the same scenes with per-frame rendered shadow maps and pre-rendered shadow maps). Which is larger?
-<br>
-<strong>Answer: </strong>
-<br>
-Clearly, generating shadow maps is more expensive. The performance cost without shadows mainly comes from iterating over lights in the shader.
-<br>
-Fixed shadows only incur a noticeable cost when the shadow maps are created; afterward, the performance increase is primarily due to sampling the shadow maps.
-<br>
-For dynamic shadows, the shadow maps must be regenerated every frame. In addition, each light has its own shadow map, and generating each one requires traversing the scene and rendering depth for all objects. As a result, the overhead is significantly higher.
-
-
-
-<figure>
-<!-- Feel free to use and duplicate the below example graph to plot data
- 	 Edit labels and variables in script below the canvas -->
-<canvas id="A3-shadow-cost" style="display: block; width: 600px; max-width: 600px; margin: 0px auto; background: rgb(255, 255, 255); box-sizing: border-box; height: 300px;" width="900" height="450"></canvas>
-<figcaption>
-The performance of my materials on a given number of lights.
-The result of (my tone-mapping curve) applied to a color of increasing intensity.
-</figcaption>
-</figure>
-<script>
-//adding an event listener so that this chart gets made *after* the document loads:
-window.addEventListener('load', () => {
-	const lights     = [5, 10, 20, 40, 60, 80, 160, 320, 640];
-	const noShadow = [0.06, 0.07, 0.08, 0.13, 0.17, 0.19, 0.26, 0.7, 1.1];
-	const fixShadow = [0.07, 0.09, 0.13, 0.22, 0.30, 0.31, 0.35, 1.2, 2.0];
-	const dynamicShadow = [0.09, 0.16, 0.19, 0.29, 0.45, 0.7, 1.2, 5.2, 10.1];
-
-	//if your tone mapping handles color channels separately
-
-	// Chart.js supports many types of charts and configuration options.
-	//   See: https://www.chartjs.org/docs/latest/
-	new Chart("A3-shadow-cost", {
-		type: "line",
-		data: {
-			labels: lights,
-			datasets: [
-				{ label: "noShadow", data: noShadow, backgroundColor:'#f00', borderColor:'#f00' },
-				{ label: "fixShadow", data: fixShadow, backgroundColor:'#0f0', borderColor:'#0f0' },
-				{ label: "dynamicShadow", data: dynamicShadow, backgroundColor:'#00f', borderColor:'#00f' },
-			]
-		},
-		options: {
-			plugins: {
-				title: { display: true, text: "Lighting Performance" }, //show a chart title
-				legend: { display: true, onClick:()=>{} }, //show legend but don't allow interacting
-			},
-			scales: {
-				y:{
-					min:0, //having y-axis start at zero provides better relative view of data
-					title: { display:true, text:"frame time (ms)" },
-				},
-				x:{
-					title: { display:true, text:"number of lights" },
-				},
-			},
-			animation:false, //don't animate in the data sets
-		}
-	});
-});
-</script>
-</p>
-
-
-
-<h3>Extra: Light Sort <span class="atag extra">A3x-sort</span></h3>
-
-<p class="placeholder">
-Cover, at least:
-your chosen method for sorting lights to meshes.
-</p>
-<p class="placeholder">
-Build a scene in which your light sorting technique provides a performance improvement over rendering all meshes with all lights.
-Include a screen shot (and the scene itself).
-</p>
-<p class="placeholder">
-Include data demonstrating the performance improvement in rendering this scene.
-E.g., a graph of the frame times for an animated fly-through of the scene with and without your sorting code enabled.
-</p>
-
-<h3>Extra: PCSS Soft Shadows <span class="atag extra">A3x-soft</span></h3>
-
-<p class="placeholder">
-Cover, at least:
-your implementation of PCSS (sampling pattern, counts)
-</p>
-
-<p class="placeholder">
-Include images showing the same shadows rendered with and without PCSS, showing the spreading behavior as the shadow stretches further from the light.
-</p>
-
-<h3>Extra: Shadows for Sun Lights <span class="atag extra">A3x-cascade</span></h3>
-
-<p class="placeholder">
-Cover, at least:
-your choice of shadow map cascade levels and layout;
-how your cascade is packed into a texture;
-how [if at all] your cascade avoids "boiling" as the camera moves
-</p>
-
-<p class="placeholder">
-Include images showing a scene rendered with a shadow-casting distant directional light.
-Include images with a modified shader color-coding pixels by what cascade level they are sampling.
-Include images from a debug camera, showing how the shadow map cascade fits the camera frustum.
-</p>
-
-<h3>Extra: Shadows for Sphere Lights <span class="atag extra">A3x-cube</span></h3>
-
-<p class="placeholder">
-Cover, at least:
-how you chose to set up cameras for cube map rendering
-</p>
-
-<p class="placeholder">
-Include images or video showing a scene rendered with a shadow-casting sphere light.
-Show that there are no artifacts at the edges or corners of the shadow map cube.
-</p>
-
-
-<h3>Extra: Other <span class="atag extra">A3x-*</span></h3>
-
-<p class="placeholder">
-If you have received instructor permission to pursue another extra credit activity, include information about that activity here.
-</p>
-
-
-
-<p class="placeholder">
-Include images or video showing a scene rendered with a shadow-casting sphere light.
-Show that there are no artifacts at the edges or corners of the shadow map cube.
-</p>
-
-
-
-<h2>Feedback</h2>
-<p class="placeholder">
-This is the end of the structured report. Feel free to add feedback about A1 to this section.
-</p>
-
-
-
-</body></html>

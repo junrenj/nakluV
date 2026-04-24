@@ -29,7 +29,7 @@ void main()
     vec3 sum = vec3(0.0);
     float wsum = 0.0;
 
-    const int R = 2;
+    const int R = 4;
 
     for (int y = -R; y <= R; ++y)
     {
@@ -47,10 +47,10 @@ void main()
             float spatial2 = float(x * x + y * y);
             float spatialWeight = exp(-spatial2 / 8.0);
 
-            float normalWeight = pow(max(dot(centerN, sampleN), 0.0), 32.0);
+            float normalWeight = max(dot(centerN, sampleN), 0.0);
 
             float posDist = length(sampleP - centerP);
-            float positionWeight = exp(-(posDist * posDist) / 0.25);
+            float positionWeight = exp(-(posDist * posDist) / 1.0);
 
             float w = spatialWeight * normalWeight * positionWeight;
 

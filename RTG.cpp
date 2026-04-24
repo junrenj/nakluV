@@ -140,11 +140,37 @@ void RTG::Configuration::parse(int argc, char **argv)
 		}
 		else if (arg == "--ssao") 
 		{
-			ScreenProcessMode = EScreenProcessMode::SSAO; 
+			ScreenProcessMode = EScreenProcessMode::SSAO;
+			if (argi + 1 >= argc) 
+			{
+        		throw std::runtime_error("--exposure requires a parameter (exposure intensity).");
+    		}
+    		argi += 1;
+			try
+			{
+    			SampleCount = std::min(std::stoi(argv[argi]), 64);
+			}
+			catch(const std::exception& e)
+			{
+				std::cout << "Invalid sample number" << e.what() << std::endl;
+			}
 		}
 		else if(arg == "--ssdo")
 		{
 			ScreenProcessMode = EScreenProcessMode::SSDO;
+			if (argi + 1 >= argc) 
+			{
+        		throw std::runtime_error("--exposure requires a parameter (exposure intensity).");
+    		}
+    		argi += 1;
+			try
+			{
+    			SampleCount = std::min(std::stoi(argv[argi]), 64);
+			}
+			catch(const std::exception& e)
+			{
+				std::cout << "Invalid sample number" << e.what() << std::endl;
+			}
 		}
 		else 
 		{

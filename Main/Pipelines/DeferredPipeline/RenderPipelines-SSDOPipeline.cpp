@@ -18,7 +18,7 @@ void FDeferredSSDOPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t S
 
     // set 0: gbuffer textures
     {
-        std::array<VkDescriptorSetLayoutBinding, 4> bindings
+        std::array<VkDescriptorSetLayoutBinding, 5> bindings
         {
             VkDescriptorSetLayoutBinding    // normalWS
             {
@@ -41,9 +41,16 @@ void FDeferredSSDOPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t S
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
-            VkDescriptorSetLayoutBinding
+            VkDescriptorSetLayoutBinding    // Direct Lighting Buffer
             {
                 .binding = 3,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding
+            {
+                .binding = 4,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -57,13 +64,13 @@ void FDeferredSSDOPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t S
             .pBindings = bindings.data(),
         };
 
-        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set0_GBuffer));
+        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &InputBuffer));
     }
 
     {
         std::array<VkDescriptorSetLayout, 1> layouts
         {
-            Set0_GBuffer
+            InputBuffer
         };
 
         VkPipelineLayoutCreateInfo create_info
@@ -221,9 +228,9 @@ void FDeferredSSDOPipeline::Destroy(RTG &rtg)
         vkDestroyPipelineLayout(rtg.device, Layout, nullptr);
         Layout = VK_NULL_HANDLE;
     }
-    if (Set0_GBuffer != VK_NULL_HANDLE)
+    if (InputBuffer != VK_NULL_HANDLE)
     {
-        vkDestroyDescriptorSetLayout(rtg.device, Set0_GBuffer, nullptr);
-        Set0_GBuffer = VK_NULL_HANDLE;
+        vkDestroyDescriptorSetLayout(rtg.device, InputBuffer, nullptr);
+        InputBuffer = VK_NULL_HANDLE;
     }
 }

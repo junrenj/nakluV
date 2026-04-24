@@ -12,19 +12,19 @@ static uint32_t frag_code[] =
 #include "../../../spv/Main/Pipelines/DeferredPipeline/deferred-lighting.frag.inl"
 ;
 
-void FDeferredLightingPipeline::Create(
+void FDeferredDirectLightingPipeline::Create(
     RTG &rtg, 
     VkRenderPass RenderPass, uint32_t Subpass, 
-    VkDescriptorSetLayout WorldLayout, VkDescriptorSetLayout LightsLayout, 
-    VkDescriptorSetLayout EnvTexLayout, VkDescriptorSetLayout ShadowLayout)
+    VkDescriptorSetLayout WorldLayout, 
+    VkDescriptorSetLayout LightsLayout, 
+    VkDescriptorSetLayout ShadowLayout)
 {
     VkShaderModule vert_module = rtg.helpers.create_shader_module(vert_code);
     VkShaderModule frag_module = rtg.helpers.create_shader_module(frag_code);
 
     Set1_World = WorldLayout;
     Set2_Lights = LightsLayout;
-    Set3_EnvTex = EnvTexLayout;
-    Set4_Shadowmap = ShadowLayout;
+    Set3_Shadowmap = ShadowLayout;
     
     // set 0: gbuffer textures
     {
@@ -64,43 +64,12 @@ void FDeferredLightingPipeline::Create(
     }
 
     {
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings
-        {
-            VkDescriptorSetLayoutBinding
-            {
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            },
-            VkDescriptorSetLayoutBinding
-            {
-                .binding = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            },
-        };
-
-        VkDescriptorSetLayoutCreateInfo create_info
-        {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = uint32_t(bindings.size()),
-            .pBindings = bindings.data(),
-        };
-
-        VK(vkCreateDescriptorSetLayout(rtg.device, &create_info, nullptr, &Set5_ScreenProcess));
-    }
-
-    {
-        std::array<VkDescriptorSetLayout, 6> layouts 
+        std::array<VkDescriptorSetLayout, 4> layouts 
         {
             Set0_GBuffer,
             Set1_World,
             Set2_Lights,
-            Set3_EnvTex,
-            Set4_Shadowmap,
-            Set5_ScreenProcess,
+            Set3_Shadowmap,
         };
 
         VkPushConstantRange pushRange
@@ -255,7 +224,7 @@ void FDeferredLightingPipeline::Create(
     vkDestroyShaderModule(rtg.device, vert_module, nullptr);
 }
 
-void FDeferredLightingPipeline::Destroy(RTG &rtg)
+void FDeferredDirectLightingPipeline::Destroy(RTG &rtg)
 {
     if (Handle != VK_NULL_HANDLE)
     {
@@ -271,10 +240,5 @@ void FDeferredLightingPipeline::Destroy(RTG &rtg)
     {
         vkDestroyDescriptorSetLayout(rtg.device, Set0_GBuffer, nullptr);
         Set0_GBuffer = VK_NULL_HANDLE;
-    }
-    if (Set5_ScreenProcess != VK_NULL_HANDLE)
-    {
-        vkDestroyDescriptorSetLayout(rtg.device, Set5_ScreenProcess, nullptr);
-        Set5_ScreenProcess = VK_NULL_HANDLE;
     }
 }

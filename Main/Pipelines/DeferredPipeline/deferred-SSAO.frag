@@ -12,15 +12,16 @@ layout(set = 0, binding = 3, std140) uniform SSAOParams
     float Radius;
     float Bias;
     float Power;
-    float Padding0;
+    int SampleCount;
 } UBO;
 
 layout(location = 0) in vec2 uv;
 layout(location = 0) out vec4 outColor;
 
-const int KERNEL_SIZE = 16;
+const int MAX_KERNEL_SIZE = 64;
 
-const vec3 SampleKernel[KERNEL_SIZE] = vec3[](
+const vec3 SampleKernel[MAX_KERNEL_SIZE] = vec3[]
+(
     vec3( 0.5381,  0.1856,  0.4319),
     vec3( 0.1379,  0.2486,  0.4430),
     vec3( 0.3371,  0.5679,  0.0057),
@@ -36,7 +37,58 @@ const vec3 SampleKernel[KERNEL_SIZE] = vec3[](
     vec3( 0.7119, -0.0154,  0.0918),
     vec3(-0.0533,  0.0596,  0.5411),
     vec3( 0.0352, -0.0631,  0.5460),
-    vec3(-0.4776,  0.2847,  0.0271)
+    vec3(-0.4776,  0.2847,  0.0271),
+
+    vec3( 0.2454,  0.7374,  0.2271),
+    vec3(-0.3207,  0.4621,  0.6345),
+    vec3( 0.6098,  0.4209,  0.1937),
+    vec3(-0.7232,  0.2081,  0.3088),
+    vec3( 0.2133, -0.8212,  0.3214),
+    vec3(-0.1547,  0.8121,  0.1289),
+    vec3( 0.7811, -0.2764,  0.4102),
+    vec3(-0.5782, -0.6031,  0.2935),
+    vec3( 0.0341,  0.3589,  0.8793),
+    vec3(-0.2422, -0.1744,  0.7628),
+    vec3( 0.4948, -0.0981,  0.6812),
+    vec3(-0.6815,  0.0187,  0.5123),
+    vec3( 0.1789,  0.6215,  0.5418),
+    vec3(-0.4319,  0.3854,  0.4562),
+    vec3( 0.3541, -0.5213,  0.6027),
+    vec3(-0.1032, -0.7428,  0.4826),
+
+    vec3( 0.8123,  0.1214,  0.1172),
+    vec3(-0.8051,  0.1432,  0.1449),
+    vec3( 0.1426,  0.9043,  0.2178),
+    vec3(-0.1728, -0.8876,  0.2567),
+    vec3( 0.5674,  0.6018,  0.0814),
+    vec3(-0.6257,  0.5562,  0.0971),
+    vec3( 0.6412, -0.4891,  0.1883),
+    vec3(-0.5219, -0.6124,  0.1746),
+    vec3( 0.2761,  0.1189,  0.9351),
+    vec3(-0.3014,  0.2092,  0.8824),
+    vec3( 0.1876, -0.3285,  0.8392),
+    vec3(-0.4213, -0.2611,  0.7815),
+    vec3( 0.7221,  0.3427,  0.3493),
+    vec3(-0.7192,  0.2765,  0.4028),
+    vec3( 0.4389, -0.6983,  0.3162),
+    vec3(-0.3187, -0.7462,  0.3315),
+
+    vec3( 0.0912,  0.0718,  0.9932),
+    vec3(-0.0873,  0.0921,  0.9891),
+    vec3( 0.0735, -0.1119,  0.9844),
+    vec3(-0.1184, -0.0845,  0.9723),
+    vec3( 0.9311,  0.2414,  0.1378),
+    vec3(-0.9182,  0.2851,  0.1225),
+    vec3( 0.2381,  0.9314,  0.1439),
+    vec3(-0.2745, -0.9203,  0.1517),
+    vec3( 0.5932,  0.2134,  0.6891),
+    vec3(-0.5571,  0.2922,  0.6435),
+    vec3( 0.2844, -0.5821,  0.6388),
+    vec3(-0.3341, -0.5192,  0.7014),
+    vec3( 0.7582, -0.0813,  0.5121),
+    vec3(-0.7634, -0.0662,  0.4812),
+    vec3( 0.0642,  0.7641,  0.4937),
+    vec3(-0.0721, -0.7315,  0.5321)
 );
 
 float Hash12(vec2 p)
@@ -79,7 +131,7 @@ float ComputeSSAO(vec2 texcoord)
 
     float occlusion = 0.0;
 
-    for (int i = 0; i < KERNEL_SIZE; ++i)
+    for (int i = 0; i < UBO.SampleCount; ++i)
     {
         vec3 sampleDirVS = TBN * SampleKernel[i];
         vec3 samplePosVS = fragPosVS + sampleDirVS * UBO.Radius;
@@ -106,7 +158,7 @@ float ComputeSSAO(vec2 texcoord)
         occlusion += blocked * rangeWeight;
     }
 
-    float ao = 1.0 - (occlusion / float(KERNEL_SIZE));
+    float ao = 1.0 - (occlusion / float(UBO.SampleCount));
     ao = pow(clamp(ao, 0.0, 1.0), UBO.Power);
     return ao;
 }

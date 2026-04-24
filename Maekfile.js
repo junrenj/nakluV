@@ -108,6 +108,12 @@ const main_deferred_lighting_shaders = [
 ];
 main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-DeferredLightingPipeline.cpp', undefined, { depends:[...main_deferred_lighting_shaders] } ) );
 
+const main_deferred_combined_shaders = [
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-combined.vert'),
+	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-combined.frag'),
+];
+main_objs.push( maek.CPP('Main/Pipelines/DeferredPipeline/RenderPipelines-CombinedPipeline.cpp', undefined, { depends:[...main_deferred_combined_shaders] } ) );
+
 // screen processing pipeline
 const main_ssao_shaders = [
 	maek.GLSLC('Main/Pipelines/DeferredPipeline/deferred-SSAO.vert'),

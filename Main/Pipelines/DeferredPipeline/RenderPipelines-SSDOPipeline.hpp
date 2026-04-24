@@ -14,12 +14,12 @@ struct FSSDOPassUBO
     float Radius;
     float Bias;
     float Power;
-    float Padding0;
+    int SampleCount;
 };
 
 struct FDeferredSSDOPipeline
 {
-    VkDescriptorSetLayout Set0_GBuffer = VK_NULL_HANDLE;
+    VkDescriptorSetLayout InputBuffer = VK_NULL_HANDLE;
 
     VkPipelineLayout Layout = VK_NULL_HANDLE;
     VkPipeline Handle = VK_NULL_HANDLE;

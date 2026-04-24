@@ -18,7 +18,7 @@ void FGBufferDebugPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t S
 
     // set 0: gbuffer textures
     {
-        std::array<VkDescriptorSetLayoutBinding, 5> bindings
+        std::array<VkDescriptorSetLayoutBinding, 6> bindings
         {
             VkDescriptorSetLayoutBinding    // GBuffer 0 - normal.xyz, roughness
             {
@@ -41,16 +41,23 @@ void FGBufferDebugPipeline::Create(RTG &rtg, VkRenderPass RenderPass, uint32_t S
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
-            VkDescriptorSetLayoutBinding    // SSAO
+            VkDescriptorSetLayoutBinding    // Direct Lighting Buffer
             {
                 .binding = 3,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
-            VkDescriptorSetLayoutBinding    // SSDO
+            VkDescriptorSetLayoutBinding    // SSAO
             {
                 .binding = 4,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            },
+            VkDescriptorSetLayoutBinding    // SSDO
+            {
+                .binding = 5,
                 .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,

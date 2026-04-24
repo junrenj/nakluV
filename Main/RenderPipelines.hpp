@@ -10,6 +10,7 @@
 #include "Pipelines/DeferredPipeline/RenderPipelines-SSAOBlurPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-SSDOPipeline.hpp"
 #include "Pipelines/DeferredPipeline/RenderPipelines-SSDOFilterPipeline.hpp"
+#include "Pipelines/DeferredPipeline/RenderPipelines-CombinedPipeline.hpp"
 
 #include "Debug/RenderPipelines-DebugGeometryPipeline.hpp"
 
@@ -45,6 +46,7 @@ struct URenderPipelines : RTG::Application
 	// Sampler
 	VkSampler TextureSamplerNearest = VK_NULL_HANDLE;
 	VkSampler TextureSamplerLinear = VK_NULL_HANDLE;
+	VkSampler ScreenSamplerNearest = VK_NULL_HANDLE;
 
 //~BEGIN Forward Pass
     // Background Pipeline
@@ -296,15 +298,17 @@ struct URenderPipelines : RTG::Application
 	void CreateGBufferPass();
 	void CreateGBufferTargets(VkExtent2D Extent, size_t FramebufferCount);
 	void RenderDeferredGeometryPass(FWorkspace &Workspace, uint32_t FramebufferIndex);
+	void DestroyGBufferResources();
 
 	// Deferred Lighting
-	FDeferredLightingPipeline DeferredLightingPipeline;
+	FDirectLightingData DirectLightData;
+	FDeferredDirectLightingPipeline DeferredDirectLightingPipeline;
 
-	VkDescriptorPool DeferredLightingDescriptorPool = VK_NULL_HANDLE;
-	VkDescriptorSet DeferredLightingDescriptors = VK_NULL_HANDLE;
-
-	void CreateDeferredLightingDescriptors();
-	void DestroyGBufferResources();
+	void CreateDirectLightingDescriptors();
+	void CreateDeferredDirectLightingBufferPass();
+	void CreateDirectLightingBufferTargets(VkExtent2D Extent, size_t FramebufferCount);
+	void RenderDirectLightingPipeline(FWorkspace &Workspace, uint32_t FramebufferIndex);
+	void DestroyDirectLightingResources();
 
 //~END GBuffer Pass
 
@@ -349,6 +353,15 @@ struct URenderPipelines : RTG::Application
 
 //~END screen process pass
 
+//~BEGIN Combined pass
+	FDeferredCombinedPipeline CombinedPipeline;
+	VkDescriptorPool CombinedPipelineDescriptorPool = VK_NULL_HANDLE;
+	VkDescriptorSet CombinedPipelineDescriptors = VK_NULL_HANDLE;
+
+	void CreateCombinedPipelineDescriptors();
+	void RenderCombinedPipeline(FWorkspace &workspace);
+//~END
+
 //~BEGIN Debug
 	UDebugScene DebugScene;
 	void InitializeDebugRenderScene();
@@ -362,8 +375,9 @@ struct URenderPipelines : RTG::Application
 		Position = 3,
 		Roughness = 4,
 		Metalness = 5,
-		SSAO = 6,
-		SSDO = 7,
+		DirectLight = 6,
+		SSAO = 7,
+		SSDO = 8,
 	};
 
 	EGBufferDebugView GBufferDebugView = EGBufferDebugView::None;
@@ -371,8 +385,6 @@ struct URenderPipelines : RTG::Application
 
 	VkDescriptorPool GBufferDebugDescriptorPool = VK_NULL_HANDLE;
 	VkDescriptorSet GBufferDebugDescriptors = VK_NULL_HANDLE;
-
-	void RenderDeferredLightingPipeline(FWorkspace &workspace);
 
 	void CreateGBufferDebugDescriptors();
 	void RenderGBufferDebugPipeline(FWorkspace &workspace);
